@@ -1,0 +1,7 @@
+spring:
+  application:
+    name: NBE-12-14-2-Team06
+  config:
+    import: "optional:file:.env[.properties]"
+  profiles:
+    active: dev
