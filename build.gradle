@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'com.back'
-version = '0.0.1-SNAPSHOT'
+version = '0.0.1'
 description = 'NBE-12-14-2-Team06'
 
 java {
@@ -19,27 +19,41 @@ repositories {
 }
 
 dependencies {
+    // 웹 / 영속성
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-    implementation("org.springframework.boot:spring-boot-starter-security")
-    implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-webmvc")
-    compileOnly("org.projectlombok:lombok")
+    implementation("org.springframework.boot:spring-boot-starter-validation")
+
+    // 인증 / 인가
+    implementation("org.springframework.boot:spring-boot-starter-security")
+    implementation("io.jsonwebtoken:jjwt-api:0.13.0")
+    runtimeOnly("io.jsonwebtoken:jjwt-impl:0.13.0")
+    runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.13.0")
+
+    // API 문서 (Swagger)
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.0")
+
+    // DB 드라이버
     runtimeOnly("com.mysql:mysql-connector-j")
+
+    // 개발 편의
+    compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")
+    developmentOnly("org.springframework.boot:spring-boot-devtools")
+
+    // 테스트
     testImplementation("org.springframework.boot:spring-boot-starter-data-jpa-test")
     testImplementation("org.springframework.boot:spring-boot-starter-security-test")
     testImplementation("org.springframework.boot:spring-boot-starter-validation-test")
     testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
-   // testRuntimeOnly("com.h2database:h2") // 테스트 전용 인메모리 DB (실제 dev MySQL과 분리, docker 없이도 실행 가능)
-    testCompileOnly("org.projectlombok:lombok")
-  //  testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testRuntimeOnly("com.h2database:h2") // 테스트 전용 인메모리 DB (실제 dev MySQL과 분리, docker 없이도 실행 가능)
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testAnnotationProcessor("org.projectlombok:lombok")
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.0")
-    implementation("io.jsonwebtoken:jjwt-api:0.12.6")
-    runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.6")
-    runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.6")
+    testCompileOnly("org.projectlombok:lombok")
+
 }
 
-tasks.named('test') {
+tasks.named('test', Test) {
     useJUnitPlatform()
 }
