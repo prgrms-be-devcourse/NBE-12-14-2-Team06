@@ -5,8 +5,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
 
-@ActiveProfiles("test")
 @SpringBootTest
+@ActiveProfiles("test")
 class Nbe12142Team06ApplicationTests {
 
     @Test
