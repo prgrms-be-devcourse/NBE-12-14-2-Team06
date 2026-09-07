@@ -18,4 +18,4 @@ logging:
 custom:
   jwt:
     secret-key: ${JWT_SECRET}
-    expire-seconds: ${JWT_EXPIRE_SECONDS}
+    expire-seconds: ${JWT_EXPIRATION}
