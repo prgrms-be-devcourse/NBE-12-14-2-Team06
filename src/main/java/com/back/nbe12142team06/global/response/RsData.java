@@ -6,7 +6,7 @@ import lombok.Getter;
 @AllArgsConstructor
 @Getter
 public class RsData<T> {
-    public String statusCode;
+    private String statusCode;
     private String msg;
     private T data;
 
@@ -16,6 +16,6 @@ public class RsData<T> {
     }
 
     public int simpleStatusCode() {
-        return Integer.parseInt(this.statusCode.split("-")[0]);
+        return Integer.parseInt(this.statusCode.substring(0, statusCode.indexOf("-")));
     }
 }
