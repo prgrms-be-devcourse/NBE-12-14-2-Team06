@@ -29,6 +29,11 @@ public class Ride extends BaseTimeEntity {
     @Column(nullable = false)
     private RideDirection direction;
 
+    // 이동 수단 상태
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private RideStatus rideStatus = RideStatus.PROCESSING;
+
     // 예상 금액
     private int estimatedFare;
 
