@@ -15,8 +15,6 @@ import java.time.LocalDate;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "users")
 public class User extends BaseSoftDeleteTimeEntity {
-
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -58,4 +56,16 @@ public class User extends BaseSoftDeleteTimeEntity {
     // 지역
     @Column(nullable = false, length = 50)
     private String region;
+
+    public User(String username, String password, String email, String name, Role role, Gender gender, LocalDate birthDate, String phoneNum, String region) {
+        this.username = username;
+        this.password = password;
+        this.email = email;
+        this.name = name;
+        this.role = role;
+        this.gender = gender;
+        this.birthDate = birthDate;
+        this.phoneNum = phoneNum;
+        this.region = region;
+    }
 }

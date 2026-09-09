@@ -38,7 +38,7 @@ public class EscortProfile extends BaseTimeEntity {
     @Column(nullable = false)
     private Integer completedCount = 0;
 
-    // 평접 합계
+    // 평점 합계
     @Column(nullable = false)
     private Integer ratingSum = 0;
 
@@ -49,4 +49,9 @@ public class EscortProfile extends BaseTimeEntity {
     // 노쇼 횟수
     @Column(nullable = false)
     private Integer noShowCount = 0;
+
+    // 유저만 연결 생성자
+    public EscortProfile(User user){
+        this.user = user;
+    }
 }
