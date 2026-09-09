@@ -4,11 +4,9 @@ import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.global.entity.BaseTimeEntity;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
+@Builder
 @Getter
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -30,6 +28,7 @@ public class Application extends BaseTimeEntity {
     private User escort;
 
     // 지원 상태
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ApplicationStatus status = ApplicationStatus.PENDING;

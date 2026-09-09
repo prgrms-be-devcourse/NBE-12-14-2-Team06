@@ -7,7 +7,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import lombok.Builder;
 
+@Builder
 @Getter
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -24,6 +26,7 @@ public class EscortProgressLog {
     private Application application;
 
     // 동행 진행 단계
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private EscortProgress progress = EscortProgress.NOT_STARTED;
