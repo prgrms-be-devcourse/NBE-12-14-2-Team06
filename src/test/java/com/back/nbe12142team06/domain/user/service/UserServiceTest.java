@@ -8,8 +8,10 @@ import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 
@@ -18,17 +20,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @ActiveProfiles("test")
 @RequiredArgsConstructor
+@Transactional
 public class UserServiceTest {
 
-    private final UserService userService;
-    private final UserRepository userRepository;
-    private final EntityManager em;
+    @Autowired
+    private UserService userService;
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private EntityManager em;
 
     @Test
     @DisplayName("회원가입 - 단순 저장")
     void t1(){
 
-        this.userService.signUp("user1",
+        User saved = this.userService.signUp("user1",
                 "1234",
                 "user@test.test",
                 "유저1",
@@ -38,6 +44,7 @@ public class UserServiceTest {
                 "010-1234-5678",
                 "서울");
 
+        // 캐시 비우고 실제로 DB에서 조회
         em.flush();
         em.clear();
 
