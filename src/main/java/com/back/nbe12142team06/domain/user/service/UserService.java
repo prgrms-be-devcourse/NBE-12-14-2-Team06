@@ -4,4 +4,6 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class UserService {
+    public void signUp(String username, String password, String email, ) {
+    }
 }

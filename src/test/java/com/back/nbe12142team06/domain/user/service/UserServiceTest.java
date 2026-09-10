@@ -4,6 +4,7 @@ import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Gender;
 import com.back.nbe12142team06.domain.user.enums.Role;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -21,12 +22,13 @@ public class UserServiceTest {
 
     private final UserService userService;
     private final UserRepository userRepository;
+    private final EntityManager em;
 
     @Test
     @DisplayName("회원가입 - 단순 저장")
     void t1(){
-        User userOrigin = new User(
-                "user1",
+
+        this.userService.signUp("user1",
                 "1234",
                 "user@test.test",
                 "유저1",
@@ -34,15 +36,12 @@ public class UserServiceTest {
                 Gender.MALE,
                 LocalDate.of(1990, 5, 6),
                 "010-1234-5678",
-                "서울"
-        );
-        // 저장
-        this.userService.signUp(userOrigin);
+                "서울");
 
-        Long originId = userOrigin.getId();
+        em.flush();
+        em.clear();
 
-        User userCheck = this.userRepository.findById(originId).get();
-        assertThat(userCheck.getId()).isEqualTo(userOrigin.getId());
+        User userCheck = this.userRepository.findByUsername("user1").orElseThrow();
         assertThat(userCheck.getUsername()).isEqualTo("user1");
         assertThat(userCheck.getPassword()).isEqualTo("1234");
         assertThat(userCheck.getEmail()).isEqualTo("user@test.test");
