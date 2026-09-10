@@ -1,5 +1,8 @@
 package com.back.nbe12142team06.global.exception;
 
+import lombok.Getter;
+
+@Getter
 public class BusinessException extends RuntimeException {
 
     String statusCode;

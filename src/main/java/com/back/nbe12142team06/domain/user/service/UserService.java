@@ -14,6 +14,8 @@ import java.time.LocalDate;
 @Service
 @RequiredArgsConstructor
 public class UserService {
+    private static final int DUPLICATED_USERNAME = 1;
+    private static final int DUPLICATED_EMAIL = 2;
 
     private final UserRepository userRepository;
 
@@ -21,7 +23,11 @@ public class UserService {
     public User signUp(String username, String password, String email, String name, Role role, Gender gender, LocalDate birthDate, String phoneNumber, String region) {
         // username 중복 검사
         if (this.userRepository.existsByUsername(username)) {
-            throw new DuplicatedException("이미 사용 중인 아이디입니다.");
+            throw new DuplicatedException(DUPLICATED_USERNAME, "이미 사용 중인 아이디입니다.");
+        }
+        // email 중복 검사
+        if (this.userRepository.existsByEmail(email)) {
+            throw new DuplicatedException(DUPLICATED_EMAIL, "이미 사용 중인 이메일입니다.");
         }
 
         User user = new User(username, password, email, name, role, gender, birthDate, phoneNumber, region);

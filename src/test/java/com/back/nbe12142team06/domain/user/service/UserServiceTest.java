@@ -16,8 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.*;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -65,6 +64,7 @@ public class UserServiceTest {
     @Test
     @DisplayName("회원가입 - 이미 사용 중인 아이디로 가입 시 예외")
     void t2(){
+        // username = user1
         User saved = this.userService.signUp("user1",
                 "1234",
                 "user@test.test",
@@ -75,7 +75,8 @@ public class UserServiceTest {
                 "010-1234-5678",
                 "서울");
 
-        assertThatThrownBy(() ->
+        // username = user1
+        DuplicatedException e = catchThrowableOfType(() ->
                 this.userService.signUp("user1",
                         "1234",
                         "userA@test.test",
@@ -84,9 +85,45 @@ public class UserServiceTest {
                         Gender.MALE,
                         LocalDate.of(1990, 5, 6),
                         "010-2345-6789",
-                        "경기")
-        )
-                .isInstanceOf(DuplicatedException.class)
-                .hasMessage("이미 사용 중인 아이디입니다.");
+                        "경기"),
+                DuplicatedException.class
+        );
+
+        assertThat(e).isNotNull();
+        assertThat(e.getMessage()).isEqualTo("이미 사용 중인 아이디입니다.");
+        assertThat(e.getStatusCode()).isEqualTo("409-1");
+    }
+
+    @Test
+    @DisplayName("회원가입 - 이미 사용 중인 이메일로 가입 시 예외")
+    void t3(){
+        // email = user@test.test
+        User saved = this.userService.signUp("user1",
+                "1234",
+                "user@test.test",
+                "유저1",
+                Role.CLIENT,
+                Gender.MALE,
+                LocalDate.of(1990, 5, 6),
+                "010-1234-5678",
+                "서울");
+
+        // email = user@test.test
+        DuplicatedException e = catchThrowableOfType(() ->
+                this.userService.signUp("user2",
+                        "1234",
+                        "user@test.test",
+                        "유저A",
+                        Role.CLIENT,
+                        Gender.MALE,
+                        LocalDate.of(1990, 5, 6),
+                        "010-2345-6789",
+                        "경기"),
+                DuplicatedException.class
+        );
+
+        assertThat(e).isNotNull();
+        assertThat(e.getMessage()).isEqualTo("이미 사용 중인 이메일입니다.");
+        assertThat(e.getStatusCode()).isEqualTo("409-2");
     }
 }
