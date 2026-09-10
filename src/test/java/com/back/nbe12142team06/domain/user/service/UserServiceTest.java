@@ -4,6 +4,7 @@ import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Gender;
 import com.back.nbe12142team06.domain.user.enums.Role;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
+import com.back.nbe12142team06.global.exception.DuplicatedException;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.DisplayName;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -58,5 +60,33 @@ public class UserServiceTest {
         assertThat(userCheck.getBirthDate()).isEqualTo(LocalDate.of(1990, 5, 6));
         assertThat(userCheck.getPhoneNum()).isEqualTo("010-1234-5678");
         assertThat(userCheck.getRegion()).isEqualTo("서울");
+    }
+
+    @Test
+    @DisplayName("회원가입 - 이미 사용 중인 아이디로 가입 시 예외")
+    void t2(){
+        User saved = this.userService.signUp("user1",
+                "1234",
+                "user@test.test",
+                "유저1",
+                Role.CLIENT,
+                Gender.MALE,
+                LocalDate.of(1990, 5, 6),
+                "010-1234-5678",
+                "서울");
+
+        assertThatThrownBy(() ->
+                this.userService.signUp("user1",
+                        "1234",
+                        "userA@test.test",
+                        "유저A",
+                        Role.CLIENT,
+                        Gender.MALE,
+                        LocalDate.of(1990, 5, 6),
+                        "010-2345-6789",
+                        "경기")
+        )
+                .isInstanceOf(DuplicatedException.class)
+                .hasMessage("이미 사용 중인 아이디입니다.");
     }
 }
