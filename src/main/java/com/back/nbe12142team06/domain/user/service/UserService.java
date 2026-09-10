@@ -6,6 +6,7 @@ import com.back.nbe12142team06.domain.user.enums.Role;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
 import com.back.nbe12142team06.global.exception.DuplicatedException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +19,7 @@ public class UserService {
     private static final int DUPLICATED_EMAIL = 2;
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional
     public User signUp(String username, String password, String email, String name, Role role, Gender gender, LocalDate birthDate, String phoneNumber, String region) {
@@ -30,7 +32,8 @@ public class UserService {
             throw new DuplicatedException(DUPLICATED_EMAIL, "이미 사용 중인 이메일입니다.");
         }
 
-        User user = new User(username, password, email, name, role, gender, birthDate, phoneNumber, region);
+        // 비밀번호 암호화
+        User user = new User(username, passwordEncoder.encode(password), email, name, role, gender, birthDate, phoneNumber, region);
         return this.userRepository.save(user);
     }
 }

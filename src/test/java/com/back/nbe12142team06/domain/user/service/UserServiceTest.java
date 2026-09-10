@@ -6,21 +6,21 @@ import com.back.nbe12142team06.domain.user.enums.Role;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
 import com.back.nbe12142team06.global.exception.DuplicatedException;
 import jakarta.persistence.EntityManager;
-import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowableOfType;
 
 @SpringBootTest
 @ActiveProfiles("test")
-@RequiredArgsConstructor
 @Transactional
 public class UserServiceTest {
 
@@ -30,6 +30,9 @@ public class UserServiceTest {
     private UserRepository userRepository;
     @Autowired
     private EntityManager em;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
 
     @Test
     @DisplayName("회원가입 - 단순 저장")
@@ -51,7 +54,7 @@ public class UserServiceTest {
 
         User userCheck = this.userRepository.findByUsername("user1").orElseThrow();
         assertThat(userCheck.getUsername()).isEqualTo("user1");
-        assertThat(userCheck.getPassword()).isEqualTo("1234");
+        assertThat(userCheck.getPassword()).isNotNull();
         assertThat(userCheck.getEmail()).isEqualTo("user@test.test");
         assertThat(userCheck.getName()).isEqualTo("유저1");
         assertThat(userCheck.getRole()).isEqualTo(Role.CLIENT);
@@ -125,5 +128,29 @@ public class UserServiceTest {
         assertThat(e).isNotNull();
         assertThat(e.getMessage()).isEqualTo("이미 사용 중인 이메일입니다.");
         assertThat(e.getStatusCode()).isEqualTo("409-2");
+    }
+
+    @Test
+    @DisplayName("회원가입 - 비밀번호 암호화")
+    void t4(){
+        User saved = this.userService.signUp("user1",
+                "1234",
+                "user@test.test",
+                "유저1",
+                Role.CLIENT,
+                Gender.MALE,
+                LocalDate.of(1990, 5, 6),
+                "010-1234-5678",
+                "서울");
+
+        em.flush();
+        em.clear();
+
+        User userCheck = this.userRepository.findByUsername("user1").orElseThrow();
+
+        // 비밀번호가 평문인지 검증
+        assertThat(userCheck.getPassword()).isNotEqualTo("1234");
+        // 비밀번호가 지정한 방식으로 정확히 암호화되어 저장되어 있는지 검증
+        assertThat(passwordEncoder.matches("1234", userCheck.getPassword())).isTrue();
     }
 }
