@@ -16,6 +16,8 @@ public class RsData<T> {
     }
 
     public int simpleStatusCode() {
-        return Integer.parseInt(this.statusCode.substring(0, statusCode.indexOf("-")));
+        // - 없이 사용하는 경우 대비
+        int idx = statusCode.indexOf('-');
+        return Integer.parseInt(idx == -1 ? statusCode : this.statusCode.substring(0, idx));
     }
 }
