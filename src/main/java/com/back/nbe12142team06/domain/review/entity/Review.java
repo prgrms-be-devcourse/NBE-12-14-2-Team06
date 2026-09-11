@@ -1,5 +1,6 @@
 package com.back.nbe12142team06.domain.review.entity;
 
+import com.back.nbe12142team06.domain.application.entity.Application;
 import com.back.nbe12142team06.global.entity.BaseTimeEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Max;
@@ -21,8 +22,9 @@ public class Review extends BaseTimeEntity {  // createdAt, updatedAt 상속
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;  // PK (BIGINT AUTO_INCREMENT)
 
-    @Column(name = "application_id", nullable = false, unique = true)
-    private Long applicationId;  // 지원서 ID (FK → Application, UNIQUE / 동행 1건당 리뷰 1개)
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "application_id", nullable = false, unique = true)
+    private Application application;  // 지원서 (FK → Application, UNIQUE / 동행 1건당 리뷰 1개)
 
     @Min(value = 1, message = "별점은 1점 이상이어야 합니다.")
     @Max(value = 5, message = "별점은 5점 이하여야 합니다.")

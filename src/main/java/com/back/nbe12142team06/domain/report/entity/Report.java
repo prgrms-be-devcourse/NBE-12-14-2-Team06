@@ -1,5 +1,6 @@
 package com.back.nbe12142team06.domain.report.entity;
 
+import com.back.nbe12142team06.domain.application.entity.Application;
 import com.back.nbe12142team06.global.entity.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -18,8 +19,9 @@ public class Report extends BaseTimeEntity {  // createdAt, updatedAt 상속
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;  // PK (BIGINT AUTO_INCREMENT)
 
-    @Column(name = "application_id", nullable = false, unique = true)
-    private Long applicationId;  // 지원서 ID (FK → Application, UNIQUE / 동행 1건당 보고서 1개)
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "application_id", nullable = false, unique = true)
+    private Application application;  // 지원서 (FK → Application, UNIQUE / 동행 1건당 보고서 1개)
 
     @Column(nullable = false, length = 100)
     private String title;  // 보고서 제목
