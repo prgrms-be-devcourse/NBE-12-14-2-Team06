@@ -5,6 +5,7 @@ import com.back.nbe12142team06.global.entity.BaseTimeEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.util.HashSet;
@@ -26,10 +27,11 @@ public class Review extends BaseTimeEntity {  // createdAt, updatedAt 상속
     @JoinColumn(name = "application_id", nullable = false, unique = true)
     private Application application;  // 지원서 (FK → Application, UNIQUE / 동행 1건당 리뷰 1개)
 
+    @NotNull(message = "별점은 필수입니다.")
     @Min(value = 1, message = "별점은 1점 이상이어야 합니다.")
     @Max(value = 5, message = "별점은 5점 이하여야 합니다.")
     @Column(nullable = false, columnDefinition = "TINYINT")
-    private int rating;  // 별점 (CHECK 1~5)
+    private Integer rating;  // 별점 (CHECK 1~5)
 
     // 선택형 후기 태그 (다중 선택 최대 5개 / review_tag 테이블에 별도 저장)
     @Builder.Default
