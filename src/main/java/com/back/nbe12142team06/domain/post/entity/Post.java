@@ -1,5 +1,6 @@
 package com.back.nbe12142team06.domain.post.entity;
 
+import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.global.entity.BaseSoftDeleteTimeEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
@@ -24,11 +25,10 @@ public class Post extends BaseSoftDeleteTimeEntity {  // createdAt, updatedAt, d
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;  // PK (BIGINT AUTO_INCREMENT)
 
-    @Column(name = "client_id", nullable = false)
-    private Long clientId;  // 의뢰인 User ID (FK → User)
-
-    @Column(name = "accepted_application_id")
-    private Long acceptedApplicationId;  // 수락된 지원서 ID (nullable, UNIQUE)
+    // ── 연관 관계 ──────────────────────────────
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "client_id", nullable = false)
+    private User client;  // 의뢰인 (FK → User)
 
     // ── 공고 기본 정보 ──────────────────────────
     @Column(nullable = false)
