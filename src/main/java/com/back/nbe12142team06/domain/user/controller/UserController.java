@@ -20,9 +20,9 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping
-    public RsData<UserSignUpResponse> signUp(@RequestBody @Valid UserSignUpRequest userSignUpRequest) {
+    public RsData<UserSignUpResponse> signUp(@RequestBody @Valid UserSignUpRequest request) {
 
-        User createUser = this.userService.signUp(userSignUpRequest.username(), userSignUpRequest.password(), userSignUpRequest.email(), userSignUpRequest.name(), userSignUpRequest.role(), userSignUpRequest.gender(), userSignUpRequest.birthDate(), userSignUpRequest.phoneNum(), userSignUpRequest.region());
+        User createUser = this.userService.signUp(request);
 
         return new RsData<>(
                 "201-1",
