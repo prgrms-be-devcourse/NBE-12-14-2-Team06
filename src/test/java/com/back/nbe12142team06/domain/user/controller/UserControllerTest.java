@@ -108,5 +108,40 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.msg").value("이미 사용 중인 아이디입니다."));
     }
 
+    @Test
+    @DisplayName("[UserController] 회원가입 - 중복된 이메일로 가입 시 409 반환")
+    void t3() throws Exception {
+        String body = """
+            {
+                "username": "%s",
+                "password": "testPassword",
+                "email": "testEmail@test.test",
+                "name": "김춘식",
+                "role": "CLIENT",
+                "gender": "MALE",
+                "birthDate": "1990-05-20",
+                "phoneNum": "010-1234-5678",
+                "region": "서울시"
+            }
+            """;
+
+        // 첫 번째 가입 성공
+        mvc.perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body.formatted("user1")))
+                .andExpect(status().isCreated());
+
+        // 같은 email, 다른 username으로 가입 시도
+        ResultActions resultActions = mvc
+                .perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body.formatted("user2")))
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.statusCode").value("409-2"))
+                .andExpect(jsonPath("$.msg").value("이미 사용 중인 이메일입니다."));
+    }
 
 }
