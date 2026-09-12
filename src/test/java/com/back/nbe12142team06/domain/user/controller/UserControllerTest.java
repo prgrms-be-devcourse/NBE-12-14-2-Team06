@@ -144,4 +144,57 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.msg").value("이미 사용 중인 이메일입니다."));
     }
 
+    @Test
+    @DisplayName("[UserController] 회원가입 - 필수값 누락 시 400-1 반환")
+    void t4() throws Exception {
+        // "username": "" 요청
+        ResultActions resultActions = mvc.perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                            "username": "",
+                            "password": "testPassword",
+                            "email": "testEmail@test.test",
+                            "name": "김춘식",
+                            "role": "CLIENT",
+                            "gender": "MALE",
+                            "birthDate": "1990-05-20",
+                            "phoneNum": "010-1234-5678",
+                            "region": "서울시"
+                        }
+                        """))
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.statusCode").value("400-1"))
+                .andExpect(jsonPath("$.msg").value("username: 아이디는 필수 항목입니다."));
+    }
+
+
+    @Test
+    @DisplayName("[UserController] 회원가입 - 존재하지 않는 gender 값으로 요청 시 400-2 반환")
+    void t5() throws Exception {
+        // "gender": "HELICOPTER"  요청
+        ResultActions resultActions = mvc.perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                        {
+                            "username": "user",
+                            "password": "testPassword",
+                            "email": "testEmail@test.test",
+                            "name": "김춘식",
+                            "role": "CLIENT",
+                            "gender": "HELICOPTER",
+                            "birthDate": "1990-05-20",
+                            "phoneNum": "010-1234-5678",
+                            "region": "서울시"
+                        }
+                        """))
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.statusCode").value("400-2"));
+    }
 }
