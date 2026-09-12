@@ -38,7 +38,7 @@ public class UserControllerTest {
         String role = "CLIENT";
         String gender = "MALE";
         String birthDate = "1990-05-20";
-        String phoneNumber = "010-1234-5678";
+        String phoneNum = "010-1234-5678";
         String region = "서울시";
 
         ResultActions resultActions = mvc
@@ -57,14 +57,14 @@ public class UserControllerTest {
                                             "phoneNum": "%s",
                                             "region": "%s"
                                         }
-                                        """.formatted(username, password, email, name, role, gender, birthDate, phoneNumber, region))
+                                        """.formatted(username, password, email, name, role, gender, birthDate, phoneNum, region))
                 ).andDo(print());
 
         resultActions
                 .andExpect(handler().handlerType(UserController.class))
                 .andExpect(handler().methodName("signUp"))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.resultCode").value("201-1"))
+                .andExpect(jsonPath("$.statusCode").value("201-1"))
                 .andExpect(jsonPath("$.msg").value("회원가입이 완료되었습니다."))
                 .andExpect(jsonPath("$.data.id").exists())
                 .andExpect(jsonPath("$.data.name").value(name))

@@ -22,7 +22,7 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
-    public User signUp(String username, String password, String email, String name, Role role, Gender gender, LocalDate birthDate, String phoneNumber, String region) {
+    public User signUp(String username, String password, String email, String name, Role role, Gender gender, LocalDate birthDate, String phoneNum, String region) {
         // username 중복 검사
         if (this.userRepository.existsByUsername(username)) {
             throw new DuplicatedException(DUPLICATED_USERNAME, "이미 사용 중인 아이디입니다.");
@@ -32,7 +32,7 @@ public class UserService {
             throw new DuplicatedException(DUPLICATED_EMAIL, "이미 사용 중인 이메일입니다.");
         }
         // 비밀번호 암호화
-        User user = new User(username, passwordEncoder.encode(password), email, name, role, gender, birthDate, phoneNumber, region);
+        User user = new User(username, passwordEncoder.encode(password), email, name, role, gender, birthDate, phoneNum, region);
         return this.userRepository.save(user);
     }
 }
