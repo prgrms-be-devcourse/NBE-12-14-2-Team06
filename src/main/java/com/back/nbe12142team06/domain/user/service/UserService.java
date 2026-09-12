@@ -31,7 +31,6 @@ public class UserService {
         if (this.userRepository.existsByEmail(email)) {
             throw new DuplicatedException(DUPLICATED_EMAIL, "이미 사용 중인 이메일입니다.");
         }
-
         // 비밀번호 암호화
         User user = new User(username, passwordEncoder.encode(password), email, name, role, gender, birthDate, phoneNumber, region);
         return this.userRepository.save(user);

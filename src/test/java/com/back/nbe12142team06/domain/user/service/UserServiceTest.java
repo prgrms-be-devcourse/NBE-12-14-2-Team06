@@ -35,7 +35,7 @@ public class UserServiceTest {
 
 
     @Test
-    @DisplayName("회원가입 - 단순 저장")
+    @DisplayName("[UserService] 회원가입 - 단순 저장")
     void t1(){
 
         User saved = this.userService.signUp("user1",
@@ -65,7 +65,7 @@ public class UserServiceTest {
     }
 
     @Test
-    @DisplayName("회원가입 - 이미 사용 중인 아이디로 가입 시 예외")
+    @DisplayName("[UserService] 회원가입 - 이미 사용 중인 아이디로 가입 시 예외")
     void t2(){
         // username = user1
         User saved = this.userService.signUp("user1",
@@ -98,7 +98,7 @@ public class UserServiceTest {
     }
 
     @Test
-    @DisplayName("회원가입 - 이미 사용 중인 이메일로 가입 시 예외")
+    @DisplayName("[UserService] 회원가입 - 이미 사용 중인 이메일로 가입 시 예외")
     void t3(){
         // email = user@test.test
         User saved = this.userService.signUp("user1",
@@ -131,7 +131,7 @@ public class UserServiceTest {
     }
 
     @Test
-    @DisplayName("회원가입 - 비밀번호 암호화")
+    @DisplayName("[UserService] 회원가입 - 비밀번호 암호화")
     void t4(){
         User saved = this.userService.signUp("user1",
                 "1234",
