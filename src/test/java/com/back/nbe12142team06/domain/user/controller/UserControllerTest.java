@@ -29,7 +29,7 @@ public class UserControllerTest {
     private PasswordEncoder passwordEncoder;
 
     @Test
-    @DisplayName("[UserController] 회원가입 -  의뢰인 정상 가입")
+    @DisplayName("[UserController] 회원가입 -  정상 가입")
     void t1() throws Exception {
         String username = "testUsername";
         String password = "testPassword";
@@ -69,9 +69,43 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.data.id").exists())
                 .andExpect(jsonPath("$.data.name").value(name))
                 .andExpect(jsonPath("$.data.password").doesNotExist());
+    }
 
-        ;
 
+    @Test
+    @DisplayName("[UserController] 회원가입 - 중복된 아이디로 가입 시 409 반환")
+    void t2() throws Exception {
+        String body = """
+            {
+                "username": "testUsername",
+                "password": "testPassword",
+                "email": "%s",
+                "name": "김춘식",
+                "role": "CLIENT",
+                "gender": "MALE",
+                "birthDate": "1990-05-20",
+                "phoneNum": "010-1234-5678",
+                "region": "서울시"
+            }
+            """;
+
+        // 첫 번째 가입 성공
+        mvc.perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body.formatted("first@test.test")))
+                .andExpect(status().isCreated());
+
+        // 같은 username, 다른 email로 가입 시도
+        ResultActions resultActions = mvc
+                .perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body.formatted("second@test.test")))
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.statusCode").value("409-1"))
+                .andExpect(jsonPath("$.msg").value("이미 사용 중인 아이디입니다."));
     }
 
 
