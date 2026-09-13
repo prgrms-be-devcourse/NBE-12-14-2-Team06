@@ -1,5 +1,6 @@
 package com.back.nbe12142team06.domain.user.service;
 
+import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpRequest;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Gender;
 import com.back.nbe12142team06.domain.user.enums.Role;
@@ -35,18 +36,22 @@ public class UserServiceTest {
 
 
     @Test
-    @DisplayName("회원가입 - 단순 저장")
+    @DisplayName("[UserService] 회원가입 - 단순 저장")
     void t1(){
 
-        User saved = this.userService.signUp("user1",
-                "1234",
-                "user@test.test",
-                "유저1",
-                Role.CLIENT,
-                Gender.MALE,
-                LocalDate.of(1990, 5, 6),
-                "010-1234-5678",
-                "서울");
+        User saved = this.userService.signUp(
+                new UserSignUpRequest(
+                        "user1",
+                        "1234",
+                        "user@test.test",
+                        "유저1",
+                        Role.CLIENT,
+                        Gender.MALE,
+                        LocalDate.of(1990, 5, 6),
+                        "010-1234-5678",
+                        "서울"
+                )
+        );
 
         // 캐시 비우고 실제로 DB에서 조회
         em.flush();
@@ -65,30 +70,38 @@ public class UserServiceTest {
     }
 
     @Test
-    @DisplayName("회원가입 - 이미 사용 중인 아이디로 가입 시 예외")
+    @DisplayName("[UserService] 회원가입 - 이미 사용 중인 아이디로 가입 시 예외")
     void t2(){
         // username = user1
-        User saved = this.userService.signUp("user1",
-                "1234",
-                "user@test.test",
-                "유저1",
-                Role.CLIENT,
-                Gender.MALE,
-                LocalDate.of(1990, 5, 6),
-                "010-1234-5678",
-                "서울");
-
-        // username = user1
-        DuplicatedException e = catchThrowableOfType(() ->
-                this.userService.signUp("user1",
+        User saved = this.userService.signUp(
+                new UserSignUpRequest(
+                        "user1",
                         "1234",
-                        "userA@test.test",
-                        "유저A",
+                        "user@test.test",
+                        "유저1",
                         Role.CLIENT,
                         Gender.MALE,
                         LocalDate.of(1990, 5, 6),
-                        "010-2345-6789",
-                        "경기"),
+                        "010-1234-5678",
+                        "서울"
+                )
+        );
+
+        // username = user1
+        DuplicatedException e = catchThrowableOfType(() ->
+                this.userService.signUp(
+                        new UserSignUpRequest(
+                                "user1",
+                                "1234",
+                                "userA@test.test",
+                                "유저A",
+                                Role.CLIENT,
+                                Gender.MALE,
+                                LocalDate.of(1990, 5, 6),
+                                "010-2345-6789",
+                                "경기"
+                        )
+                ),
                 DuplicatedException.class
         );
 
@@ -98,30 +111,38 @@ public class UserServiceTest {
     }
 
     @Test
-    @DisplayName("회원가입 - 이미 사용 중인 이메일로 가입 시 예외")
+    @DisplayName("[UserService] 회원가입 - 이미 사용 중인 이메일로 가입 시 예외")
     void t3(){
         // email = user@test.test
-        User saved = this.userService.signUp("user1",
-                "1234",
-                "user@test.test",
-                "유저1",
-                Role.CLIENT,
-                Gender.MALE,
-                LocalDate.of(1990, 5, 6),
-                "010-1234-5678",
-                "서울");
-
-        // email = user@test.test
-        DuplicatedException e = catchThrowableOfType(() ->
-                this.userService.signUp("user2",
+        User saved = this.userService.signUp(
+                new UserSignUpRequest(
+                        "user1",
                         "1234",
                         "user@test.test",
-                        "유저A",
+                        "유저1",
                         Role.CLIENT,
                         Gender.MALE,
                         LocalDate.of(1990, 5, 6),
-                        "010-2345-6789",
-                        "경기"),
+                        "010-1234-5678",
+                        "서울"
+                )
+        );
+
+        // email = user@test.test
+        DuplicatedException e = catchThrowableOfType(() ->
+                this.userService.signUp(
+                        new UserSignUpRequest(
+                                "user2",
+                                "1234",
+                                "user@test.test",
+                                "유저A",
+                                Role.CLIENT,
+                                Gender.MALE,
+                                LocalDate.of(1990, 5, 6),
+                                "010-2345-6789",
+                                "경기"
+                        )
+                ),
                 DuplicatedException.class
         );
 
@@ -131,17 +152,21 @@ public class UserServiceTest {
     }
 
     @Test
-    @DisplayName("회원가입 - 비밀번호 암호화")
+    @DisplayName("[UserService] 회원가입 - 비밀번호 암호화")
     void t4(){
-        User saved = this.userService.signUp("user1",
-                "1234",
-                "user@test.test",
-                "유저1",
-                Role.CLIENT,
-                Gender.MALE,
-                LocalDate.of(1990, 5, 6),
-                "010-1234-5678",
-                "서울");
+        User saved = this.userService.signUp(
+                new UserSignUpRequest(
+                        "user1",
+                        "1234",
+                        "user@test.test",
+                        "유저1",
+                        Role.CLIENT,
+                        Gender.MALE,
+                        LocalDate.of(1990, 5, 6),
+                        "010-1234-5678",
+                        "서울"
+                )
+        );
 
         em.flush();
         em.clear();
