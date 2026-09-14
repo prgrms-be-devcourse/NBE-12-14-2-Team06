@@ -9,6 +9,7 @@ import com.back.nbe12142team06.global.exception.DuplicatedException;
 import com.back.nbe12142team06.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -17,6 +18,7 @@ public class ReportService {
     private final ReportRepository reportRepository;
     private final ApplicationRepository applicationRepository;
 
+    @Transactional
     public Report write(Long applicationId, ReportWriteRequest request) {
 
         Application application = applicationRepository.findById(applicationId)

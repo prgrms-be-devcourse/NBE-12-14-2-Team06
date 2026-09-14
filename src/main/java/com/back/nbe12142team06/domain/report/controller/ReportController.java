@@ -7,7 +7,6 @@ import com.back.nbe12142team06.domain.report.service.ReportService;
 import com.back.nbe12142team06.global.response.RsData;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -19,7 +18,6 @@ public class ReportController {
 
     // 진료 보고서 작성
     @PostMapping("/{applicationId}/report")
-    @Transactional
     public RsData<ReportWriteResponse> write(
             @PathVariable Long applicationId,
             @RequestBody @Valid ReportWriteRequest request) {
