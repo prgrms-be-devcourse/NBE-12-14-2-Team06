@@ -2,6 +2,7 @@ package com.back.nbe12142team06.domain.payment.service;
 
 import com.back.nbe12142team06.domain.payment.dto.PaymentCancelRequest;
 import com.back.nbe12142team06.domain.payment.dto.PaymentConfirmRequest;
+import com.back.nbe12142team06.domain.payment.dto.TossConfirmResponse;
 import com.back.nbe12142team06.domain.payment.entity.Payment;
 import com.back.nbe12142team06.domain.payment.entity.PaymentStatus;
 import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
@@ -46,18 +47,23 @@ public class PaymentService {
                 .put("amount", amount)
                 .toPrettyString();
 
-        ResponseEntity<Void> response = tossRestClient.post()
+        ResponseEntity<TossConfirmResponse> response = tossRestClient.post()
                 .uri("/v1/payments/confirm")
                 .body(requestBody)
                 .retrieve()
-                .toBodilessEntity();
+                .toEntity(TossConfirmResponse.class);
 
         if (!response.getStatusCode().is2xxSuccessful()) {
             throw new InvalidException(11, "결제 승인에 실패했습니다.");
         }
 
-        // 승인 시 상태 변경, 더티 체킹으로 자동 변경
-        payment.ApprovePayment(tossOrderId, tossPaymentKey);
+        TossConfirmResponse body = response.getBody();
+        if (body != null) {
+            // 승인 시 상태 변경, 더티 체킹으로 자동 변경
+            payment.ApprovePayment(tossOrderId, tossPaymentKey, body.method());
+        } else {
+            payment.ApprovePayment(tossOrderId, tossPaymentKey, null);
+        }
 
         return payment;
     }
@@ -87,11 +93,11 @@ public class PaymentService {
                 .put("cancelAmount", payment.getAmount())
                 .toPrettyString();
 
-        ResponseEntity<Void> response = tossRestClient.post()
+        ResponseEntity<TossConfirmResponse> response = tossRestClient.post()
                 .uri("/v1/payments/%s/cancel".formatted(payment.getPaymentKey()))
                 .body(requestBody)
                 .retrieve()
-                .toBodilessEntity();
+                .toEntity(TossConfirmResponse.class);
 
         if (!response.getStatusCode().is2xxSuccessful()) {
             throw new InvalidException(12, "결제 취소에 실패했습니다.");

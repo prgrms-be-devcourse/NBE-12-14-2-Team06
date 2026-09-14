@@ -24,12 +24,16 @@ public class PaymentController {
     @PostMapping("/{paymentId}/confirm")
     public RsData<PaymentConfirmResponse> requestConfirm(@RequestParam Long userId,
                                                          @RequestBody PaymentConfirmRequest request,
-                                                         @PathVariable Long paymentId) {
+                                                         @PathVariable Long paymentId,
+                                                         HttpSession session) {
         // 현재는 쿼리로 받도록 설정 -> 나중에 AccessToken 도입 후 리팩터링
+
+        // 결제 정보 검증
+        verifyAmount(session, new SaveAmountRequest(request.orderId(), request.amount()));
 
         // 결제 승인 요청 로직, 실패 시 예외(400-11) 발생
         try {
-            paymentService.confirm(request, paymentId, 1L);
+            paymentService.confirm(request, paymentId, userId);
         } catch (InvalidException e) {
             throw e;
         } catch (Exception e) {
