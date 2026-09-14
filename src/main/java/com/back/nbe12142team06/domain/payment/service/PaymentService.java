@@ -1,14 +1,54 @@
 package com.back.nbe12142team06.domain.payment.service;
 
+import com.back.nbe12142team06.domain.payment.dto.PaymentConfirmRequest;
 import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
+import com.back.nbe12142team06.global.response.RsData;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestClient;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
+import java.util.logging.Logger;
+
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class PaymentService {
 
     private final PaymentRepository paymentRepository;
+    private final ObjectMapper objectMapper;
+    private final RestClient tossRestClient;
+
+    public RsData<?> confirm(PaymentConfirmRequest request) {
+
+        String tossPaymentKey = request.paymentKey();
+        String tossOrderId = request.orderId();
+        String amount = request.amount();
+
+        System.out.println("tossPaymentKey = " + tossPaymentKey);
+        System.out.println("tossOrderId = " + tossOrderId);
+        System.out.println("amount = " + amount);
+
+        // 요청 DTO를 JSON으로 변환
+        String requestBody = objectMapper.createObjectNode()
+                .put("paymentKey", tossPaymentKey)
+                .put("orderId", tossOrderId)
+                .put("amount", amount)
+                .toPrettyString();
+
+        ResponseEntity<Void> response = tossRestClient.post()
+                .uri("/v1/payments/confirm")
+                .body(requestBody)
+                .retrieve()
+                .toBodilessEntity();
+
+        String statusCode = response.getStatusCode().is2xxSuccessful() ? "200-n" : "400-n";
+        String msg = statusCode.equals("200-n") ? "결제 승인 되었습니다." : "결제 승인에 실패했습니다.";
+        return new RsData<>(statusCode, msg);
+    }
 }
