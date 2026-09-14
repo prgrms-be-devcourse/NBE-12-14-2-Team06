@@ -1,4 +1,4 @@
-package com.back.nbe12142team06.domain.application.entity;
+package com.back.nbe12142team06.domain.application.enums;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
