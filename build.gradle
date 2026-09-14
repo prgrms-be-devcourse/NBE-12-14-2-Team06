@@ -62,3 +62,6 @@ tasks.named('test', Test) {
         exceptionFormat "full"
     }
 }
+if (project.hasProperty('production')) {
+    // Railway 배포용 (빈 블록으로도 충분)
+}
