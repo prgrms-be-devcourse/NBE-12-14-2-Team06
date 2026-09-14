@@ -1,11 +1,13 @@
 package com.back.nbe12142team06.domain.payment.entity;
 
+import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.global.entity.BaseSoftDeleteTimeEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
@@ -18,6 +20,7 @@ import java.time.LocalDateTime;
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Builder
 public class Payment extends BaseSoftDeleteTimeEntity {
 
     @Id
@@ -55,6 +58,7 @@ public class Payment extends BaseSoftDeleteTimeEntity {
     // 결제 처리 상태, 기본값 준비 상태
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private PaymentStatus paymentStatus = PaymentStatus.READY;
 
     // 승인 날짜
@@ -71,10 +75,15 @@ public class Payment extends BaseSoftDeleteTimeEntity {
             nullable = false,
             check = @CheckConstraint(name = "chk_balance_amount", constraint = "balance_amount >= 0")
     )
+    @Builder.Default
     private int balanceAmount = 0;
 
     // 결제를 취소/재결제 할 수 있기 때문에 N:1
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "post_id")
-//    private Post post;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "post_id")
+    private Post post;
+
+    public void statusUpdate(PaymentStatus status) {
+        this.paymentStatus = status;
+    }
 }
