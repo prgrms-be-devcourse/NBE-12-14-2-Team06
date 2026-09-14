@@ -29,6 +29,7 @@ import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClient;
 import tools.jackson.databind.ObjectMapper;
@@ -42,6 +43,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -68,7 +70,9 @@ class PaymentControllerTest {
 
     private Long savedUser1Id;
     private Long savedUser2Id;
-    private Long savedPostId;
+    private Long savedPost1Id;
+    private Long savedPost2Id;
+    private Long savedPaymentId;
 
     @BeforeEach
     public void init() {
@@ -96,27 +100,40 @@ class PaymentControllerTest {
                 phoneNum, region));
         savedUser2Id = user2.getId();
 
-        PostWriteRequest postWriteRequest = new PostWriteRequest(
-                "정형외과 동행 구합니다",
-                "무릎 수술 후 검진 예약이 있어 동행인이 필요합니다.",
-                "서울",
-                "서울성모병원",
-                "서울 서초구 반포대로 222",
-                BigDecimal.valueOf(37.5012743),
-                BigDecimal.valueOf(127.0051893),
-                "서울 서초구 잠원동 10-1",
-                BigDecimal.valueOf(37.5160000),
-                BigDecimal.valueOf(127.0200000),
-                15_000,
-                LocalDateTime.now().plusDays(7),
-                LocalDateTime.now().plusDays(7).plusHours(4),
-                LocalDateTime.now().plusDays(6),
-                "",
-                true
+
+        String title = "정형외과 동행 구합니다";
+        String content = "무릎 수술 후 검진 예약이 있어 동행인이 필요합니다.";
+        String postRegion = "서울";
+        String hospitalName = "서울성모병원";
+        String hospitalAddress = "서울 서초구 반포대로 222";
+        BigDecimal hospitalLat = BigDecimal.valueOf(37.5012743);
+        BigDecimal hospitalLng = BigDecimal.valueOf(127.0051893);
+        String pickupAddress = "서울 서초구 잠원동 10-1";
+        BigDecimal pickupLat = BigDecimal.valueOf(37.5160000);
+        BigDecimal pickupLng = BigDecimal.valueOf(127.0200000);
+        int hourlyPay = 15_000;
+        LocalDateTime escortStartAt = LocalDateTime.now().plusDays(7);
+        LocalDateTime escortEndAt = LocalDateTime.now().plusDays(7).plusHours(4);
+        LocalDateTime deadlineAt = LocalDateTime.now().plusDays(6);
+        PostWriteRequest postWriteRequest1 = new PostWriteRequest(
+                title, content, postRegion, hospitalName, hospitalAddress, hospitalLat, hospitalLng,
+                pickupAddress, pickupLat, pickupLng, hourlyPay, escortStartAt, escortEndAt, deadlineAt,
+                "", true
         );
 
-        Post post = postService.write(user1, postWriteRequest);
-        savedPostId = post.getId();
+        Post post1 = postService.write(user1, postWriteRequest1);
+        savedPost1Id = post1.getId();
+
+        PostWriteRequest postWriteRequest2 = new PostWriteRequest(
+                title + "2", content + "2", postRegion + "2", hospitalName + "2", hospitalAddress + "2",
+                hospitalLat, hospitalLng, pickupAddress + "2", pickupLat, pickupLng, hourlyPay, escortStartAt, escortEndAt, deadlineAt,
+                "", true
+        );
+
+        Post post2 = postService.write(user1, postWriteRequest2);
+        savedPost2Id = post2.getId();
+
+        savedPaymentId = paymentRepository.findAll().get(0).getId();
 
         entityManager.flush();
         entityManager.clear();
@@ -134,7 +151,7 @@ class PaymentControllerTest {
 
         PaymentService paymentService = new PaymentService(paymentRepository, objectMapper, restClient);
 
-        Payment payment = paymentService.confirm(new PaymentConfirmRequest(paymentKey, orderId, amount), savedPostId, savedUser1Id);
+        Payment payment = paymentService.confirm(new PaymentConfirmRequest(paymentKey, orderId, amount), savedPost1Id, savedUser1Id);
 
         assertEquals(PaymentStatus.DONE, payment.getPaymentStatus());
         assertEquals(LocalDateTime.now().getHour(), payment.getApprovedAt().getHour());
@@ -153,7 +170,7 @@ class PaymentControllerTest {
 
         // 예외 발생 400번
         assertThrows(InvalidException.class, () -> {
-            paymentService.confirm(new PaymentConfirmRequest(paymentKey, orderId, amount), savedPostId, savedUser2Id);
+            paymentService.confirm(new PaymentConfirmRequest(paymentKey, orderId, amount), savedPost1Id, savedUser2Id);
         });
     }
 
@@ -164,13 +181,13 @@ class PaymentControllerTest {
         String paymentKey = "temp";
         String orderId = "temp";
         String amount = "10000";
-        Long invalidPostId = 10L;
+        Long postId = 10000L;
 
         PaymentService paymentService = new PaymentService(paymentRepository, null, null);
 
         // 예외 발생 400번
         assertThrows(InvalidException.class, () -> {
-            paymentService.confirm(new PaymentConfirmRequest(paymentKey, orderId, amount), invalidPostId, savedUser1Id);
+            paymentService.confirm(new PaymentConfirmRequest(paymentKey, orderId, amount), postId, savedUser1Id);
         });
     }
 
@@ -181,8 +198,6 @@ class PaymentControllerTest {
         String paymentKey = "temp";
         String orderId = "temp";
         String amount = "10000";
-        Long postId = 10L;
-        Long userId = 1L;
 
         RestClient restClient = mockRestClient(HttpStatus.INTERNAL_SERVER_ERROR);
 
@@ -190,7 +205,7 @@ class PaymentControllerTest {
 
         // 예외 발생 400번
         assertThrows(InvalidException.class, () -> {
-            paymentService.confirm(new PaymentConfirmRequest(paymentKey, orderId, amount), postId, userId);
+            paymentService.confirm(new PaymentConfirmRequest(paymentKey, orderId, amount), savedUser1Id, savedPost1Id);
         });
     }
 
@@ -294,5 +309,82 @@ class PaymentControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value("400-10"))
                 .andExpect(jsonPath("$.msg").value("결제 금액 정보가 유효하지 않습니다."));
+    }
+
+    @Test
+    @DisplayName("[PaymentController] 결제 데이터 가져오기")
+    void paymentList() throws Exception {
+
+        ResultActions resultActions = mvc.perform(
+                get("/api/v1/payments")
+                        .param("userId", String.valueOf(savedUser1Id))
+        ).andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(PaymentController.class))
+                .andExpect(handler().methodName("paymentList"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-n"))
+                .andExpect(jsonPath("$.msg").value("결제 정보를 불러왔습니다."))
+                .andExpect(jsonPath("$.data[0]").exists())
+                .andExpect(jsonPath("$.data[1]").exists());
+    }
+
+    @Test
+    @DisplayName("[PaymentController] 결제 상세 데이터 가져오기 - 성공")
+    void getPayment() throws Exception {
+
+        ResultActions resultActions = mvc.perform(
+                get("/api/v1/payments/" + savedPaymentId)
+                        .param("userId", String.valueOf(savedUser1Id))
+        ).andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(PaymentController.class))
+                .andExpect(handler().methodName("getPayment"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-n"))
+                .andExpect(jsonPath("$.msg").value("결제 정보를 불러왔습니다."))
+                .andExpect(jsonPath("$.data.id").value(savedPaymentId))
+                .andExpect(jsonPath("$.data.amount").value(60_000))
+                .andExpect(jsonPath("$.data.hourlyPaySnapshot").value(15_000))
+                .andExpect(jsonPath("$.data.hours").value(4.0))
+                .andExpect(jsonPath("$.data.orderId").isEmpty())
+                .andExpect(jsonPath("$.data.paymentStatus").value("READY"));
+    }
+
+    @Test
+    @DisplayName("[PaymentController] 결제 상세 데이터 가져오기 - 잘못된 결제 ID")
+    void getPaymentFailInvalidPaymentId() throws Exception {
+        Long paymentId = 10000L;
+
+        ResultActions resultActions = mvc.perform(
+                get("/api/v1/payments/" + paymentId)
+                        .param("userId", String.valueOf(savedUser1Id))
+        ).andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(PaymentController.class))
+                .andExpect(handler().methodName("getPayment"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.statusCode").value("404-10"))
+                .andExpect(jsonPath("$.msg").value("결제 정보를 찾을 수 없습니다."));
+    }
+
+    @Test
+    @DisplayName("[PaymentController] 결제 상세 데이터 가져오기 - 다른 회원이 조회")
+    void getPaymentFailOtherMember() throws Exception {
+
+        ResultActions resultActions = mvc.perform(
+                get("/api/v1/payments/" + savedPaymentId)
+                        .param("userId", String.valueOf(savedUser2Id))
+        ).andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(PaymentController.class))
+                .andExpect(handler().methodName("getPayment"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.statusCode").value("400-10"))
+                .andExpect(jsonPath("$.msg").value("사용자의 결제 정보가 아닙니다."));
     }
 }

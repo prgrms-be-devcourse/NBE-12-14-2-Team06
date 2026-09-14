@@ -5,6 +5,7 @@ import com.back.nbe12142team06.domain.payment.entity.Payment;
 import com.back.nbe12142team06.domain.payment.entity.PaymentStatus;
 import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
 import com.back.nbe12142team06.global.exception.InvalidException;
+import com.back.nbe12142team06.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClient;
 import tools.jackson.databind.ObjectMapper;
 
+import java.util.List;
 import java.util.Optional;
 
 @Slf4j
@@ -61,6 +63,21 @@ public class PaymentService {
 
         // 승인 시 상태 변경, 더티 체킹으로 자동 변경
         payment.ApprovePayment(tossOrderId, tossPaymentKey);
+
+        return payment;
+    }
+
+    public List<Payment> findAll(Long userId) {
+        return paymentRepository.findAllByUserId(userId);
+    }
+
+    public Payment findById(Long userId, Long paymentId) {
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new NotFoundException(10, "결제 정보를 찾을 수 없습니다."));
+
+        if (!payment.getPost().getClient().getId().equals(userId)) {
+            throw new InvalidException(10, "사용자의 결제 정보가 아닙니다.");
+        }
 
         return payment;
     }
