@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -31,7 +32,6 @@ import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClient;
 import tools.jackson.databind.ObjectMapper;
@@ -46,7 +46,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -101,7 +101,6 @@ class PaymentControllerTest {
                 LocalDate.parse(birthDate, DateTimeFormatter.ISO_LOCAL_DATE),
                 phoneNum, region));
         savedUser2Id = user2.getId();
-
 
         String title = "정형외과 동행 구합니다";
         String content = "무릎 수술 후 검진 예약이 있어 동행인이 필요합니다.";
@@ -159,6 +158,33 @@ class PaymentControllerTest {
         assertEquals(LocalDateTime.now().getHour(), payment.getApprovedAt().getHour());
         assertEquals(LocalDateTime.now().getMinute(), payment.getApprovedAt().getMinute());
     }
+
+    /*
+    @Test
+    @DisplayName("[PaymentController] 결제 승인 - DB 정지")
+    void requestConfirmFailDbStop() throws Exception {
+
+        String paymentKey = "temp";
+        String orderId = "temp";
+        String amount = "10000";
+
+        ResultActions resultActions = mvc.perform(
+                post("/api/v1/payments/%s/confirm".formatted(savedPayment1Id))
+                        .param("userId", String.valueOf(savedUser1Id))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "paymentKey": "%s",
+                                    "orderId": "%s",
+                                    "amount": "%s"
+                                }
+                                """.formatted(paymentKey, orderId, amount))
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isInternalServerError());
+    }
+     */
 
     @Test
     @DisplayName("[PaymentController] 결제 승인 - 잘못 요청된 유저")

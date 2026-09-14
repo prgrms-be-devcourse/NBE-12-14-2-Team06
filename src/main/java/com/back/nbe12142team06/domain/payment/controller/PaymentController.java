@@ -3,14 +3,17 @@ package com.back.nbe12142team06.domain.payment.controller;
 import com.back.nbe12142team06.domain.payment.dto.*;
 import com.back.nbe12142team06.domain.payment.entity.Payment;
 import com.back.nbe12142team06.domain.payment.service.PaymentService;
+import com.back.nbe12142team06.global.exception.InternalServerErrorException;
 import com.back.nbe12142team06.global.exception.InvalidException;
 import com.back.nbe12142team06.global.response.RsData;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/payments")
 @RequiredArgsConstructor
@@ -32,7 +35,7 @@ public class PaymentController {
         } catch (Exception e) {
             // 기타 DB 저장 하다 예외 발생하는 경우 -> 결제 취소
             cancelPayment(userId, paymentId, new PaymentCancelRequest("서버 에러 발생"));
-            // throw new INTERNAL_ERROR
+            throw new InternalServerErrorException(10, "결제 승인 도중 서버 에러가 발생했습니다.");
         }
 
         return new RsData<>("200-10", "결제 승인에 성공했습니다.",

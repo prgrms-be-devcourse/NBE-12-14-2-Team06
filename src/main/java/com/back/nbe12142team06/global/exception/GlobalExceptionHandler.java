@@ -43,4 +43,9 @@ public class GlobalExceptionHandler {
     public RsData<?> invalidExceptionHandler(InvalidException e) {
         return new RsData<>(e.statusCode, e.getMessage());
     }
+
+    @ExceptionHandler
+    public RsData<?> internalServerErrorExceptionHandler(InternalServerErrorException e) {
+        return new RsData<>(e.statusCode, e.getMessage());
+    }
 }
