@@ -4,8 +4,10 @@ import com.back.nbe12142team06.domain.post.entity.Post;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+//상세목록용
 public record PostDto(
         Long id,
+        String client_id,
         String title,
         String content,
         String patientNote,
@@ -26,17 +28,11 @@ public record PostDto(
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 
-        // 필요하다면 client 정보 일부만 노출
-  /*      Long clientId,      // User ID만
-        String clientName,  // User 이름만*/
-
 ) {
     public PostDto(Post post) {
         this(
-                // Post 생성자에서
-      /*          post.getClient().getId(),
-                post.getClient().getName(),*/
                 post.getId(),
+                post.getClient().getUsername(),
                 post.getTitle(),
                 post.getContent(),
                 post.getPatientNote(),
