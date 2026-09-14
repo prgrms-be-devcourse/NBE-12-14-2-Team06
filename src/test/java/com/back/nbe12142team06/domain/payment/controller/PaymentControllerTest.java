@@ -132,10 +132,9 @@ class PaymentControllerTest {
 
         Post post2 = postService.write(user1, postWriteRequest2);
 
-        List<Payment> payments = paymentRepository.findAll();
-        savedPayment1Id = payments.get(0).getId();
-        savedPayment2Id = payments.get(1).getId();
-
+        savedPayment1Id = paymentRepository.findByPostIdAndUserId(post1.getId(), savedUser1Id).get().getId();
+        savedPayment2Id = paymentRepository.findByPostIdAndUserId(post2.getId(), savedUser1Id).get().getId();
+        
         entityManager.flush();
         entityManager.clear();
     }
@@ -233,7 +232,7 @@ class PaymentControllerTest {
 
         // 예외 발생 400번
         assertThrows(InvalidException.class, () -> {
-            paymentService.confirm(new PaymentConfirmRequest(paymentKey, orderId, amount), savedUser1Id, savedPayment1Id);
+            paymentService.confirm(new PaymentConfirmRequest(paymentKey, orderId, amount), savedPayment1Id, savedUser1Id);
         });
     }
 
