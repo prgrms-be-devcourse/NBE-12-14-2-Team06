@@ -4,10 +4,7 @@ import com.back.nbe12142team06.domain.payment.dto.PaymentConfirmRequest;
 import com.back.nbe12142team06.domain.payment.entity.Payment;
 import com.back.nbe12142team06.domain.payment.entity.PaymentStatus;
 import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
-import com.back.nbe12142team06.domain.post.entity.Post;
-import com.back.nbe12142team06.domain.post.service.PostService;
 import com.back.nbe12142team06.global.exception.InvalidException;
-import com.back.nbe12142team06.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -16,8 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClient;
 import tools.jackson.databind.ObjectMapper;
 
-import java.math.BigDecimal;
-import java.time.Duration;
 import java.util.Optional;
 
 @Slf4j
@@ -65,7 +60,7 @@ public class PaymentService {
         }
 
         // 승인 시 상태 변경, 더티 체킹으로 자동 변경
-        payment.ApprovePayment();
+        payment.ApprovePayment(tossOrderId, tossPaymentKey);
 
         return payment;
     }

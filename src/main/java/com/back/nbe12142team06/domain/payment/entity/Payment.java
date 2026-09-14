@@ -51,6 +51,7 @@ public class Payment extends BaseSoftDeleteTimeEntity {
     private String paymentKey;
 
     // 결제 수단, 현재 서비스는 카드 또는 계좌이체
+    // 제거 예정, 필요하지 않은 필드
     private String method;
 
     // 결제 처리 상태, 기본값 준비 상태
@@ -85,8 +86,11 @@ public class Payment extends BaseSoftDeleteTimeEntity {
         this.paymentStatus = status;
     }
 
-    public void ApprovePayment() {
+    public void ApprovePayment(String orderId, String paymentKey) {
         this.statusUpdate(PaymentStatus.DONE);
         this.approvedAt = LocalDateTime.now();
+        this.orderId = orderId;
+        this.paymentKey = paymentKey;
+        this.balanceAmount = this.amount;
     }
 }
