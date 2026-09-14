@@ -1,5 +1,6 @@
 package com.back.nbe12142team06.domain.application.entity;
 
+import com.back.nbe12142team06.domain.application.enums.ApplicationStatus;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.global.entity.BaseTimeEntity;
