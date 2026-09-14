@@ -18,18 +18,21 @@ public class PaymentController {
 
     private final PaymentService paymentService;
 
-    @PostMapping("/confirm/{postId}")
-    public RsData<PaymentConfirmResponse> requestConfirm(@RequestBody PaymentConfirmRequest request,
-                                                         @PathVariable Long postId) {
+    @PostMapping("/{paymentId}/confirm")
+    public RsData<PaymentConfirmResponse> requestConfirm(@RequestParam Long userId,
+                                                         @RequestBody PaymentConfirmRequest request,
+                                                         @PathVariable Long paymentId) {
+        // 현재는 쿼리로 받도록 설정 -> 나중에 AccessToken 도입 후 리팩터링
 
         // 결제 승인 요청 로직, 실패 시 예외(400-11) 발생
         try {
-            paymentService.confirm(request, postId, 1L);
+            paymentService.confirm(request, paymentId, 1L);
         } catch (InvalidException e) {
             throw e;
         } catch (Exception e) {
             // 기타 DB 저장 하다 예외 발생하는 경우 -> 결제 취소
-
+            cancelPayment(userId, paymentId, new PaymentCancelRequest("서버 에러 발생"));
+            // throw new INTERNAL_ERROR
         }
 
         return new RsData<>("200-10", "결제 승인에 성공했습니다.",
@@ -76,4 +79,13 @@ public class PaymentController {
                 new PaymentResponse(payment));
     }
 
+    @DeleteMapping("/{paymentId}")
+    public RsData<?> cancelPayment(@RequestParam Long userId, @PathVariable Long paymentId,
+                                   @RequestBody PaymentCancelRequest request) {
+        // 현재는 쿼리로 받도록 설정 -> 나중에 AccessToken 도입 후 리팩터링
+
+        paymentService.cancel(userId, paymentId, request);
+
+        return new RsData<>("201-n", "결제 취소 성공했습니다.");
+    }
 }

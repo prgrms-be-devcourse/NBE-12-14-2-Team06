@@ -86,11 +86,26 @@ public class Payment extends BaseSoftDeleteTimeEntity {
         this.paymentStatus = status;
     }
 
+    // 결제 승인
     public void ApprovePayment(String orderId, String paymentKey) {
         this.statusUpdate(PaymentStatus.DONE);
         this.approvedAt = LocalDateTime.now();
         this.orderId = orderId;
         this.paymentKey = paymentKey;
         this.balanceAmount = this.amount;
+    }
+
+    // 결제 취소 -> 새로운 결제 데이터 반환
+    public Payment cancelPayment(String cancelReason) {
+        this.statusUpdate(PaymentStatus.CANCELED);
+        this.balanceAmount = 0;
+        this.canceledAt = LocalDateTime.now();
+        this.cancelReason = cancelReason;
+        return Payment.builder()
+                .amount(this.amount)
+                .hourlyPaySnapshot(this.hourlyPaySnapshot)
+                .hours(this.hours)
+                .post(this.post)
+                .build();
     }
 }

@@ -1,5 +1,6 @@
 package com.back.nbe12142team06.domain.payment.service;
 
+import com.back.nbe12142team06.domain.payment.dto.PaymentCancelRequest;
 import com.back.nbe12142team06.domain.payment.dto.PaymentConfirmRequest;
 import com.back.nbe12142team06.domain.payment.entity.Payment;
 import com.back.nbe12142team06.domain.payment.entity.PaymentStatus;
@@ -28,21 +29,15 @@ public class PaymentService {
     private final RestClient tossRestClient;
 
     @Transactional
-    public Payment confirm(PaymentConfirmRequest request, Long postId, Long userId) {
+    public Payment confirm(PaymentConfirmRequest request, Long paymentId, Long userId) {
 
-        Optional<Payment> optionalPayment = paymentRepository.findByPostIdAndUserId(postId, userId);
-        Payment payment =
-                optionalPayment.orElseThrow(() -> new InvalidException(10, "유효하지 않은 회원 정보 또는 공고입니다."));
+        Payment payment = this.findById(userId, paymentId);
 
         payment.statusUpdate(PaymentStatus.IN_PROGRESS);
 
         String tossPaymentKey = request.paymentKey();
         String tossOrderId = request.orderId();
         String amount = request.amount();
-
-        System.out.println("tossPaymentKey = " + tossPaymentKey);
-        System.out.println("tossOrderId = " + tossOrderId);
-        System.out.println("amount = " + amount);
 
         // 요청 DTO를 JSON으로 변환
         String requestBody = objectMapper.createObjectNode()
@@ -78,6 +73,33 @@ public class PaymentService {
         if (!payment.getPost().getClient().getId().equals(userId)) {
             throw new InvalidException(10, "사용자의 결제 정보가 아닙니다.");
         }
+
+        return payment;
+    }
+
+    @Transactional
+    public Payment cancel(Long userId, Long paymentId, PaymentCancelRequest request) {
+        Payment payment = findById(userId, paymentId);
+
+        // 요청 DTO를 JSON으로 변환
+        String requestBody = objectMapper.createObjectNode()
+                .put("cancelReason", payment.getPaymentKey())
+                .put("cancelAmount", payment.getAmount())
+                .toPrettyString();
+
+        ResponseEntity<Void> response = tossRestClient.post()
+                .uri("/v1/payments/%s/cancel".formatted(payment.getPaymentKey()))
+                .body(requestBody)
+                .retrieve()
+                .toBodilessEntity();
+
+        if (!response.getStatusCode().is2xxSuccessful()) {
+            throw new InvalidException(12, "결제 취소에 실패했습니다.");
+        }
+
+        Payment newPayment = payment.cancelPayment(request.cancelReason());
+
+        paymentRepository.save(newPayment);
 
         return payment;
     }

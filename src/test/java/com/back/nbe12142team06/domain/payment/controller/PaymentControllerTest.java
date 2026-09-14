@@ -1,5 +1,6 @@
 package com.back.nbe12142team06.domain.payment.controller;
 
+import com.back.nbe12142team06.domain.payment.dto.PaymentCancelRequest;
 import com.back.nbe12142team06.domain.payment.dto.PaymentConfirmRequest;
 import com.back.nbe12142team06.domain.payment.entity.Payment;
 import com.back.nbe12142team06.domain.payment.entity.PaymentStatus;
@@ -14,6 +15,7 @@ import com.back.nbe12142team06.domain.user.enums.Gender;
 import com.back.nbe12142team06.domain.user.enums.Role;
 import com.back.nbe12142team06.domain.user.service.UserService;
 import com.back.nbe12142team06.global.exception.InvalidException;
+import com.back.nbe12142team06.global.exception.NotFoundException;
 import jakarta.persistence.EntityManager;
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,6 +40,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -70,9 +73,8 @@ class PaymentControllerTest {
 
     private Long savedUser1Id;
     private Long savedUser2Id;
-    private Long savedPost1Id;
-    private Long savedPost2Id;
-    private Long savedPaymentId;
+    private Long savedPayment1Id;
+    private Long savedPayment2Id;
 
     @BeforeEach
     public void init() {
@@ -122,7 +124,6 @@ class PaymentControllerTest {
         );
 
         Post post1 = postService.write(user1, postWriteRequest1);
-        savedPost1Id = post1.getId();
 
         PostWriteRequest postWriteRequest2 = new PostWriteRequest(
                 title + "2", content + "2", postRegion + "2", hospitalName + "2", hospitalAddress + "2",
@@ -131,9 +132,10 @@ class PaymentControllerTest {
         );
 
         Post post2 = postService.write(user1, postWriteRequest2);
-        savedPost2Id = post2.getId();
 
-        savedPaymentId = paymentRepository.findAll().get(0).getId();
+        List<Payment> payments = paymentRepository.findAll();
+        savedPayment1Id = payments.get(0).getId();
+        savedPayment2Id = payments.get(1).getId();
 
         entityManager.flush();
         entityManager.clear();
@@ -151,7 +153,7 @@ class PaymentControllerTest {
 
         PaymentService paymentService = new PaymentService(paymentRepository, objectMapper, restClient);
 
-        Payment payment = paymentService.confirm(new PaymentConfirmRequest(paymentKey, orderId, amount), savedPost1Id, savedUser1Id);
+        Payment payment = paymentService.confirm(new PaymentConfirmRequest(paymentKey, orderId, amount), savedPayment1Id, savedUser1Id);
 
         assertEquals(PaymentStatus.DONE, payment.getPaymentStatus());
         assertEquals(LocalDateTime.now().getHour(), payment.getApprovedAt().getHour());
@@ -170,7 +172,7 @@ class PaymentControllerTest {
 
         // 예외 발생 400번
         assertThrows(InvalidException.class, () -> {
-            paymentService.confirm(new PaymentConfirmRequest(paymentKey, orderId, amount), savedPost1Id, savedUser2Id);
+            paymentService.confirm(new PaymentConfirmRequest(paymentKey, orderId, amount), savedPayment1Id, savedUser2Id);
         });
     }
 
@@ -181,13 +183,13 @@ class PaymentControllerTest {
         String paymentKey = "temp";
         String orderId = "temp";
         String amount = "10000";
-        Long postId = 10000L;
+        Long paymentId = 10000L;
 
         PaymentService paymentService = new PaymentService(paymentRepository, null, null);
 
-        // 예외 발생 400번
-        assertThrows(InvalidException.class, () -> {
-            paymentService.confirm(new PaymentConfirmRequest(paymentKey, orderId, amount), postId, savedUser1Id);
+        // 예외 발생 404
+        assertThrows(NotFoundException.class, () -> {
+            paymentService.confirm(new PaymentConfirmRequest(paymentKey, orderId, amount), paymentId, savedUser1Id);
         });
     }
 
@@ -205,7 +207,7 @@ class PaymentControllerTest {
 
         // 예외 발생 400번
         assertThrows(InvalidException.class, () -> {
-            paymentService.confirm(new PaymentConfirmRequest(paymentKey, orderId, amount), savedUser1Id, savedPost1Id);
+            paymentService.confirm(new PaymentConfirmRequest(paymentKey, orderId, amount), savedUser1Id, savedPayment1Id);
         });
     }
 
@@ -335,7 +337,7 @@ class PaymentControllerTest {
     void getPayment() throws Exception {
 
         ResultActions resultActions = mvc.perform(
-                get("/api/v1/payments/" + savedPaymentId)
+                get("/api/v1/payments/" + savedPayment1Id)
                         .param("userId", String.valueOf(savedUser1Id))
         ).andDo(print());
 
@@ -345,7 +347,7 @@ class PaymentControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value("200-n"))
                 .andExpect(jsonPath("$.msg").value("결제 정보를 불러왔습니다."))
-                .andExpect(jsonPath("$.data.id").value(savedPaymentId))
+                .andExpect(jsonPath("$.data.id").value(savedPayment1Id))
                 .andExpect(jsonPath("$.data.amount").value(60_000))
                 .andExpect(jsonPath("$.data.hourlyPaySnapshot").value(15_000))
                 .andExpect(jsonPath("$.data.hours").value(4.0))
@@ -376,7 +378,7 @@ class PaymentControllerTest {
     void getPaymentFailOtherMember() throws Exception {
 
         ResultActions resultActions = mvc.perform(
-                get("/api/v1/payments/" + savedPaymentId)
+                get("/api/v1/payments/" + savedPayment1Id)
                         .param("userId", String.valueOf(savedUser2Id))
         ).andDo(print());
 
@@ -386,5 +388,40 @@ class PaymentControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value("400-10"))
                 .andExpect(jsonPath("$.msg").value("사용자의 결제 정보가 아닙니다."));
+    }
+
+    @Test
+    @DisplayName("[PaymentController] 결제 취소 - 성공")
+    void requestCancel() {
+
+        String cancelReason = "결제 취소 사유";
+
+        RestClient restClient = mockRestClient(HttpStatus.OK);
+
+        PaymentService paymentService = new PaymentService(paymentRepository, objectMapper, restClient);
+
+        Payment canceldPayment = paymentService.cancel(savedUser1Id, savedPayment1Id, new PaymentCancelRequest(cancelReason));
+
+        assertEquals(PaymentStatus.CANCELED, canceldPayment.getPaymentStatus());
+        assertEquals("결제 취소 사유", canceldPayment.getCancelReason());
+        assertEquals(LocalDateTime.now().getHour(), canceldPayment.getCanceledAt().getHour());
+        assertEquals(LocalDateTime.now().getMinute(), canceldPayment.getCanceledAt().getMinute());
+        assertEquals(0, canceldPayment.getBalanceAmount());
+    }
+
+    @Test
+    @DisplayName("[PaymentController] 결제 취소 - 토스 결제 취소 실패")
+    void requestCancelFailCancel() {
+
+        String cancelReason = "결제 취소 사유";
+
+        RestClient restClient = mockRestClient(HttpStatus.INTERNAL_SERVER_ERROR);
+
+        PaymentService paymentService = new PaymentService(paymentRepository, objectMapper, restClient);
+
+        // 예외 발생 400번
+        assertThrows(InvalidException.class, () -> {
+            paymentService.cancel(savedUser1Id, savedPayment1Id, new PaymentCancelRequest(cancelReason));
+        });
     }
 }
