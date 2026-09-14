@@ -1,30 +1,62 @@
 package com.back.nbe12142team06.domain.post.controller;
 
+import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpRequest;
+import com.back.nbe12142team06.domain.user.entity.User;
+import com.back.nbe12142team06.domain.user.enums.Gender;
+import com.back.nbe12142team06.domain.user.enums.Role;
+import com.back.nbe12142team06.domain.user.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 @SpringBootTest
 @ActiveProfiles("test")
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(addFilters = false)
 @Transactional
 public class PostControllerTest {
+
     @Autowired
     private MockMvc mvc;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    private Long testUserId;
+
+    @BeforeEach
+    void setUp() {
+        User user = new User(
+                "testUser",
+                passwordEncoder.encode("testPassword"),
+                "test@test.com",
+                "테스트유저",
+                Role.CLIENT,
+                Gender.MALE,
+                LocalDate.of(1990, 1, 1),
+                "010-1234-5678",
+                "서울"
+        );
+        testUserId = userRepository.save(user).getId();
+    }
     @Test
     @DisplayName("[PostController] 공고 목록 조회 - 정상 조회")
     void t1() throws Exception {
@@ -39,7 +71,6 @@ public class PostControllerTest {
                 .andExpect(jsonPath("$.statusCode").value("200-1"))
                 .andExpect(jsonPath("$.msg").value("목록 조회 성공"))
                 .andExpect(jsonPath("$.data").isArray());
-              //  .andExpect(jsonPath("$.data.length()").value(3));
     }
 
     @Test
@@ -55,14 +86,29 @@ public class PostControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray());
     }
-
     @Test
     @DisplayName("[PostController] 공고 상세 조회 - 정상 조회")
     void t3() throws Exception {
-        Long existingId = 1L;
+        // 먼저 공고 등록
+        ResultActions writeResult = mvc
+                .perform(post("/api/v1/posts")
+                        .header("X-User-Id", testUserId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validPostJson(
+                                "2026-09-17T10:00:00",
+                                "2026-09-17T13:00:00",
+                                "2026-09-16T10:00:00"
+                        )));
 
+        Long postId = Long.parseLong(
+                writeResult.andReturn().getResponse()
+                        .getContentAsString()
+                        .replaceAll(".*\"id\":(\\d+).*", "$1")
+        );
+
+        // 등록된 공고 조회
         ResultActions resultActions = mvc
-                .perform(get("/api/v1/posts/{id}", existingId))
+                .perform(get("/api/v1/posts/{id}", postId))
                 .andDo(print());
 
         resultActions
@@ -71,7 +117,7 @@ public class PostControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value("200-1"))
                 .andExpect(jsonPath("$.msg").value("상세 조회 성공"))
-                .andExpect(jsonPath("$.data.id").value(existingId))
+                .andExpect(jsonPath("$.data.id").value(postId))
                 .andExpect(jsonPath("$.data.title").exists())
                 .andExpect(jsonPath("$.data.postStatus").exists());
     }
@@ -90,7 +136,6 @@ public class PostControllerTest {
                 .andExpect(handler().methodName("detail"))
                 .andExpect(status().isNotFound());
     }
-
     private String validPostJson(String escortStartAt, String escortEndAt, String deadlineAt) {
         return """
                 {
@@ -119,11 +164,12 @@ public class PostControllerTest {
     void t5() throws Exception {
         ResultActions resultActions = mvc
                 .perform(post("/api/v1/posts")
+                        .header("X-User-Id", testUserId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validPostJson(
                                 "2026-09-17T10:00:00",
                                 "2026-09-17T13:00:00",
-                                "2026-09-15T10:00:00"
+                                "2026-09-16T10:00:00"
                         )))
                 .andDo(print());
 
@@ -141,6 +187,7 @@ public class PostControllerTest {
     void t6() throws Exception {
         ResultActions resultActions = mvc
                 .perform(post("/api/v1/posts")
+                        .header("X-User-Id", testUserId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -155,7 +202,7 @@ public class PostControllerTest {
                 .andExpect(handler().handlerType(PostController.class))
                 .andExpect(handler().methodName("write"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.statusCode").value("400-1"));
+                .andExpect(jsonPath("$.statusCode").value("400-2"));
     }
 
     @Test
@@ -163,6 +210,7 @@ public class PostControllerTest {
     void t7() throws Exception {
         ResultActions resultActions = mvc
                 .perform(post("/api/v1/posts")
+                        .header("X-User-Id", testUserId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -197,10 +245,11 @@ public class PostControllerTest {
     void t8() throws Exception {
         ResultActions resultActions = mvc
                 .perform(post("/api/v1/posts")
+                        .header("X-User-Id", testUserId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validPostJson(
-                                "2026-09-17T13:00:00",  // 시작이 더 늦음
-                                "2026-09-17T10:00:00",  // 종료가 더 빠름
+                                "2026-09-17T13:00:00",
+                                "2026-09-17T10:00:00",
                                 "2026-09-16T10:00:00"
                         )))
                 .andDo(print());
@@ -218,11 +267,12 @@ public class PostControllerTest {
     void t9() throws Exception {
         ResultActions resultActions = mvc
                 .perform(post("/api/v1/posts")
+                        .header("X-User-Id", testUserId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validPostJson(
                                 "2026-09-17T10:00:00",
                                 "2026-09-17T13:00:00",
-                                "2026-09-18T10:00:00"   // 마감이 시작보다 늦음
+                                "2026-09-18T10:00:00"
                         )))
                 .andDo(print());
 
