@@ -22,7 +22,7 @@ public class PaymentController {
                                                          @PathVariable Long postId) {
 
         // 결제 승인 요청 로직, 실패 시 예외(400-11) 발생
-        paymentService.confirm(request, postId);
+        paymentService.confirm(request, postId, 1L);
 
         return new RsData<>("200-10", "결제 승인에 성공했습니다.",
                 new PaymentConfirmResponse(request));

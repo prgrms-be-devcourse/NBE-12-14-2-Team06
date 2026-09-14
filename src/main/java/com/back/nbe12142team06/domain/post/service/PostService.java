@@ -1,5 +1,7 @@
 package com.back.nbe12142team06.domain.post.service;
 
+import com.back.nbe12142team06.domain.payment.entity.Payment;
+import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.repository.PostRepository;
 import com.back.nbe12142team06.domain.user.entity.User;
@@ -10,6 +12,9 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import com.back.nbe12142team06.domain.post.dto.PostWriteRequest;
+
+import java.math.BigDecimal;
+import java.time.Duration;
 import java.util.List;
 
 @Service
@@ -18,6 +23,7 @@ import java.util.List;
 public class PostService {
 
     private final PostRepository postRepository;
+    private final PaymentRepository paymentRepository;
 
     public List<Post> findAll() {
         return postRepository.findAllWithClient();
@@ -61,7 +67,22 @@ public class PostService {
                 .reportRequired(reqBody.reportRequired())
                 .build();
 
+        // 결제 데이터 생성
+        createPayment(post);
+
         return postRepository.save(post);
+    }
+
+    private Payment createPayment(Post post) {
+        BigDecimal hours = BigDecimal.valueOf(
+                Duration.between(post.getEscortStartAt(), post.getEscortEndAt()).toMinutes() / 60);
+        Payment payment = Payment.builder()
+                .post(post)
+                .hourlyPaySnapshot(post.getHourlyPay())
+                .hours(hours)
+                .amount(hours.multiply(BigDecimal.valueOf(post.getHourlyPay())).intValue())
+                .build();
+        return paymentRepository.save(payment);
     }
 
     @Transactional

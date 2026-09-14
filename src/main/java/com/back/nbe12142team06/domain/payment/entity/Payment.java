@@ -5,10 +5,7 @@ import com.back.nbe12142team06.global.entity.BaseSoftDeleteTimeEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -21,6 +18,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Builder
+@Getter
 public class Payment extends BaseSoftDeleteTimeEntity {
 
     @Id
@@ -45,11 +43,11 @@ public class Payment extends BaseSoftDeleteTimeEntity {
     private BigDecimal hours;
 
     // 토스 주문 번호
-    @Column(nullable = false, unique = true)
+    @Column(unique = true)
     private String orderId;
 
     // 토스 결제 키
-    @Column(nullable = false, unique = true)
+    @Column(unique = true)
     private String paymentKey;
 
     // 결제 수단, 현재 서비스는 카드 또는 계좌이체
@@ -85,5 +83,10 @@ public class Payment extends BaseSoftDeleteTimeEntity {
 
     public void statusUpdate(PaymentStatus status) {
         this.paymentStatus = status;
+    }
+
+    public void ApprovePayment() {
+        this.statusUpdate(PaymentStatus.DONE);
+        this.approvedAt = LocalDateTime.now();
     }
 }
