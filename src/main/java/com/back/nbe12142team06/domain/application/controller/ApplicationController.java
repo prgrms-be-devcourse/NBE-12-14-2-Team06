@@ -4,7 +4,9 @@ import com.back.nbe12142team06.domain.application.dto.ApplicationApplyResponse;
 import com.back.nbe12142team06.domain.application.dto.ApplicationListResponse;
 import com.back.nbe12142team06.domain.application.service.ApplicationService;
 import com.back.nbe12142team06.global.response.RsData;
+import com.back.nbe12142team06.global.security.SecurityUser;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,9 +18,11 @@ public class ApplicationController {
     private final ApplicationService applicationService;
 
     @PostMapping("/{postId}")
-    public RsData<ApplicationApplyResponse> apply(@PathVariable Long postId, @RequestParam String username) {
-        // 아직 JWT 적용 전이라 username을 임시로 받음
-        ApplicationApplyResponse response = applicationService.apply(postId, username);
+    public RsData<ApplicationApplyResponse> apply(
+            @PathVariable Long postId,
+             @AuthenticationPrincipal SecurityUser actor) {
+
+        ApplicationApplyResponse response = applicationService.apply(postId, actor.getId());
 
         return new RsData<>(
                 "201-1",
@@ -28,8 +32,11 @@ public class ApplicationController {
     }
 
     @GetMapping("/posts/{postId}")
-    public RsData<List<ApplicationListResponse>> list(@PathVariable Long postId) {
-        List<ApplicationListResponse> responses = applicationService.list(postId);
+    public RsData<List<ApplicationListResponse>> list(
+            @PathVariable Long postId,
+            @AuthenticationPrincipal SecurityUser actor) {
+
+        List<ApplicationListResponse> responses = applicationService.list(postId, actor.getId());
 
         return new RsData<>(
             "200-1",
