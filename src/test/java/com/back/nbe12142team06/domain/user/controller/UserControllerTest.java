@@ -233,4 +233,9 @@ public class UserControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value("400-2"));
     }
+
+    // TODO
+    @Test
+    @DisplayName("[UserController] 회원가입 - 회원가입 시 AccessToken 발급")
+    void t7() throws Exception {}
 }

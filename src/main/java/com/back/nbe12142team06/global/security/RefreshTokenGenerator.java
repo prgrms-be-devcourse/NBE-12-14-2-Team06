@@ -28,7 +28,7 @@ public final class RefreshTokenGenerator {
         이는 URL이나 쿠키에서 공백이나 경로 구분자로 해석한다고 합니다.
         getUrlEncoder는 이걸 -, _로 바꿔준다고합니다.
          */
-        return Base64.getUrlEncoder().encodeToString(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);   // "="으로 패딩하는 것을 방지 (나중에 모르고 =를 기준으로 자를 수도 있어서 추가했습니다.)
     }
 
     // DB에는 해시값만 저장
