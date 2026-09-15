@@ -1,5 +1,6 @@
 package com.back.nbe12142team06.domain.report.controller;
 
+import com.back.nbe12142team06.domain.report.dto.ReportDto;
 import com.back.nbe12142team06.domain.report.dto.ReportWriteRequest;
 import com.back.nbe12142team06.domain.report.dto.ReportWriteResponse;
 import com.back.nbe12142team06.domain.report.entity.Report;
@@ -29,5 +30,14 @@ public class ReportController {
                 "%d번 동행 건의 보고서가 등록되었습니다.".formatted(applicationId),
                 new ReportWriteResponse(report)
         );
+    }
+
+    // 진료 보고서 조회
+    @GetMapping("/{applicationId}/report")
+    public RsData<ReportDto> detail(@PathVariable Long applicationId) {
+
+        ReportDto reportDto = new ReportDto(reportService.findByApplicationId(applicationId));
+
+        return new RsData<>("200-1", "보고서 조회 성공", reportDto);
     }
 }

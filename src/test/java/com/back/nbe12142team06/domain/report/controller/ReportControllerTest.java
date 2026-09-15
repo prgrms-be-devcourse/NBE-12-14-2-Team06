@@ -27,6 +27,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -187,5 +188,55 @@ public class ReportControllerTest {
         ).andDo(print());
 
         resultActions.andExpect(status().isBadRequest());
+    }
+
+
+    @Test
+    @DisplayName("[ReportController] 진료 보고서 조회 - 정상 조회")
+    void 보고서_조회_성공() throws Exception {
+
+        reportRepository.save(
+                Report.builder()
+                        .application(applicationRepository.findById(testApplicationId).orElseThrow())
+                        .title("정형외과 진료 결과")
+                        .originContent("무릎 통증으로 내원하셨고 물리치료 처방을 받으셨습니다.")
+                        .build()
+        );
+
+        ResultActions resultActions = mvc.perform(
+                get("/api/v1/applications/%d/report".formatted(testApplicationId))
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-1"))
+                .andExpect(jsonPath("$.data.title").value("정형외과 진료 결과"))
+                .andExpect(jsonPath("$.data.applicationId").value(testApplicationId));
+    }
+
+    @Test
+    @DisplayName("[ReportController] 진료 보고서 조회 - 존재하지 않는 동행 건일 때 404-1 반환")
+    void 보고서_조회_동행건_없음() throws Exception {
+
+        ResultActions resultActions = mvc.perform(
+                get("/api/v1/applications/999999/report")
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.statusCode").value("404-1"));
+    }
+
+    @Test
+    @DisplayName("[ReportController] 진료 보고서 조회 - 보고서가 아직 작성되지 않았을 때 404-2 반환")
+    void 보고서_조회_미작성() throws Exception {
+
+        ResultActions resultActions = mvc.perform(
+                get("/api/v1/applications/%d/report".formatted(testApplicationId))
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.statusCode").value("404-2"));
     }
 }
