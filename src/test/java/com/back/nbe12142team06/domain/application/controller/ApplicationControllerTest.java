@@ -7,6 +7,7 @@ import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Gender;
 import com.back.nbe12142team06.domain.user.enums.Role;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -30,7 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @ActiveProfiles("test")
-@AutoConfigureMockMvc(addFilters = false)
+@AutoConfigureMockMvc
 @Transactional
 public class ApplicationControllerTest {
 
@@ -47,9 +48,11 @@ public class ApplicationControllerTest {
     private PasswordEncoder passwordEncoder;
 
     private Long testPostId;
+    private Cookie clientAccessTokenCookie;
+    private Cookie escortAccessTokenCookie;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
 
         // 공고를 작성할 의뢰인
         User client = new User(
@@ -103,6 +106,34 @@ public class ApplicationControllerTest {
                 .build();
 
         testPostId = postRepository.save(post).getId();
+
+        clientAccessTokenCookie = mvc.perform(
+                        post("/api/v1/users/login")
+                                .contentType("application/json")
+                                .content("""
+                                {
+                                  "username": "client1",
+                                  "password": "testPassword"
+                                }
+                                """)
+                )
+                .andReturn()
+                .getResponse()
+                .getCookie("accessToken");
+
+        escortAccessTokenCookie = mvc.perform(
+                        post("/api/v1/users/login")
+                                .contentType("application/json")
+                                .content("""
+                                {
+                                  "username": "escort1",
+                                  "password": "testPassword"
+                                }
+                                """)
+                )
+                .andReturn()
+                .getResponse()
+                .getCookie("accessToken");
     }
 
     @Test
@@ -111,7 +142,7 @@ public class ApplicationControllerTest {
 
         ResultActions resultActions = mvc
                 .perform(post("/api/v1/applications/{postId}", testPostId)
-                        .param("username", "escort1"))
+                        .cookie(escortAccessTokenCookie))
                 .andDo(print());
 
         resultActions
@@ -131,14 +162,14 @@ public class ApplicationControllerTest {
 
         // 첫 번째 지원
         mvc.perform(post("/api/v1/applications/{postId}", testPostId)
-                        .param("username", "escort1"))
+                        .cookie(escortAccessTokenCookie))
                 .andDo(print())
                 .andExpect(status().isCreated());
 
         // 같은 사용자가 같은 공고에 두 번째 지원
         ResultActions resultActions = mvc
                 .perform(post("/api/v1/applications/{postId}", testPostId)
-                        .param("username", "escort1"))
+                        .cookie(escortAccessTokenCookie))
                 .andDo(print());
 
         resultActions
@@ -155,7 +186,7 @@ public class ApplicationControllerTest {
 
         ResultActions resultActions = mvc
                 .perform(post("/api/v1/applications/{postId}", testPostId)
-                        .param("username", "client1"))
+                        .cookie(clientAccessTokenCookie))
                 .andDo(print());
 
         resultActions
@@ -200,7 +231,7 @@ public class ApplicationControllerTest {
 
         ResultActions resultActions = mvc
                 .perform(post("/api/v1/applications/{postId}", matchedPostId)
-                        .param("username", "escort1"))
+                        .cookie(escortAccessTokenCookie))
                 .andDo(print());
 
         resultActions
@@ -220,7 +251,7 @@ public class ApplicationControllerTest {
 
         ResultActions resultActions = mvc
                 .perform(post("/api/v1/applications/{postId}", notExistingPostId)
-                        .param("username", "escort1"))
+                        .cookie(escortAccessTokenCookie))
                 .andDo(print());
 
         resultActions
@@ -238,13 +269,14 @@ public class ApplicationControllerTest {
 
         // 먼저 해당 공고에 지원
         mvc.perform(post("/api/v1/applications/{postId}", testPostId)
-                        .param("username", "escort1"))
+                        .cookie(escortAccessTokenCookie))
                 .andDo(print())
                 .andExpect(status().isCreated());
 
         // 지원 목록 조회
         ResultActions resultActions = mvc
-                .perform(get("/api/v1/applications/posts/{postId}", testPostId))
+                .perform(get("/api/v1/applications/posts/{postId}", testPostId)
+                        .cookie(clientAccessTokenCookie))
                 .andDo(print());
 
         resultActions
@@ -265,7 +297,8 @@ public class ApplicationControllerTest {
     void t7() throws Exception {
 
         ResultActions resultActions = mvc
-                .perform(get("/api/v1/applications/posts/{postId}", testPostId))
+                .perform(get("/api/v1/applications/posts/{postId}", testPostId)
+                        .cookie(clientAccessTokenCookie))
                 .andDo(print());
 
         resultActions
@@ -285,7 +318,8 @@ public class ApplicationControllerTest {
         Long notExistingPostId = 999L;
 
         ResultActions resultActions = mvc
-                .perform(get("/api/v1/applications/posts/{postId}", notExistingPostId))
+                .perform(get("/api/v1/applications/posts/{postId}", notExistingPostId)
+                        .cookie(clientAccessTokenCookie))
                 .andDo(print());
 
         resultActions
@@ -294,5 +328,49 @@ public class ApplicationControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.statusCode").value("404"))
                 .andExpect(jsonPath("$.msg").value("공고를 찾을 수 없습니다."));
+    }
+
+    @Test
+    @DisplayName("[ApplicationController] 공고별 지원 목록 조회 - 다른 의뢰인의 공고 조회 시 403 반환")
+    void t9() throws Exception {
+        // 다른 의뢰인 생성
+        User otherClient = new User(
+                "client2",
+                passwordEncoder.encode("testPassword"),
+                "client2@test.com",
+                "의뢰인2",
+                Role.CLIENT,
+                Gender.MALE,
+                LocalDate.of(1990, 1, 1),
+                "010-3333-3333",
+                "서울"
+        );
+
+        userRepository.save(otherClient);
+
+        Cookie otherClientAccessTokenCookie = mvc.perform(
+                        post("/api/v1/users/login")
+                                .contentType("application/json")
+                                .content("""
+                                    {
+                                      "username": "client2",
+                                      "password": "testPassword"
+                                    }
+                                    """)
+                )
+                .andReturn()
+                .getResponse()
+                .getCookie("accessToken");
+
+        ResultActions resultActions = mvc.perform(
+                get("/api/v1/applications/posts/{postId}", testPostId)
+                        .cookie(otherClientAccessTokenCookie)
+        );
+
+        resultActions
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.statusCode").value("403-1"))
+                .andExpect(jsonPath("$.msg")
+                        .value("본인 공고의 지원 목록만 조회할 수 있습니다."));
     }
 }

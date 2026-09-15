@@ -10,6 +10,7 @@ import com.back.nbe12142team06.domain.post.repository.PostRepository;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Role;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
+import com.back.nbe12142team06.global.exception.BusinessException;
 import com.back.nbe12142team06.global.exception.DuplicatedException;
 import com.back.nbe12142team06.global.exception.InvalidException;
 import com.back.nbe12142team06.global.exception.NotFoundException;
@@ -27,7 +28,7 @@ public class ApplicationService {
     private final UserRepository userRepository;
 
     @Transactional
-    public ApplicationApplyResponse apply(Long postId, String username) {
+    public ApplicationApplyResponse apply(Long postId, Long userId) {
 
         Post post = postRepository.findById(postId).orElseThrow(
                 () -> new NotFoundException("공고를 찾을 수 없습니다."));
@@ -37,7 +38,7 @@ public class ApplicationService {
             throw new InvalidException("모집 중인 공고에만 지원할 수 있습니다.");
         }
 
-        User escort = userRepository.findByUsername(username)
+        User escort = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다."));
 
         // 동행인만 지원 가능
@@ -60,10 +61,14 @@ public class ApplicationService {
     }
 
     @Transactional(readOnly = true)
-    public List<ApplicationListResponse> list(Long postId) {
+    public List<ApplicationListResponse> list(Long postId, Long userId) {
 
-        postRepository.findById(postId).orElseThrow(
+        Post post = postRepository.findById(postId).orElseThrow(
                 () -> new NotFoundException("공고를 찾을 수 없습니다."));
+
+        if (!post.getClient().getId().equals(userId)) {
+            throw new BusinessException("403-1", "본인 공고의 지원 목록만 조회할 수 있습니다.");
+        }
 
         List<Application> applications = applicationRepository.findAllByPostIdWithEscort(postId);
 
