@@ -39,26 +39,26 @@ public class RefreshToken extends BaseTimeEntity {
         this.expiresAt = expiryAt;
     }
 
-    // now + ttl(Time to Live)를 만료 시각으로 설정
-    public static RefreshToken issue(User user, String tokenHash, Duration ttl){
+    // now + ttl(Time to Live)를 만료 시각으로 생성
+    public static RefreshToken create(User user, String tokenHash, Duration ttl){
         return new RefreshToken(user, tokenHash, LocalDateTime.now().plus(ttl));
     }
 
-    // 토큰 만료 설정
+    // 토큰 폐기
     public void revoke() {
         if (this.revokedAt == null) {
             this.revokedAt = LocalDateTime.now();
         }
     }
 
-    // 이미 만료된 토큰인지 확인
+    // 폐기된 토큰인지 확인
     public boolean isRevoked() {
         return this.revokedAt != null;
     }
 
     // 토큰의 생존 시간이 만료되었는지 확인
     public boolean isExpired() {
-        return LocalDateTime.now().isBefore(LocalDateTime.now());
+        return this.expiresAt.isBefore(LocalDateTime.now());
     }
 
     // 사용 가능한 토큰인지 확인

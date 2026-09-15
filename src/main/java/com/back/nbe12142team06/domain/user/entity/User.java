@@ -52,7 +52,7 @@ public class User extends BaseSoftDeleteTimeEntity {
     private LocalDate birthDate;
 
     // 회원 전화번호
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false, length = 20, unique = true)
     private String phoneNum;
 
     // 지역
