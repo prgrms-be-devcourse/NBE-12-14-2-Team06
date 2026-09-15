@@ -84,7 +84,7 @@ public class UserControllerTest {
                 "role": "CLIENT",
                 "gender": "MALE",
                 "birthDate": "1990-05-20",
-                "phoneNum": "010-1234-5678",
+                "phoneNum": "%s",
                 "region": "서울시"
             }
             """;
@@ -92,14 +92,14 @@ public class UserControllerTest {
         // 첫 번째 가입 성공
         mvc.perform(post("/api/v1/users")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body.formatted("first@test.test")))
+                        .content(body.formatted("first@test.test", "010-1234-5678")))
                 .andExpect(status().isCreated());
 
         // 같은 username, 다른 email로 가입 시도
         ResultActions resultActions = mvc
                 .perform(post("/api/v1/users")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body.formatted("second@test.test")))
+                        .content(body.formatted("second@test.test", "010-1734-5478")))
                 .andDo(print());
 
         resultActions
@@ -120,7 +120,7 @@ public class UserControllerTest {
                 "role": "CLIENT",
                 "gender": "MALE",
                 "birthDate": "1990-05-20",
-                "phoneNum": "010-1234-5678",
+                "phoneNum": "%s",
                 "region": "서울시"
             }
             """;
@@ -128,14 +128,14 @@ public class UserControllerTest {
         // 첫 번째 가입 성공
         mvc.perform(post("/api/v1/users")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body.formatted("user1")))
+                        .content(body.formatted("user1", "010-1234-5678")))
                 .andExpect(status().isCreated());
 
         // 같은 email, 다른 username으로 가입 시도
         ResultActions resultActions = mvc
                 .perform(post("/api/v1/users")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(body.formatted("user2")))
+                        .content(body.formatted("user2", "010-1234-9999")))
                 .andDo(print());
 
         resultActions
@@ -145,8 +145,44 @@ public class UserControllerTest {
     }
 
     @Test
-    @DisplayName("[UserController] 회원가입 - 필수값 누락 시 400-1 반환")
+    @DisplayName("[UserController] 회원가입 - 중복된 전화번호로 가입 시 409 반환")
     void t4() throws Exception {
+        String body = """
+            {
+                "username": "%s",
+                "password": "testPassword",
+                "email": "%s",
+                "name": "김춘식",
+                "role": "CLIENT",
+                "gender": "MALE",
+                "birthDate": "1990-05-20",
+                "phoneNum": "010-1234-5678",
+                "region": "서울시"
+            }
+            """;
+
+        // 첫 번째 가입 성공
+        mvc.perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body.formatted("user1", "first@test.test")))
+                .andExpect(status().isCreated());
+
+        // 같은 username, 다른 email로 가입 시도
+        ResultActions resultActions = mvc
+                .perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body.formatted("user2", "second@test.test")))
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.statusCode").value("409-3"))
+                .andExpect(jsonPath("$.msg").value("이미 사용 중인 전화번호입니다."));
+    }
+
+    @Test
+    @DisplayName("[UserController] 회원가입 - 필수값 누락 시 400-1 반환")
+    void t5() throws Exception {
         // "username": "" 요청
         ResultActions resultActions = mvc.perform(post("/api/v1/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -174,7 +210,7 @@ public class UserControllerTest {
 
     @Test
     @DisplayName("[UserController] 회원가입 - 존재하지 않는 gender 값으로 요청 시 400-2 반환")
-    void t5() throws Exception {
+    void t6() throws Exception {
         // "gender": "HELICOPTER"  요청
         ResultActions resultActions = mvc.perform(post("/api/v1/users")
                         .contentType(MediaType.APPLICATION_JSON)

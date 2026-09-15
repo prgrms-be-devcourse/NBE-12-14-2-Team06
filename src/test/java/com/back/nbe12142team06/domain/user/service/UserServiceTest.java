@@ -152,8 +152,50 @@ public class UserServiceTest {
     }
 
     @Test
-    @DisplayName("[UserService] 회원가입 - 비밀번호 암호화")
+    @DisplayName("[UserService] 회원가입 - 이미 사용 중인 전화번호로 가입 시 예외")
     void t4(){
+        // phoneNum = "010-1234-5678"
+        User saved = this.userService.signUp(
+                new UserSignUpRequest(
+                        "user1",
+                        "1234",
+                        "user@test.test",
+                        "유저1",
+                        Role.CLIENT,
+                        Gender.MALE,
+                        LocalDate.of(1990, 5, 6),
+                        "010-1234-5678",
+                        "서울"
+                )
+        );
+
+        // phoneNum = "010-1234-5678"
+        DuplicatedException e = catchThrowableOfType(() ->
+                        this.userService.signUp(
+                                new UserSignUpRequest(
+                                        "user2",
+                                        "1234",
+                                        "user2@test.test",
+                                        "유저A",
+                                        Role.CLIENT,
+                                        Gender.MALE,
+                                        LocalDate.of(1990, 5, 6),
+                                        "010-1234-5678",
+                                        "경기"
+                                )
+                        ),
+                DuplicatedException.class
+        );
+
+        assertThat(e).isNotNull();
+        assertThat(e.getMessage()).isEqualTo("이미 사용 중인 전화번호입니다.");
+        assertThat(e.getStatusCode()).isEqualTo("409-3");
+    }
+
+
+    @Test
+    @DisplayName("[UserService] 회원가입 - 비밀번호 암호화")
+    void t5(){
         User saved = this.userService.signUp(
                 new UserSignUpRequest(
                         "user1",
