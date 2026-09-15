@@ -1,6 +1,6 @@
 package com.back.nbe12142team06.global.exception;
 
-public class UnauthorizedException extends BusinessException{
+public class UnauthorizedException extends BusinessException {
 
     public UnauthorizedException(String message) {
         super("401", message);

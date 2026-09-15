@@ -19,3 +19,7 @@ custom:
   jwt:
     secret-key: ${JWT_SECRET}
     expire-seconds: ${JWT_EXPIRATION}
+    refresh-expire-seconds: ${REFRESH_TOKEN_EXPIRATION}
+  cookie:
+    secure: false
+    same-site: Lax
