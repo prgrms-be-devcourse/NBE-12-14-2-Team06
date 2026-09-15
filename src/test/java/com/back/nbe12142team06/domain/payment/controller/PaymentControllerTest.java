@@ -132,9 +132,6 @@ class PaymentControllerTest {
 
         savedPayment1Id = paymentRepository.findByPostIdAndUserId(post1.getId(), savedUser1Id).get().getId();
         savedPayment2Id = paymentRepository.findByPostIdAndUserId(post2.getId(), savedUser1Id).get().getId();
-        
-        entityManager.flush();
-        entityManager.clear();
     }
 
     @Test
