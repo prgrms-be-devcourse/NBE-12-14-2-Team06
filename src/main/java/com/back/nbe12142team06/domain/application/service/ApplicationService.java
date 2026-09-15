@@ -65,7 +65,7 @@ public class ApplicationService {
         postRepository.findById(postId).orElseThrow(
                 () -> new NotFoundException("공고를 찾을 수 없습니다."));
 
-        List<Application> applications = applicationRepository.findAllByPostId(postId);
+        List<Application> applications = applicationRepository.findAllByPostIdWithEscort(postId);
 
         return applications.stream()
                 .map(ApplicationListResponse::new)
