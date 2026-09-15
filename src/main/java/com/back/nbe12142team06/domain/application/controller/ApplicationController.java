@@ -1,10 +1,13 @@
 package com.back.nbe12142team06.domain.application.controller;
 
 import com.back.nbe12142team06.domain.application.dto.ApplicationApplyResponse;
+import com.back.nbe12142team06.domain.application.dto.ApplicationListResponse;
 import com.back.nbe12142team06.domain.application.service.ApplicationService;
 import com.back.nbe12142team06.global.response.RsData;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -23,4 +26,16 @@ public class ApplicationController {
                 response
         );
     }
+
+    @GetMapping("/posts/{postId}")
+    public RsData<List<ApplicationListResponse>> list(@PathVariable Long postId) {
+        List<ApplicationListResponse> responses = applicationService.list(postId);
+
+        return new RsData<>(
+            "200-1",
+            "지원 목록 조회가 완료되었습니다.",
+                responses
+        );
+    }
+
 }
