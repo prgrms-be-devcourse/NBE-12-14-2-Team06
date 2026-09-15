@@ -9,6 +9,8 @@ import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Duration;
 import java.time.LocalDateTime;
 
 @Getter
@@ -51,6 +53,7 @@ public class Post extends BaseSoftDeleteTimeEntity {  // createdAt, updatedAt, d
     @Column(name = "hospital_address", nullable = false)
     private String hospitalAddress;  // 병원 주소
 
+    //프론트에서 받아올 예정
     @Column(name = "hospital_lat", precision = 10, scale = 7, nullable = false)
     private BigDecimal hospitalLat;  // 병원 위도 (예: 37.5665351) - 소수점 정밀도 위해 BigDecimal
 
@@ -78,8 +81,11 @@ public class Post extends BaseSoftDeleteTimeEntity {  // createdAt, updatedAt, d
     @Column(name = "escort_end_at", nullable = false)
     private LocalDateTime escortEndAt;  // 동행 종료 예정 시간
 
-    @Column(name = "deadline_at", nullable = false)
-    private LocalDateTime deadlineAt;  // 모집 마감 시간
+    @Column(name = "recruit_start_at", nullable = false)
+    private LocalDateTime recruitStartAt;  // 모집 시작 시간
+
+    @Column(name = "recruit_end_at", nullable = false)
+    private LocalDateTime recruitEndAt;  // 모집 마감 시간
 
     // ── 상태 ────────────────────────────────────
     @Enumerated(EnumType.STRING)  // DB에 ENUM 문자열로 저장 (예: "OPEN")
@@ -90,4 +96,48 @@ public class Post extends BaseSoftDeleteTimeEntity {  // createdAt, updatedAt, d
     @Column(name = "report_required", nullable = false)
     @Builder.Default
     private boolean reportRequired = true;  // 동행 후 보고서 작성 여부 (기본값: true)
+
+    public void modify(
+            String title, String content, String region,
+            String hospitalName, String hospitalAddress,
+            BigDecimal hospitalLat, BigDecimal hospitalLng,
+            String pickupAddress, BigDecimal pickupLat, BigDecimal pickupLng,
+            int hourlyPay,
+            LocalDateTime recruitStartAt, LocalDateTime recruitEndAt,
+            LocalDateTime escortStartAt, LocalDateTime escortEndAt,
+            String patientNote, boolean reportRequired
+    ) {
+        this.title = title;
+        this.content = content;
+        this.region = region;
+        this.hospitalName = hospitalName;
+        this.hospitalAddress = hospitalAddress;
+        this.hospitalLat = hospitalLat;
+        this.hospitalLng = hospitalLng;
+        this.pickupAddress = pickupAddress;
+        this.pickupLat = pickupLat;
+        this.pickupLng = pickupLng;
+        this.hourlyPay = hourlyPay;
+        this.recruitStartAt = recruitStartAt;
+        this.recruitEndAt = recruitEndAt;
+        this.escortStartAt = escortStartAt;
+        this.escortEndAt = escortEndAt;
+        this.patientNote = patientNote;
+        this.reportRequired = reportRequired;
+    }
+
+    // 동행 시간(시간 단위, 소수점 1자리) = 동행 종료 - 동행 시작
+    public BigDecimal getEscortHours() {
+        //2시간30분인경우 2.5시간 * 10,000 = 25,000
+        //2시간35분인경우 2.6시간 * 10,000 = 26,000
+        // TODO : 30분단위로만 가능하게 할지 확인 필요
+        long minutes = Duration.between(escortStartAt, escortEndAt).toMinutes();
+        return BigDecimal.valueOf(minutes)
+                .divide(BigDecimal.valueOf(60), 1, RoundingMode.HALF_UP);
+    }
+
+    // 총 지급액 = 시급 * 동행 시간
+    public BigDecimal getTotalPay() {
+        return getEscortHours().multiply(BigDecimal.valueOf(hourlyPay));
+    }
 }
