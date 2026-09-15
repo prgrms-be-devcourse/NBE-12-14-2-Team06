@@ -34,7 +34,7 @@ public class RideController {
     }
 
     // 공고 별 목록
-    @GetMapping("/post/{postId}")
+    @GetMapping("/posts/{postId}")
     public RsData<List<RideResponse>> getListByPostId(@AuthenticationPrincipal SecurityUser actor,
                                                       @PathVariable Long postId) {
         Long userId = actor.getId();
