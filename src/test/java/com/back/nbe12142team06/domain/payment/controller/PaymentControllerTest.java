@@ -67,14 +67,13 @@ class PaymentControllerTest {
     private PostService postService;
     @Autowired
     private ObjectMapper objectMapper;
-    @Autowired
-    private EntityManager entityManager;
 
     private Long savedUser1Id;
     private Long savedUser2Id;
     private Long savedPayment1Id;
     private Long savedPayment2Id;
-    private Cookie accessTokenCookie;
+    private Cookie accessTokenCookie1;
+    private Cookie accessTokenCookie2;
 
 
     @BeforeEach
@@ -137,7 +136,7 @@ class PaymentControllerTest {
         savedPayment2Id = paymentRepository.findByPostIdAndUserId(post2.getId(), savedUser1Id).get().getId();
 
         // user1로 로그인해 인증 쿠키 확보
-        accessTokenCookie = mvc.perform(
+        accessTokenCookie1 = mvc.perform(
                         post("/api/v1/users/login")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
@@ -146,6 +145,20 @@ class PaymentControllerTest {
                                             "password": "%s"
                                         }
                                         """.formatted(username, password))
+                )
+                .andReturn()
+                .getResponse()
+                .getCookie("accessToken");
+
+        accessTokenCookie2 = mvc.perform(
+                        post("/api/v1/users/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                            "username": "%s",
+                                            "password": "%s"
+                                        }
+                                        """.formatted(username + "2", password + "2"))
                 )
                 .andReturn()
                 .getResponse()
@@ -182,7 +195,7 @@ class PaymentControllerTest {
 
         ResultActions resultActions = mvc.perform(
                 post("/api/v1/payments/%s/confirm".formatted(savedPayment1Id))
-                        .param("userId", String.valueOf(savedUser1Id))
+                        .cookie(accessTokenCookie1)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -273,7 +286,7 @@ class PaymentControllerTest {
         ResultActions resultActions = mvc.perform(
                 post("/api/v1/payments/saveAmount")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .cookie(accessTokenCookie)
+                        .cookie(accessTokenCookie1)
                         .session(new MockHttpSession())
                         .content("""
                                 {
@@ -304,7 +317,7 @@ class PaymentControllerTest {
         ResultActions resultActions = mvc.perform(
                 post("/api/v1/payments/verifyAmount")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .cookie(accessTokenCookie)
+                        .cookie(accessTokenCookie1)
                         .session(session)
                         .content("""
                                 {
@@ -336,7 +349,7 @@ class PaymentControllerTest {
         ResultActions resultActions = mvc.perform(
                 post("/api/v1/payments/verifyAmount")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .cookie(accessTokenCookie)
+                        .cookie(accessTokenCookie1)
                         .session(session)
                         .content("""
                                 {
@@ -360,8 +373,7 @@ class PaymentControllerTest {
 
         ResultActions resultActions = mvc.perform(
                 get("/api/v1/payments")
-                        .cookie(accessTokenCookie)
-                        .param("userId", String.valueOf(savedUser1Id))
+                        .cookie(accessTokenCookie1)
         ).andDo(print());
 
         resultActions
@@ -380,8 +392,7 @@ class PaymentControllerTest {
 
         ResultActions resultActions = mvc.perform(
                 get("/api/v1/payments/" + savedPayment1Id)
-                        .cookie(accessTokenCookie)
-                        .param("userId", String.valueOf(savedUser1Id))
+                        .cookie(accessTokenCookie1)
         ).andDo(print());
 
         resultActions
@@ -405,8 +416,7 @@ class PaymentControllerTest {
 
         ResultActions resultActions = mvc.perform(
                 get("/api/v1/payments/" + paymentId)
-                        .cookie(accessTokenCookie)
-                        .param("userId", String.valueOf(savedUser1Id))
+                        .cookie(accessTokenCookie1)
         ).andDo(print());
 
         resultActions
@@ -423,7 +433,7 @@ class PaymentControllerTest {
 
         ResultActions resultActions = mvc.perform(
                 get("/api/v1/payments/" + savedPayment1Id)
-                        .cookie(accessTokenCookie)
+                        .cookie(accessTokenCookie2)
                         .param("userId", String.valueOf(savedUser2Id))
         ).andDo(print());
 

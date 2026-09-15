@@ -11,6 +11,7 @@ import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Gender;
 import com.back.nbe12142team06.domain.user.enums.Role;
 import com.back.nbe12142team06.domain.user.service.UserService;
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -28,8 +29,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -54,9 +55,11 @@ class RideControllerTest {
     private Long savedRide2Id;
     private Long savedPost1Id;
     private Long savedPost2Id;
+    private Cookie accessTokenCookie1;
+    private Cookie accessTokenCookie2;
 
     @BeforeEach
-    void init() {
+    void init() throws Exception {
         String username = "testUsername";
         String password = "testPassword";
         String email = "testEmail@test.test";
@@ -77,7 +80,7 @@ class RideControllerTest {
                 username + "2", password + "2", email + "2", name + "2", Role.valueOf(role),
                 Gender.valueOf(gender),
                 LocalDate.parse(birthDate, DateTimeFormatter.ISO_LOCAL_DATE),
-                phoneNum, region));
+                phoneNum+"2", region));
 
         String title = "정형외과 동행 구합니다";
         String content = "무릎 수술 후 검진 예약이 있어 동행인이 필요합니다.";
@@ -115,6 +118,35 @@ class RideControllerTest {
         savedRide2Id = rideService.findByPostId(post2.getId()).getFirst().getId();
         savedPost1Id = post1.getId();
         savedPost2Id = post2.getId();
+
+        // user1로 로그인해 인증 쿠키 확보
+        accessTokenCookie1 = mvc.perform(
+                        post("/api/v1/users/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                            "username": "%s",
+                                            "password": "%s"
+                                        }
+                                        """.formatted(username, password))
+                )
+                .andReturn()
+                .getResponse()
+                .getCookie("accessToken");
+
+        accessTokenCookie2 = mvc.perform(
+                        post("/api/v1/users/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                            "username": "%s",
+                                            "password": "%s"
+                                        }
+                                        """.formatted(username + "2", password + "2"))
+                )
+                .andReturn()
+                .getResponse()
+                .getCookie("accessToken");
     }
 
     @Test
@@ -122,6 +154,7 @@ class RideControllerTest {
     void rideSelectWalk() throws Exception {
         ResultActions resultActions = mvc.perform(
                         put("/api/v1/rides/%s".formatted(savedRide1Id))
+                                .cookie(accessTokenCookie1)
                                 .param("userId", String.valueOf(savedUser1Id))
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
@@ -144,7 +177,7 @@ class RideControllerTest {
     void rideSelectBus() throws Exception {
         ResultActions resultActions = mvc.perform(
                         put("/api/v1/rides/%s".formatted(savedRide1Id))
-                                .param("userId", String.valueOf(savedUser1Id))
+                                .cookie(accessTokenCookie1)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
                                         {
@@ -166,7 +199,7 @@ class RideControllerTest {
     void rideSelectTaxi() throws Exception {
         ResultActions resultActions = mvc.perform(
                         put("/api/v1/rides/%s".formatted(savedRide1Id))
-                                .param("userId", String.valueOf(savedUser1Id))
+                                .cookie(accessTokenCookie1)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
                                         {
@@ -188,7 +221,7 @@ class RideControllerTest {
     void rideSelectOwnCar() throws Exception {
         ResultActions resultActions = mvc.perform(
                         put("/api/v1/rides/%s".formatted(savedRide1Id))
-                                .param("userId", String.valueOf(savedUser1Id))
+                                .cookie(accessTokenCookie1)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
                                         {
@@ -210,7 +243,7 @@ class RideControllerTest {
     void rideSelectFailNotFound() throws Exception {
         ResultActions resultActions = mvc.perform(
                         put("/api/v1/rides/%s".formatted("10000"))
-                                .param("userId", String.valueOf(savedUser1Id))
+                                .cookie(accessTokenCookie1)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
                                         {
@@ -231,7 +264,7 @@ class RideControllerTest {
     void rideSelectFailForbidden() throws Exception {
         ResultActions resultActions = mvc.perform(
                         put("/api/v1/rides/%s".formatted(savedRide1Id))
-                                .param("userId", String.valueOf(savedUser2Id))
+                                .cookie(accessTokenCookie2)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
                                         {
@@ -252,7 +285,7 @@ class RideControllerTest {
     void listByPost() throws Exception {
         ResultActions resultActions = mvc.perform(
                         get("/api/v1/rides/post/%s".formatted(savedPost1Id))
-                                .param("userId", String.valueOf(savedUser1Id)))
+                                .cookie(accessTokenCookie1))
                 .andDo(print());
 
         resultActions.andExpect(handler().handlerType(RideController.class));
@@ -270,7 +303,7 @@ class RideControllerTest {
     void listByPostFailForbidden() throws Exception {
         ResultActions resultActions = mvc.perform(
                         get("/api/v1/rides/post/%s".formatted(savedPost1Id))
-                                .param("userId", String.valueOf(savedUser2Id)))
+                                .cookie(accessTokenCookie2))
                 .andDo(print());
 
         resultActions.andExpect(handler().handlerType(RideController.class));
@@ -285,7 +318,7 @@ class RideControllerTest {
     void rideDetails() throws Exception {
         ResultActions resultActions = mvc.perform(
                         get("/api/v1/rides/%s".formatted(savedRide1Id))
-                                .param("userId", String.valueOf(savedUser1Id)))
+                                .cookie(accessTokenCookie1))
                 .andDo(print());
 
         resultActions.andExpect(handler().handlerType(RideController.class));
@@ -303,7 +336,7 @@ class RideControllerTest {
     void rideDetailsFailNotFound() throws Exception {
         ResultActions resultActions = mvc.perform(
                         get("/api/v1/rides/%s".formatted(10000))
-                                .param("userId", String.valueOf(savedUser1Id)))
+                                .cookie(accessTokenCookie1))
                 .andDo(print());
 
         resultActions.andExpect(handler().handlerType(RideController.class));
@@ -318,7 +351,7 @@ class RideControllerTest {
     void rideDetailsFailForbidden() throws Exception {
         ResultActions resultActions = mvc.perform(
                         get("/api/v1/rides/%s".formatted(savedRide1Id))
-                                .param("userId", String.valueOf(savedUser2Id)))
+                                .cookie(accessTokenCookie2))
                 .andDo(print());
 
         resultActions.andExpect(handler().handlerType(RideController.class));
@@ -338,7 +371,7 @@ class RideControllerTest {
 
         ResultActions resultActions = mvc.perform(
                         put("/api/v1/rides/%s".formatted(rideId))
-                                .param("userId", String.valueOf(userId))
+                                .cookie(accessTokenCookie1)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
                                         {
@@ -370,7 +403,7 @@ class RideControllerTest {
 
         ResultActions resultActions = mvc.perform(
                         put("/api/v1/rides/%s".formatted(rideId))
-                                .param("userId", String.valueOf(userId))
+                                .cookie(accessTokenCookie1)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
                                         {
@@ -399,7 +432,7 @@ class RideControllerTest {
 
         ResultActions resultActions = mvc.perform(
                         put("/api/v1/rides/%s".formatted(rideId))
-                                .param("userId", String.valueOf(userId))
+                                .cookie(accessTokenCookie1)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
                                         {
