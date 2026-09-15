@@ -60,7 +60,8 @@ class ReportRepositoryTest {
                 .hourlyPay(15000)
                 .escortStartAt(LocalDateTime.now().plusDays(1))
                 .escortEndAt(LocalDateTime.now().plusDays(1).plusHours(3))
-                .deadlineAt(LocalDateTime.now().plusHours(12))
+                .recruitStartAt(LocalDateTime.now().plusHours(12))
+                .recruitEndAt(LocalDateTime.now().plusHours(12))
                 .build();
         em.persist(post);
 

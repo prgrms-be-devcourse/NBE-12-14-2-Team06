@@ -1,6 +1,5 @@
 package com.back.nbe12142team06.global;
 
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 

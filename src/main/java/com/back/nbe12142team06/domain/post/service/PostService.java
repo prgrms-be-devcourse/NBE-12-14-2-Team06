@@ -60,7 +60,7 @@ public class PostService {
     public Post write(Long userId, PostWriteRequest request) {
         User user = getUser(userId);
         if (user.getRole() != Role.CLIENT && user.getRole() != Role.ADMIN) {
-            throw new UnauthorizedException(1, "공고 등록 권한이 없습니다. 의뢰인으로 로그인 해주세요.");
+            throw new UnauthorizedException(10, "공고 등록 권한이 없습니다. 의뢰인으로 로그인 해주세요.");
         }
         validateTime(request.recruitStartAt(), request.recruitEndAt(),
                 request.escortStartAt(), request.escortEndAt());
@@ -96,10 +96,10 @@ public class PostService {
                 .orElseThrow(() -> new NotFoundException(1, postId + "번 공고가 없습니다."));
 
         if (user.getRole() != Role.CLIENT && user.getRole() != Role.ADMIN) {
-            throw new UnauthorizedException(3, "공고 수정 권한이 없습니다. 의뢰인으로 로그인 해주세요.");
+            throw new UnauthorizedException(11, "공고 수정 권한이 없습니다. 의뢰인으로 로그인 해주세요.");
         }
         if (!post.getClient().getId().equals(user.getId())) {
-            throw new UnauthorizedException(2, "본인이 작성한 공고만 수정할 수 있습니다.");
+            throw new UnauthorizedException(12, "본인이 작성한 공고만 수정할 수 있습니다.");
         }
         if (!LocalDateTime.now().isBefore(post.getRecruitStartAt())) {
             throw new InvalidException(8, "모집이 시작된 이후에는 공고를 수정할 수 없습니다. 모집 삭제 후 재등록해주세요.");
@@ -128,13 +128,13 @@ public class PostService {
         Post post = findById(postId);
 
         if (user.getRole() != Role.CLIENT && user.getRole() != Role.ADMIN) {
-            throw new UnauthorizedException(8, "공고 삭제 권한이 없습니다.");
+            throw new UnauthorizedException(13, "공고 삭제 권한이 없습니다.");
         }
         if (!post.getClient().getId().equals(user.getId())) {
-            throw new UnauthorizedException(9, "본인이 작성한 공고만 삭제할 수 있습니다.");
+            throw new UnauthorizedException(14, "본인이 작성한 공고만 삭제할 수 있습니다.");
         }
         if (post.getPostStatus() != PostStatus.OPEN && post.getPostStatus() != PostStatus.EXPIRED) {
-            throw new InvalidException(9, "모집 중이거나 만료 상태에서만 삭제가 가능합니다.");
+            throw new InvalidException(10, "모집 중이거나 만료 상태에서만 삭제가 가능합니다.");
         }
         postRepository.deleteById(postId);
     }

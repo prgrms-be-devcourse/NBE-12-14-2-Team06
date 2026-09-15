@@ -1,0 +1,39 @@
+# 테스트 전용 프로필. 실제 dev MySQL(docker)이랑 완전히 분리된 인메모리 H2를 씀.
+# @SpringBootTest(@ActiveProfiles("test")) 붙은 테스트는 이 설정으로 뜨고,
+# DataInitializer가 dev/test 프로필 둘 다에서 돌게 해놈
+spring:
+  datasource:
+   # url: jdbc:h2:########;MODE=MySQL;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+  servlet:
+    multipart:
+      max-file-size: 30MB
+      max-request-size: 30MB
+
+# 실제 값 필요 없음(테스트에서 진짜 R2로 업로드하지 않음) - 빈 생성만 안 터지면 됨
+# 주의: AuthTokenService/Rq/RefreshTokenService는 "custom.jwt.*", "custom.cookie.*" 를 읽음(jwt.* 아님)
+custom:
+  jwt:
+    secret-key: test-secret-key-for-ci-only-must-be-at-least-32-bytes-long-1234
+    expire-seconds: 3600
+    refresh-expire-seconds: 60000
+  cookie:
+    secure: false
+    same-site: Lax
+
+cloudflare:
+  r2:
+    account-id: test-account
+    access-key: test-access-key
+    secret-key: test-secret-key
+    bucket: test-bucket
+    url: http://localhost/test-bucket
