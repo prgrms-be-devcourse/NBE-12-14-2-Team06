@@ -87,8 +87,7 @@ public class PaymentController {
     }
 
     @DeleteMapping("/{paymentId}")
-    public RsData<?> cancelPayment(@RequestParam Long userId,
-                                   @PathVariable Long paymentId,
+    public RsData<?> cancelPayment(@RequestParam Long userId, @PathVariable Long paymentId,
                                    @RequestBody PaymentCancelRequest request) {
         // 현재는 쿼리로 받도록 설정 -> 나중에 AccessToken 도입 후 리팩터링
 

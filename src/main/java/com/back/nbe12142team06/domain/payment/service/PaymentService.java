@@ -77,7 +77,7 @@ public class PaymentService {
                 .orElseThrow(() -> new NotFoundException(10, "결제 정보를 찾을 수 없습니다."));
 
         if (!payment.getPost().getClient().getId().equals(userId)) {
-            throw new InvalidException(13, "사용자의 결제 정보가 아닙니다.");
+            throw new InvalidException(10, "사용자의 결제 정보가 아닙니다.");
         }
 
         return payment;
