@@ -44,7 +44,7 @@ public class UserService {
         if (this.userRepository.existsByEmail(request.email())) {
             throw new DuplicatedException(DUPLICATED_EMAIL, "이미 사용 중인 이메일입니다.");
         }
-        // username 중복 검사
+        // phoneNum 중복 검사
         if (this.userRepository.existsByPhoneNum(request.phoneNum())) {
             throw new DuplicatedException(DUPLICATED_PHONE_NUM, "이미 사용 중인 전화번호입니다.");
         }
