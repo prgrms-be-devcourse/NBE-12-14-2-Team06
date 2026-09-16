@@ -5,6 +5,9 @@ import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.entity.PostStatus;
 import com.back.nbe12142team06.domain.post.repository.PostRepository;
+import com.back.nbe12142team06.domain.ride.entity.Ride;
+import com.back.nbe12142team06.domain.ride.entity.RideDirection;
+import com.back.nbe12142team06.domain.ride.repository.RideRepository;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Role;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
@@ -31,6 +34,7 @@ public class PostService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final PaymentRepository paymentRepository;
+    private final RideRepository rideRepository;
 
     public Page<Post> findAll(Pageable pageable) {
         return postRepository.findAllWithClient(pageable);
@@ -93,11 +97,13 @@ public class PostService {
 
         // 결제 데이터 생성
         createPayment(post);
+        // 이동수단 데이터 생성
+        createRide(post);
 
         return postRepository.save(post);
     }
 
-    private Payment createPayment(Post post) {
+    private void createPayment(Post post) {
         BigDecimal hours = BigDecimal.valueOf(
                 Duration.between(post.getEscortStartAt(), post.getEscortEndAt()).toMinutes() / 60);
         Payment payment = Payment.builder()
@@ -106,7 +112,19 @@ public class PostService {
                 .hours(hours)
                 .amount(hours.multiply(BigDecimal.valueOf(post.getHourlyPay())).intValue())
                 .build();
-        return paymentRepository.save(payment);
+        paymentRepository.save(payment);
+    }
+
+    private void createRide(Post post) {
+        Ride rideToHos = Ride.builder()
+                .post(post)
+                .build();
+        Ride rideToHome = Ride.builder()
+                .post(post)
+                .direction(RideDirection.TO_HOME)
+                .build();
+        rideRepository.save(rideToHos);
+        rideRepository.save(rideToHome);
     }
 
     @Transactional
