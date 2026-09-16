@@ -1,10 +1,10 @@
 package com.back.nbe12142team06.domain.ride.entity;
 
+import com.back.nbe12142team06.domain.application.entity.Application;
+import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.global.entity.BaseTimeEntity;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
@@ -13,6 +13,8 @@ import java.time.LocalDateTime;
  * 의뢰인 이동 수단 선택
  */
 @Entity
+@Getter
+@Builder
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Ride extends BaseTimeEntity {
@@ -20,36 +22,37 @@ public class Ride extends BaseTimeEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // 우버 API 요청 번호
-    @Column(nullable = false, unique = true)
-    private String requestId;
-
     // 이동 방향
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private RideDirection direction;
+    @Builder.Default
+    private RideDirection direction = RideDirection.TO_HOSPITAL;
 
     // 이동 수단 상태
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private RideStatus rideStatus = RideStatus.PROCESSING;
 
-    // 예상 금액
-    private int estimatedFare;
+    @Enumerated(EnumType.STRING)
+    private RideSelect selected;
 
-    // 실제 금액
-    private int actualFare;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "post_id")
+    private Post post;
 
-    // 요청 시간
-    // 지금은 now로 설정했는데 API에서 택시 도착 예정 시간을 보내주면 그거에 맞춰 변경
-    @Column(nullable = false)
-    private LocalDateTime requestedAt = LocalDateTime.now();
+    // 이동수단 선택 시 정보 업데이트
+    public void rideUpdate(String selected) {
+        updateSelect(RideSelect.valueOf(selected));
+        updateStatus(RideStatus.ACCEPTED);
+    }
 
-    // 도착 시간
-    private LocalDateTime completedAt;
+    public void updateSelect(RideSelect selected) {
+        this.selected = selected;
+    }
 
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "application_id")
-//    @Column(nullable = false)
-//    private Application application;
+    // 이동 상태 변경
+    public void updateStatus(RideStatus rideStatus) {
+        this.rideStatus = rideStatus;
+    }
 }

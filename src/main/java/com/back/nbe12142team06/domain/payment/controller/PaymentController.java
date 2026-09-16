@@ -6,11 +6,15 @@ import com.back.nbe12142team06.domain.payment.service.PaymentService;
 import com.back.nbe12142team06.global.exception.InternalServerErrorException;
 import com.back.nbe12142team06.global.exception.InvalidException;
 import com.back.nbe12142team06.global.response.RsData;
+import com.back.nbe12142team06.global.security.SecurityUser;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
 
 @Slf4j
@@ -22,11 +26,11 @@ public class PaymentController {
     private final PaymentService paymentService;
 
     @PostMapping("/{paymentId}/confirm")
-    public RsData<PaymentConfirmResponse> requestConfirm(@RequestParam Long userId,
+    public RsData<PaymentConfirmResponse> requestConfirm(@AuthenticationPrincipal SecurityUser actor,
                                                          @RequestBody PaymentConfirmRequest request,
                                                          @PathVariable Long paymentId,
                                                          HttpSession session) {
-        // 현재는 쿼리로 받도록 설정 -> 나중에 AccessToken 도입 후 리팩터링
+        Long userId = actor.getId();
 
         // 결제 정보 검증
         verifyAmount(session, new SaveAmountRequest(request.orderId(), request.amount()));
@@ -38,7 +42,7 @@ public class PaymentController {
             throw e;
         } catch (Exception e) {
             // 기타 DB 저장 하다 예외 발생하는 경우 -> 결제 취소
-            cancelPayment(userId, paymentId, new PaymentCancelRequest("서버 에러 발생"));
+            cancelPayment(actor, paymentId, new PaymentCancelRequest("서버 에러 발생"));
             throw new InternalServerErrorException(10, "결제 승인 도중 서버 에러가 발생했습니다.");
         }
 
@@ -67,8 +71,8 @@ public class PaymentController {
     }
 
     @GetMapping
-    public RsData<?> paymentList(@RequestParam Long userId) {
-        // 현재는 쿼리로 받도록 설정 -> 나중에 AccessToken 도입 후 리팩터링
+    public RsData<?> paymentList(@AuthenticationPrincipal SecurityUser actor) {
+        Long userId = actor.getId();
 
         List<Payment> payments = paymentService.findAll(userId);
 
@@ -77,8 +81,9 @@ public class PaymentController {
     }
 
     @GetMapping("/{paymentId}")
-    public RsData<?> getPayment(@RequestParam Long userId, @PathVariable Long paymentId) {
-        // 현재는 쿼리로 받도록 설정 -> 나중에 AccessToken 도입 후 리팩터링
+    public RsData<?> getPayment(@AuthenticationPrincipal SecurityUser actor,
+                                @PathVariable Long paymentId) {
+        Long userId = actor.getId();
 
         Payment payment = paymentService.findById(userId, paymentId);
 
@@ -87,9 +92,10 @@ public class PaymentController {
     }
 
     @DeleteMapping("/{paymentId}")
-    public RsData<?> cancelPayment(@RequestParam Long userId, @PathVariable Long paymentId,
+    public RsData<?> cancelPayment(@AuthenticationPrincipal SecurityUser actor,
+                                   @PathVariable Long paymentId,
                                    @RequestBody PaymentCancelRequest request) {
-        // 현재는 쿼리로 받도록 설정 -> 나중에 AccessToken 도입 후 리팩터링
+        Long userId = actor.getId();
 
         paymentService.cancel(userId, paymentId, request);
 
