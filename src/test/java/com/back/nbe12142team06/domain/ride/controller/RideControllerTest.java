@@ -284,7 +284,7 @@ class RideControllerTest {
     @DisplayName("[RideController] 해당 공고 이동 목록 - 성공")
     void listByPost() throws Exception {
         ResultActions resultActions = mvc.perform(
-                        get("/api/v1/rides/post/%s".formatted(savedPost1Id))
+                        get("/api/v1/rides/posts/%s".formatted(savedPost1Id))
                                 .cookie(accessTokenCookie1))
                 .andDo(print());
 
@@ -302,7 +302,7 @@ class RideControllerTest {
     @DisplayName("[RideController] 해당 공고 이동 목록 - 권한 부족")
     void listByPostFailForbidden() throws Exception {
         ResultActions resultActions = mvc.perform(
-                        get("/api/v1/rides/post/%s".formatted(savedPost1Id))
+                        get("/api/v1/rides/posts/%s".formatted(savedPost1Id))
                                 .cookie(accessTokenCookie2))
                 .andDo(print());
 
