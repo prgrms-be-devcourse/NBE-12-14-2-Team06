@@ -1,5 +1,6 @@
 package com.back.nbe12142team06.domain.user.controller;
 
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +13,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -395,6 +397,60 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.msg").value("아이디 또는 비밀번호가 올바르지 않습니다."))
                 .andExpect(cookie().doesNotExist("accessToken"))
                 .andExpect(cookie().doesNotExist("refreshToken"));
+    }
+
+    @Test
+    @DisplayName("[UserController] 내 정보 조회 - 존재하는 아이디로 정상 로그인 후 내 정보 조회 요청")
+    void t11() throws Exception {
+        String signUpBody = """
+        {
+            "username": "user1",
+            "password": "pwd1",
+            "email": "first@test.test",
+            "name": "김춘식",
+            "role": "CLIENT",
+            "gender": "MALE",
+            "birthDate": "1990-05-20",
+            "phoneNum": "010-1234-5678",
+            "region": "서울시"
+        }
+        """;
+
+        String body = """
+        {
+            "username": "user1",
+            "password": "pwd1"
+        }
+        """;
+
+        // 회원 가입
+        mvc.perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(signUpBody))
+                .andDo(print());
+
+        // 로그인
+        Cookie accessToken = mvc.perform(
+                        post("/api/v1/users/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(body)
+                )
+                .andReturn()
+                .getResponse()
+                .getCookie("accessToken");
+
+        ResultActions resultActions = mvc.perform(
+                        get("/api/v1/users/profile")
+                                .cookie(accessToken)
+                )
+                .andDo(
+                        print()
+                );
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-1"))
+                .andExpect(jsonPath("$.msg").value("내 정보 조회가 완료되었습니다"));
     }
 
 }

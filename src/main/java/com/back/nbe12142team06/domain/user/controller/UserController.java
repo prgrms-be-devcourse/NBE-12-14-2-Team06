@@ -71,7 +71,7 @@ public class UserController {
 
         return new RsData<>(
                 "200-1",
-                "OK",
+                "내 정보 조회가 완료되었습니다",
                 new UserResponse(user)
         );
     }
