@@ -234,8 +234,36 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.statusCode").value("400-2"));
     }
 
-    // TODO
+
     @Test
-    @DisplayName("[UserController] 회원가입 - 회원가입 시 AccessToken 발급")
-    void t7() throws Exception {}
+    @DisplayName("[UserController] 회원가입 - 회원가입 시 쿠키 발급")
+    void t7() throws Exception {
+        String body = """
+        {
+            "username": "testUsername",
+            "password": "testPassword",
+            "email": "first@test.test",
+            "name": "김춘식",
+            "role": "CLIENT",
+            "gender": "MALE",
+            "birthDate": "1990-05-20",
+            "phoneNum": "010-1234-5678",
+            "region": "서울시"
+        }
+        """;
+
+        // 회원 가입
+        ResultActions resultActions = mvc.perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isCreated())    // 201 검증
+                .andExpect(cookie().exists("accessToken"))  // accessToken이 왔는지 검증
+                .andExpect(cookie().exists("refreshToken")) // refreshToken이 왔는지 검증
+                .andExpect(cookie().httpOnly("accessToken", true))  // js의 쿠키 접근 차단 검증
+                .andExpect(cookie().path("accessToken", "/"))   // access Token의 요청 Path가 전체인지 검증
+                .andExpect(cookie().path("refreshToken", "/api/v1/auth/refresh"));  // refresh Token의 요청 Path가 /api/v1/auth/refresh인지 검증
+    }
 }
