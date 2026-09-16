@@ -266,4 +266,135 @@ public class UserControllerTest {
                 .andExpect(cookie().path("accessToken", "/"))   // access Token의 요청 Path가 전체인지 검증
                 .andExpect(cookie().path("refreshToken", "/api/v1/auth/refresh"));  // refresh Token의 요청 Path가 /api/v1/auth/refresh인지 검증
     }
+
+
+    @Test
+    @DisplayName("[UserController] 로그인 - 회원가입 한 아이디로 정상 로그인")
+    void t8() throws Exception {
+        String signUpBody = """
+        {
+            "username": "user1",
+            "password": "pwd1",
+            "email": "first@test.test",
+            "name": "김춘식",
+            "role": "CLIENT",
+            "gender": "MALE",
+            "birthDate": "1990-05-20",
+            "phoneNum": "010-1234-5678",
+            "region": "서울시"
+        }
+        """;
+
+        String body = """
+        {
+            "username": "user1",
+            "password": "pwd1"
+        }
+        """;
+
+        // 회원 가입
+        mvc.perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(signUpBody))
+                .andDo(print());
+
+        // 로그인
+        ResultActions resultActions = mvc.perform(
+                post("/api/v1/users/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body)
+                )
+                .andDo(
+                        print()
+                );
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-1"))
+                .andExpect(jsonPath("$.msg").value("김춘식님 반갑습니다."))
+                .andExpect(jsonPath("$.data.id").exists())
+                .andExpect(jsonPath("$.data.name").value("김춘식"))
+                .andExpect(cookie().exists("accessToken"))
+                .andExpect(cookie().exists("refreshToken"))
+                .andExpect(cookie().path("accessToken", "/"))   // access Token의 요청 Path가 전체인지 검증
+                .andExpect(cookie().path("refreshToken", "/api/v1/auth/refresh"));  // refresh Token의 요청 Path가 /api/v1/auth/refresh인지 검증
+    }
+
+    @Test
+    @DisplayName("[UserController] 로그인 - 존재하지 않는 아이디로 로그인 시도 시 401")
+    void t9() throws Exception {
+        String body = """
+        {
+            "username": "user1",
+            "password": "pwd1"
+        }
+        """;
+
+        // 로그인
+        ResultActions resultActions = mvc.perform(
+                        post("/api/v1/users/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(body)
+                )
+                .andDo(
+                        print()
+                );
+
+        resultActions
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.statusCode").value("401"))
+                .andExpect(jsonPath("$.msg").value("아이디 또는 비밀번호가 올바르지 않습니다."))
+                .andExpect(cookie().doesNotExist("accessToken"))
+                .andExpect(cookie().doesNotExist("refreshToken"));
+    }
+
+
+    @Test
+    @DisplayName("[UserController] 로그인 - 아이디는 존재하지만 비밀번호가 옳지 않은 로그인 시도 시 401")
+    void t10() throws Exception {
+        String signUpBody = """
+        {
+            "username": "user1",
+            "password": "pwd1",
+            "email": "first@test.test",
+            "name": "김춘식",
+            "role": "CLIENT",
+            "gender": "MALE",
+            "birthDate": "1990-05-20",
+            "phoneNum": "010-1234-5678",
+            "region": "서울시"
+        }
+        """;
+
+        String body = """
+        {
+            "username": "user1",
+            "password": "pwd999999999999999999999"
+        }
+        """;
+
+        // 회원 가입
+        mvc.perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(signUpBody))
+                .andDo(print());
+
+        // 로그인
+        ResultActions resultActions = mvc.perform(
+                        post("/api/v1/users/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(body)
+                )
+                .andDo(
+                        print()
+                );
+
+        resultActions
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.statusCode").value("401"))
+                .andExpect(jsonPath("$.msg").value("아이디 또는 비밀번호가 올바르지 않습니다."))
+                .andExpect(cookie().doesNotExist("accessToken"))
+                .andExpect(cookie().doesNotExist("refreshToken"));
+    }
+
 }
