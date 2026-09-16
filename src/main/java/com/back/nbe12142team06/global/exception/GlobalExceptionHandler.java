@@ -48,4 +48,14 @@ public class GlobalExceptionHandler {
     public RsData<?> internalServerErrorExceptionHandler(InternalServerErrorException e) {
         return new RsData<>(e.statusCode, e.getMessage());
     }
+
+    @ExceptionHandler
+    public RsData<?> unAuthorizedExceptionHandler(UnauthorizedException e) {
+        return new RsData<>(e.statusCode, e.getMessage());
+    }
+
+    @ExceptionHandler
+    public RsData<?> ForbiddenExceptionHandler(ForbiddenException e) {
+        return new RsData<>(e.statusCode, e.getMessage());
+    }
 }
