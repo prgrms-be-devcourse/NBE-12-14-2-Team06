@@ -453,4 +453,20 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.msg").value("내 정보 조회가 완료되었습니다"));
     }
 
+    @Test
+    @DisplayName("[UserController] 내 정보 조회 - 로그인 시도 없이 내 정보 조회 요청")
+    void t12() throws Exception {
+        ResultActions resultActions = mvc.perform(
+                        get("/api/v1/users/profile")
+                )
+                .andDo(
+                        print()
+                );
+
+        resultActions
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.statusCode").value("401-1"))
+                .andExpect(jsonPath("$.msg").value("로그인 후 이용해주세요."));
+    }
+
 }
