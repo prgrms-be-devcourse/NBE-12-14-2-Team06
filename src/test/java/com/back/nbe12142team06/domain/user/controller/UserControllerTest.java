@@ -1,9 +1,11 @@
 package com.back.nbe12142team06.domain.user.controller;
 
+import com.back.nbe12142team06.global.security.JwtProvider;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
@@ -12,6 +14,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Map;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -29,6 +33,9 @@ public class UserControllerTest {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Value("${custom.jwt.secret-key}")
+    private String secretKey;
 
     @Test
     @DisplayName("[UserController] 회원가입 -  정상 가입")
@@ -469,4 +476,27 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.msg").value("로그인 후 이용해주세요."));
     }
 
+    @Test
+    @DisplayName("[UserController] 내 정보 조회 - 위조된 토큰으로 요청 시 401-3")
+    void t14() throws Exception {
+        String validToken = JwtProvider.toString(
+                secretKey, 600,
+                Map.of("id", 1L, "username", "user1", "role", "CLIENT")
+        );
+
+        // 서명 부분의 마지막 글자를 변경
+        String forged = validToken.substring(0, validToken.length() - 1)
+                + (validToken.endsWith("A") ? "B" : "A");
+
+        ResultActions resultActions = mvc.perform(
+                        get("/api/v1/users/profile")
+                                .cookie(new Cookie("accessToken", forged))
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.statusCode").value("401-3"))
+                .andExpect(jsonPath("$.msg").value("유효하지 않은 토큰입니다."));
+    }
 }
