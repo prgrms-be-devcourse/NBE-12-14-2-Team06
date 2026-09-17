@@ -2,6 +2,7 @@ package com.back.nbe12142team06.domain.user.service;
 
 import com.back.nbe12142team06.domain.user.dto.login.common.UserLoginRequest;
 import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpRequest;
+import com.back.nbe12142team06.domain.user.dto.user.UserProfileUpdateRequest;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Role;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
@@ -9,6 +10,7 @@ import com.back.nbe12142team06.global.exception.BusinessException;
 import com.back.nbe12142team06.global.exception.DuplicatedException;
 import com.back.nbe12142team06.global.exception.NotFoundException;
 import com.back.nbe12142team06.global.exception.UnauthorizedException;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -49,10 +51,10 @@ public class UserService {
             throw new DuplicatedException(DUPLICATED_PHONE_NUM, "이미 사용 중인 전화번호입니다.");
         }
 
-        // 비밀번호 암호화
+
         User user = new User(
                 request.username(),
-                passwordEncoder.encode(request.password()),
+                passwordEncoder.encode(request.password()), // 비밀번호 암호화
                 request.email(),
                 request.name(),
                 request.role(),
@@ -107,5 +109,29 @@ public class UserService {
         }
     }
 
+    // 회원 정보 수정
+    @Transactional
+    public User updateMyProfile(Long id, @Valid UserProfileUpdateRequest request) {
 
+        User user = this.userRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("존재하지 않는 사용자입니다."));
+
+        if (!user.getEmail().equals(request.email()) && userRepository.existsByEmail(request.email())) {
+            throw new DuplicatedException(DUPLICATED_EMAIL, "이미 사용 중인 이메일입니다.");
+        }
+        if (!user.getPhoneNum().equals(request.phoneNum()) && userRepository.existsByPhoneNum(request.phoneNum())) {
+            throw new DuplicatedException(DUPLICATED_PHONE_NUM, "이미 사용 중인 전화번호입니다.");
+        }
+
+        user.updateUser(
+                passwordEncoder.encode(request.password()),
+                request.email(),
+                request.name(),
+                request.birthDate(),
+                request.phoneNum(),
+                request.region()
+        );
+
+        return this.userRepository.save(user);
+    }
 }

@@ -2,6 +2,8 @@ package com.back.nbe12142team06.domain.user.controller;
 
 import com.back.nbe12142team06.domain.auth.entity.RefreshToken;
 import com.back.nbe12142team06.domain.auth.repository.RefreshTokenRepository;
+import com.back.nbe12142team06.domain.user.entity.User;
+import com.back.nbe12142team06.domain.user.repository.UserRepository;
 import com.back.nbe12142team06.global.security.JwtProvider;
 import com.back.nbe12142team06.global.security.RefreshTokenGenerator;
 import jakarta.persistence.EntityManager;
@@ -20,6 +22,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,6 +47,9 @@ public class UserControllerTest {
 
     @Autowired
     private RefreshTokenRepository refreshTokenRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @Value("${custom.jwt.secret-key}")
     private String secretKey;
@@ -624,5 +630,78 @@ public class UserControllerTest {
         String hash = RefreshTokenGenerator.hash(rawRefreshToken.getValue());
         RefreshToken saved = this.refreshTokenRepository.findByTokenHash(hash).orElseThrow();
         assertThat(saved.isRevoked()).isTrue();
+    }
+
+    @Test
+    @DisplayName("[UserController] 회원 정보 수정 - 정상 수정은 200-3 반환")
+    void t18() throws Exception {
+        String signUpBody = """
+        {
+            "username": "user1",
+            "password": "pwd1",
+            "email": "first@test.test",
+            "name": "김춘식",
+            "role": "CLIENT",
+            "gender": "MALE",
+            "birthDate": "1990-05-20",
+            "phoneNum": "010-1234-5678",
+            "region": "서울시"
+        }
+        """;
+
+        String updateBody = """
+        {
+            "password": "pwd123",
+            "email": "firssst@test.test",
+            "name": "김춘자",
+            "birthDate": "1990-05-29",
+            "phoneNum": "010-1334-5678",
+            "region": "경기도"
+        }
+        """;
+
+        // 회원 가입
+        MvcResult signUpResult = mvc.perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(signUpBody))
+                .andReturn();
+
+        Cookie accessToken = signUpResult.getResponse().getCookie("accessToken");
+
+        // 회원 정보 수정
+        ResultActions resultActions = mvc.perform(
+                        patch("/api/v1/users/profile")
+                                .cookie(accessToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(updateBody)
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-3"))
+                .andExpect(jsonPath("$.msg").value("회원 정보가 수정되었습니다."))
+                .andExpect(jsonPath("$.data.username").value("user1"))
+                .andExpect(jsonPath("$.data.email").value("firssst@test.test"))
+                .andExpect(jsonPath("$.data.name").value("김춘자"))
+                .andExpect(jsonPath("$.data.role").value("CLIENT"))
+                .andExpect(jsonPath("$.data.gender").value("MALE"))
+                .andExpect(jsonPath("$.data.birthDate").value("1990-05-29"))
+                .andExpect(jsonPath("$.data.phoneNum").value("010-1334-5678"))
+                .andExpect(jsonPath("$.data.region").value("경기도"))
+                .andExpect(jsonPath("$.data.createdAt").exists())
+                .andExpect(jsonPath("$.data.password").doesNotExist());
+
+        em.flush();
+        em.clear();
+
+        User updated = this.userRepository.findByUsername("user1").orElseThrow();
+        assertThat(updated.getEmail()).isEqualTo("firssst@test.test");
+        assertThat(updated.getName()).isEqualTo("김춘자");
+        assertThat(updated.getBirthDate()).isEqualTo(LocalDate.of(1990, 5, 29));
+        assertThat(passwordEncoder.matches("pwd1", updated.getPassword())).isFalse();
+        assertThat(updated.getPhoneNum()).isEqualTo("010-1334-5678");
+        assertThat(updated.getRegion()).isEqualTo("경기도");
+        assertThat(passwordEncoder.matches("pwd123", updated.getPassword())).isTrue();  // 비밀번호를 수정 대상에 둔다면
     }
 }
