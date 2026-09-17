@@ -1,6 +1,8 @@
 package com.back.nbe12142team06.domain.settlement.repository;
 
 import com.back.nbe12142team06.domain.settlement.entity.Settlement;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -22,9 +24,10 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long> {
             "join User u on s.escort=u " +
             "join fetch Post p on s.application.post=p " +
             "where u.id=:userId and p.escortStartAt >= :startDate and p.escortStartAt <= :endDate")
-    List<Settlement> findAllByUserIdAndDate(@Param("userId") Long userId,
+    Page<Settlement> findAllByUserIdAndDate(@Param("userId") Long userId,
                                             @Param("startDate") LocalDate startDate,
-                                            @Param("endDate") LocalDate endDate);
+                                            @Param("endDate") LocalDate endDate,
+                                            Pageable pageable);
 
 
 }

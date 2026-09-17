@@ -6,6 +6,9 @@ import com.back.nbe12142team06.domain.settlement.service.SettlementService;
 import com.back.nbe12142team06.global.response.RsData;
 import com.back.nbe12142team06.global.security.SecurityUser;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,14 +35,18 @@ public class SettlementController {
 
     // 정산 목록 기능
     @GetMapping
-    public RsData<List<SettlementResponse>> settlementList(@AuthenticationPrincipal SecurityUser actor,
+    public RsData<Page<SettlementResponse>> settlementList(@AuthenticationPrincipal SecurityUser actor,
                                                            @RequestParam LocalDate startDate,
-                                                           @RequestParam LocalDate endDate) {
+                                                           @RequestParam LocalDate endDate,
+                                                           @RequestParam(defaultValue = "0") int page,
+                                                           @RequestParam(defaultValue = "10") int offset,
+                                                           @RequestParam(defaultValue = "DESC") Sort.Direction sort) {
         Long userId = actor.getId();
 
-        List<Settlement> settlements = settlementService.findAll(userId, startDate, endDate);
+        Page<Settlement> settlements = settlementService.findAll(userId, startDate, endDate, PageRequest.of(page, offset,
+                Sort.by(sort, "application.post.escortStartAt")));
 
         return new RsData<>("200-31", "정산 목록을 가져왔습니다.",
-                settlements.stream().map(SettlementResponse::new).toList());
+                settlements.map(SettlementResponse::new));
     }
 }

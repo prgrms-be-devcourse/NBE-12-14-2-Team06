@@ -12,6 +12,8 @@ import com.back.nbe12142team06.global.exception.InternalServerErrorException;
 import com.back.nbe12142team06.global.exception.InvalidException;
 import com.back.nbe12142team06.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -65,7 +67,7 @@ public class SettlementService {
         return settlement;
     }
 
-    public List<Settlement> findAll(Long userId, LocalDate startDate, LocalDate endDate) {
-        return settlementRepository.findAllByUserIdAndDate(userId, startDate, endDate);
+    public Page<Settlement> findAll(Long userId, LocalDate startDate, LocalDate endDate, Pageable pageable) {
+        return settlementRepository.findAllByUserIdAndDate(userId, startDate, endDate, pageable);
     }
 }
