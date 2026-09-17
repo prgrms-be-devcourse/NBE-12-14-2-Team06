@@ -23,7 +23,11 @@ import com.back.nbe12142team06.domain.payment.entity.Payment;
 import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import com.back.nbe12142team06.domain.post.service.PostService;
+import com.back.nbe12142team06.domain.post.entity.PostStatus;
+import java.math.BigDecimal;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -42,6 +46,8 @@ public class PostControllerTest {
     private PostRepository postRepository;
     @Autowired
     private PaymentRepository paymentRepository;
+    @Autowired
+    private PostService postService;
     @Autowired
     private PasswordEncoder passwordEncoder;
 
@@ -585,5 +591,73 @@ public class PostControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.content.length()").value(1))
                 .andExpect(jsonPath("$.data.content[0].id").value(postId));
+    }
+    @Test
+    @DisplayName("[PostService] 만료 배치 - 모집마감 지난 OPEN 공고는 EXPIRED로 전환된다")
+    void t18() {
+        User client = userRepository.findById(testUserId).orElseThrow();
+        LocalDateTime now = LocalDateTime.now();
+
+        // API로는 과거 날짜 공고를 못 만드니 리포지토리로 직접 생성
+        Post expiredTargetPost = Post.builder()
+                .client(client)
+                .title("만료 테스트 공고")
+                .content("만료 배치 테스트용")
+                .region("서울")
+                .hospitalName("테스트병원")
+                .hospitalAddress("테스트주소")
+                .hospitalLat(BigDecimal.valueOf(37.5))
+                .hospitalLng(BigDecimal.valueOf(127.0))
+                .pickupAddress("테스트픽업주소")
+                .pickupLat(BigDecimal.valueOf(37.5))
+                .pickupLng(BigDecimal.valueOf(127.0))
+                .hourlyPay(15000)
+                .recruitStartAt(now.minusDays(3))
+                .recruitEndAt(now.minusDays(1))     // 이미 지난 마감시간
+                .escortStartAt(now.plusDays(1))
+                .escortEndAt(now.plusDays(1).plusHours(3))
+                .build();
+        Long targetPostId = postRepository.save(expiredTargetPost).getId();
+
+        // when
+        postService.expireOverduePosts();
+
+        // then
+        Post result = postRepository.findById(targetPostId).orElseThrow();
+        assertThat(result.getPostStatus()).isEqualTo(PostStatus.EXPIRED);
+    }
+    @Test
+    @DisplayName("[PostService] 만료 배치 - 매칭된 공고는 마감시간 지나도 대상에서 제외된다")
+    void t19() {
+        User client = userRepository.findById(testUserId).orElseThrow();
+        LocalDateTime now = LocalDateTime.now();
+        //registerPost() 대신 builder()를 써야 시간 체크 피해감
+        Post matchedPost = Post.builder()
+                .client(client)
+                .title("매칭된 공고")
+                .content("만료 배치 제외 테스트용")
+                .region("서울")
+                .hospitalName("테스트병원")
+                .hospitalAddress("테스트주소")
+                .hospitalLat(BigDecimal.valueOf(37.5))
+                .hospitalLng(BigDecimal.valueOf(127.0))
+                .pickupAddress("테스트픽업주소")
+                .pickupLat(BigDecimal.valueOf(37.5))
+                .pickupLng(BigDecimal.valueOf(127.0))
+                .hourlyPay(15000)
+                .recruitStartAt(now.minusDays(3))
+                .recruitEndAt(now.minusDays(1))     // 마감 지남
+                .escortStartAt(now.plusDays(1))
+                .escortEndAt(now.plusDays(1).plusHours(3))
+                .postStatus(PostStatus.MATCHED)     // 이미 매칭된 상태로 직접 세팅
+                .build();
+        Long matchedPostId = postRepository.save(matchedPost).getId();
+
+        // when
+        postService.expireOverduePosts();
+
+        // then
+        Post result = postRepository.findById(matchedPostId).orElseThrow();
+        assertThat(result.getPostStatus()).isEqualTo(PostStatus.MATCHED); // 그대로 유지돼야 함
     }
 }

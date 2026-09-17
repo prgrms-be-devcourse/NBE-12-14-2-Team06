@@ -145,8 +145,18 @@ public class Post extends BaseSoftDeleteTimeEntity {  // createdAt, updatedAt, d
     public void match() {
         this.postStatus = PostStatus.MATCHED;
     }
+    // 매칭된 공고 동행진행중 처리
+    public void startProgress() {
+        this.postStatus = PostStatus.IN_PROGRESS;}
+    // 매칭된 공고 동행완료 처리
+    public void complete() {
+        this.postStatus = PostStatus.COMPLETED;}
     // 매칭된 공고 취소 처리 (MATCHED -> CANCELED)
     public void matchedCancel() {
         this.postStatus = PostStatus.CANCELED;
+    }
+    // 모집마감시간 초과 처리 (OPEN -> EXPIRED)
+    public void expire() {
+        this.postStatus = PostStatus.EXPIRED;
     }
 }
