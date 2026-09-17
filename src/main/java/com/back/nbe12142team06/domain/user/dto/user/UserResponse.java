@@ -8,7 +8,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public record UserResponse(
-        Long id,
         String username,
         String email,
         String name,
@@ -20,7 +19,7 @@ public record UserResponse(
         LocalDateTime createdAt
 ) {
     public UserResponse(User user) {
-        this(user.getId(), user.getUsername(), user.getEmail(), user.getName(),
+        this(user.getUsername(), user.getEmail(), user.getName(),
                 user.getRole(), user.getGender(), user.getBirthDate(),
                 user.getPhoneNum(), user.getRegion(), user.getCreatedAt());
     }

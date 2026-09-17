@@ -50,6 +50,18 @@ public class EscortProfile extends BaseTimeEntity {
     @Column(nullable = false)
     private Integer noShowCount = 0;
 
+    // 은행 이름
+    @Column(length = 20)
+    private String bankName;
+
+    // 예금주명
+    @Column(length = 50)
+    private String accountHolder;
+
+    // 계좌번호
+    @Column(length = 30)
+    private String accountNumber;
+
     // 유저만 연결 생성자
     public EscortProfile(User user){
         this.user = user;
