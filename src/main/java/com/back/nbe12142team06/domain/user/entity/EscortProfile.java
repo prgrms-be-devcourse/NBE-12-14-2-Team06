@@ -60,8 +60,8 @@ public class EscortProfile extends BaseTimeEntity {
 
     // 계좌번호
     @Column(length = 30)
-
     private String accountNumber;
+
     // 유저만 연결 생성자
     public EscortProfile(User user){
         this.user = user;

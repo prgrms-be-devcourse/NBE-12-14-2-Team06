@@ -72,4 +72,14 @@ public class User extends BaseSoftDeleteTimeEntity {
         this.phoneNum = phoneNum;
         this.region = region;
     }
+
+    // 회원 정보 수정
+    public void updateUser(String password, String email, String name, LocalDate birthDate, String phoneNum, String region){
+        this.password = password;
+        this.email = email;
+        this.name = name;
+        this.birthDate = birthDate;
+        this.phoneNum = phoneNum;
+        this.region = region;
+    }
 }

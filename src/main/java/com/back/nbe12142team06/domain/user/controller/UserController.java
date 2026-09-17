@@ -75,11 +75,12 @@ public class UserController {
             @AuthenticationPrincipal SecurityUser me,
             @Valid @RequestBody UserProfileUpdateRequest request
     ) {
-        // User user = this.userService.updateMyProfile(me.getId(), request);
+        User user = this.userService.updateMyProfile(me.getId(), request);
 
         return new RsData<>(
                 "200-3",
-                "회원 정보가 수정되었습니다."
+                "회원 정보가 수정되었습니다.",
+                new UserResponse(user)
         );
     }
 }
