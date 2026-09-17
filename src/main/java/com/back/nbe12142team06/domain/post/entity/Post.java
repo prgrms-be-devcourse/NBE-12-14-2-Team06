@@ -140,4 +140,13 @@ public class Post extends BaseSoftDeleteTimeEntity {  // createdAt, updatedAt, d
     public BigDecimal getTotalPay() {
         return getEscortHours().multiply(BigDecimal.valueOf(hourlyPay));
     }
+
+    // 매칭 완료 처리 (OPEN -> MATCHED)
+    public void match() {
+        this.postStatus = PostStatus.MATCHED;
+    }
+    // 매칭된 공고 취소 처리 (MATCHED -> CANCELED)
+    public void matchedCancel() {
+        this.postStatus = PostStatus.CANCELED;
+    }
 }
