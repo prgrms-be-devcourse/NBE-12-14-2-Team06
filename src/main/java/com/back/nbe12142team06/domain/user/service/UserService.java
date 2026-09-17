@@ -28,7 +28,7 @@ public class UserService {
     private final AuthTokenService authTokenService;
     private final PasswordEncoder passwordEncoder;
 
-
+    // 회원가입
     @Transactional
     public User signUp(UserSignUpRequest request) {
         // Admin으로 가입 불가
@@ -64,11 +64,7 @@ public class UserService {
         return this.userRepository.save(user);
     }
 
-    public User myProfile(Long id) {
-        return this.userRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("존재하지 않는 사용자입니다."));
-    }
-
+    // 로그인
     public User login(UserLoginRequest request) {
         Optional<User> opUser = this.userRepository.findByUsername(request.username());
 
@@ -83,14 +79,28 @@ public class UserService {
         return user;
     }
 
+    // 상세정보 조회
+    public User myProfile(Long id) {
+        return this.userRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("존재하지 않는 사용자입니다."));
+    }
+
+    // username 중복 검사
+    public boolean isUsernameAvailable(String username) {
+        return !this.userRepository.existsByUsername(username);
+    }
+
+    // access token 생성
     public String genAccessToken(User user) {
         return this.authTokenService.genAccessToken(user);
     }
 
+    // access token 파싱
     public Map<String, Object> payload(String jwt){
         return authTokenService.payload(jwt);
     }
 
+    // 비밀번호 해싱값 대조
     public void checkPassword(String rawPassword, String encodedPassword) {
         if (!passwordEncoder.matches(rawPassword, encodedPassword)) {
             throw new UnauthorizedException("아이디 또는 비밀번호가 올바르지 않습니다.");
