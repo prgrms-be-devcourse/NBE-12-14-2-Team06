@@ -123,7 +123,7 @@ public class ReportControllerTest {
     // 로그인 후 accessToken 쿠키 획득
     private Cookie login(String username) throws Exception {
         return mvc.perform(
-                        post("/api/v1/users/login")
+                        post("/api/v1/auth/login")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
                                         {

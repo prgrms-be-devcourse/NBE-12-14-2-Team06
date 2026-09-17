@@ -201,4 +201,12 @@ public class PostService {
 
         post.matchedCancel();
     }
+    @Transactional
+    public void expireOverduePosts() {
+        List<Post> targets = postRepository.findAllByPostStatusAndRecruitEndAtBefore(
+                PostStatus.OPEN, LocalDateTime.now());
+
+        targets.forEach(post -> post.expire());
+        // 변경 감지(더티체킹)로 트랜잭션 끝날 때 자동으로 UPDATE 쿼리 나감
+    }
 }
