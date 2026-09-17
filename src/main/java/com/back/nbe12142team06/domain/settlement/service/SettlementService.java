@@ -1,5 +1,6 @@
 package com.back.nbe12142team06.domain.settlement.service;
 
+import com.back.nbe12142team06.domain.post.entity.PostStatus;
 import com.back.nbe12142team06.domain.settlement.client.SettlementClient;
 import com.back.nbe12142team06.domain.settlement.client.SettlementClientRequest;
 import com.back.nbe12142team06.domain.settlement.client.SettlementClientResponse;
@@ -8,6 +9,7 @@ import com.back.nbe12142team06.domain.settlement.repository.SettlementRepository
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.global.exception.ForbiddenException;
 import com.back.nbe12142team06.global.exception.InternalServerErrorException;
+import com.back.nbe12142team06.global.exception.InvalidException;
 import com.back.nbe12142team06.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -37,6 +39,10 @@ public class SettlementService {
 
         if (!settlement.getEscort().getId().equals(userId)) {
             throw new ForbiddenException(30, "정산 요청할 권한이 없습니다.");
+        }
+
+        if (!settlement.getApplication().getPost().getPostStatus().equals(PostStatus.COMPLETED)) {
+            throw new InvalidException(30, "아직 완료되지 않은 동행 의뢰입니다.");
         }
 
         // 정산 외부 API 로직(목으로 대체)
