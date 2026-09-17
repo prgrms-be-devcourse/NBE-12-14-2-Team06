@@ -58,9 +58,10 @@ class ReportRepositoryTest {
                 .pickupLat(new BigDecimal("37.6180000"))
                 .pickupLng(new BigDecimal("126.9230000"))
                 .hourlyPay(15000)
+                .recruitStartAt(LocalDateTime.now())
+                .recruitEndAt(LocalDateTime.now().plusHours(12))
                 .escortStartAt(LocalDateTime.now().plusDays(1))
                 .escortEndAt(LocalDateTime.now().plusDays(1).plusHours(3))
-                .deadlineAt(LocalDateTime.now().plusHours(12))
                 .build();
         em.persist(post);
 

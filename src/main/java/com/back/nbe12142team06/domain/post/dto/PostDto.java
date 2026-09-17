@@ -4,7 +4,6 @@ import com.back.nbe12142team06.domain.post.entity.Post;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-//상세목록용
 public record PostDto(
         Long id,
         String client_id,
@@ -20,14 +19,16 @@ public record PostDto(
         BigDecimal pickupLat,
         BigDecimal pickupLng,
         int hourlyPay,
+        LocalDateTime recruitStartAt,
+        LocalDateTime recruitEndAt,
         LocalDateTime escortStartAt,
         LocalDateTime escortEndAt,
-        LocalDateTime deadlineAt,
+        BigDecimal escortHours,
+        BigDecimal totalPay,
         String postStatus,
         boolean reportRequired,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
-
 ) {
     public PostDto(Post post) {
         this(
@@ -45,9 +46,12 @@ public record PostDto(
                 post.getPickupLat(),
                 post.getPickupLng(),
                 post.getHourlyPay(),
+                post.getRecruitStartAt(),
+                post.getRecruitEndAt(),
                 post.getEscortStartAt(),
                 post.getEscortEndAt(),
-                post.getDeadlineAt(),
+                post.getEscortHours(),
+                post.getTotalPay(),
                 post.getPostStatus().getDescription(),
                 post.isReportRequired(),
                 post.getCreatedAt(),
