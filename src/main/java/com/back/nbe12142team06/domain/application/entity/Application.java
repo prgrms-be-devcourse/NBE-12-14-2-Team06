@@ -42,4 +42,8 @@ public class Application extends BaseTimeEntity {
         this.status = ApplicationStatus.ACCEPTED;
         this.acceptedPostId = this.post.getId();
     }
+
+    public void reject() {
+        this.status = ApplicationStatus.REJECTED;
+    }
 }

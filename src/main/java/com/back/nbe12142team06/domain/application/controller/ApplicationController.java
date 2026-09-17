@@ -60,4 +60,18 @@ public class ApplicationController {
         );
     }
 
+    @PatchMapping("/{applicationId}/reject")
+    public RsData<Void> reject(
+            @PathVariable Long applicationId,
+            @AuthenticationPrincipal SecurityUser actor) {
+
+        applicationService.reject(applicationId, actor.getId());
+
+        return new RsData<>(
+                "200-1",
+                "지원 거절이 완료되었습니다.",
+                null
+        );
+    }
+
 }

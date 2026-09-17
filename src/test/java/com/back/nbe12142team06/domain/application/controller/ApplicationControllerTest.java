@@ -471,7 +471,7 @@ public class ApplicationControllerTest {
         userRepository.save(otherClient);
 
         Cookie otherClientAccessTokenCookie = mvc.perform(
-                        post("/api/v1/users/login")
+                        post("/api/v1/auth/login")
                                 .contentType("application/json")
                                 .content("""
                             {
@@ -532,7 +532,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    @DisplayName("[ApplicationController] 지원 승인 - 이미 다른 지원자가 매칭된 공고 승인 시 400 반환")
+    @DisplayName("[ApplicationController] 지원 승인 - 한 명 승인 시 나머지 지원자는 자동 거절")
     void t13() throws Exception {
 
         // 두 번째 동행인 생성
@@ -545,20 +545,20 @@ public class ApplicationControllerTest {
                 Gender.MALE,
                 LocalDate.of(1996, 1, 1),
                 "010-4444-4444",
-                "수원"
+                "인천"
         );
 
         userRepository.save(escort2);
 
         Cookie escort2AccessTokenCookie = mvc.perform(
-                        post("/api/v1/users/login")
+                        post("/api/v1/auth/login")
                                 .contentType("application/json")
                                 .content("""
-                            {
-                              "username": "escort2",
-                              "password": "testPassword"
-                            }
-                            """)
+                                    {
+                                      "username": "escort2",
+                                      "password": "testPassword"
+                                    }
+                                    """)
                 )
                 .andReturn()
                 .getResponse()
@@ -594,15 +594,47 @@ public class ApplicationControllerTest {
 
         // 첫 번째 동행인 승인
         mvc.perform(
-                        patch("/api/v1/applications/{applicationId}/accept", firstApplication.getId())
+                        patch("/api/v1/applications/{applicationId}/accept",
+                                firstApplication.getId())
                                 .cookie(clientAccessTokenCookie)
                 )
                 .andDo(print())
                 .andExpect(status().isOk());
 
-        // 두 번째 동행인도 승인 시도
+        // 승인된 지원 상태 확인
+        Application acceptedApplication = applicationRepository
+                .findById(firstApplication.getId())
+                .orElseThrow();
+
+        assertEquals(
+                ApplicationStatus.ACCEPTED,
+                acceptedApplication.getStatus()
+        );
+
+        // 나머지 지원자는 자동 거절됐는지 확인
+        Application rejectedApplication = applicationRepository
+                .findById(secondApplication.getId())
+                .orElseThrow();
+
+        assertEquals(
+                ApplicationStatus.REJECTED,
+                rejectedApplication.getStatus()
+        );
+
+        // 공고도 매칭 완료됐는지 확인
+        Post matchedPost = postRepository
+                .findById(testPostId)
+                .orElseThrow();
+
+        assertEquals(
+                PostStatus.MATCHED,
+                matchedPost.getPostStatus()
+        );
+
+        // 이미 자동 거절된 두 번째 지원을 다시 승인 시도
         ResultActions resultActions = mvc.perform(
-                patch("/api/v1/applications/{applicationId}/accept", secondApplication.getId())
+                patch("/api/v1/applications/{applicationId}/accept",
+                        secondApplication.getId())
                         .cookie(clientAccessTokenCookie)
         ).andDo(print());
 
@@ -610,7 +642,7 @@ public class ApplicationControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value("400"))
                 .andExpect(jsonPath("$.msg")
-                        .value("모집 중인 공고만 매칭할 수 있습니다."));
+                        .value("대기 중인 지원만 승인할 수 있습니다."));
     }
 
     @Test
@@ -627,6 +659,548 @@ public class ApplicationControllerTest {
         resultActions
                 .andExpect(handler().handlerType(ApplicationController.class))
                 .andExpect(handler().methodName("accept"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.statusCode").value("404"))
+                .andExpect(jsonPath("$.msg")
+                        .value("지원을 찾을 수 없습니다."));
+    }
+
+    @Test
+    @DisplayName("[ApplicationController] 지원 승인 - 같은 동행인의 시간 겹치는 다른 지원 자동 거절")
+    void t15() throws Exception {
+
+        User client = userRepository.findByUsername("client1")
+                .orElseThrow();
+
+        // 기존 testPost와 시간이 겹치는 두 번째 공고 생성
+        Post overlappingPost = Post.builder()
+                .client(client)
+                .title("시간 겹치는 테스트 공고")
+                .content("동행 시간이 겹치는 공고입니다.")
+                .region("수원")
+                .hospitalName("성빈센트병원")
+                .hospitalAddress("경기도 수원시")
+                .hospitalLat(BigDecimal.valueOf(37.2770))
+                .hospitalLng(BigDecimal.valueOf(127.0276))
+                .pickupAddress("경기도 수원시")
+                .pickupLat(BigDecimal.valueOf(37.2700))
+                .pickupLng(BigDecimal.valueOf(127.0300))
+                .hourlyPay(15000)
+                .recruitStartAt(LocalDateTime.now().plusDays(1))
+                .recruitEndAt(LocalDateTime.now().plusDays(2))
+
+                // 기존 testPost: 3일 뒤 ~ 3일 뒤 + 3시간
+                // 새 공고: 3일 뒤 + 1시간 ~ 3일 뒤 + 4시간
+                // -> 서로 시간이 겹침
+                .escortStartAt(LocalDateTime.now().plusDays(3).plusHours(1))
+                .escortEndAt(LocalDateTime.now().plusDays(3).plusHours(4))
+
+                .patientNote("테스트 환자")
+                .reportRequired(false)
+                .build();
+
+        Long overlappingPostId = postRepository.save(overlappingPost).getId();
+
+        // 같은 동행인이 첫 번째 공고에 지원
+        mvc.perform(
+                        post("/api/v1/applications/{postId}", testPostId)
+                                .cookie(escortAccessTokenCookie)
+                )
+                .andExpect(status().isCreated());
+
+        // 같은 동행인이 시간이 겹치는 두 번째 공고에도 지원
+        mvc.perform(
+                        post("/api/v1/applications/{postId}", overlappingPostId)
+                                .cookie(escortAccessTokenCookie)
+                )
+                .andExpect(status().isCreated());
+
+        // 첫 번째 공고 지원 조회
+        Application firstApplication = applicationRepository
+                .findAllByPostIdWithEscort(testPostId)
+                .get(0);
+
+        // 두 번째 공고 지원 조회
+        Application overlappingApplication = applicationRepository
+                .findAllByPostIdWithEscort(overlappingPostId)
+                .get(0);
+
+        // 첫 번째 공고에서 동행인 선정
+        mvc.perform(
+                        patch("/api/v1/applications/{applicationId}/accept",
+                                firstApplication.getId())
+                                .cookie(clientAccessTokenCookie)
+                )
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        // DB 상태 다시 조회
+        Application acceptedApplication = applicationRepository
+                .findById(firstApplication.getId())
+                .orElseThrow();
+
+        Application rejectedApplication = applicationRepository
+                .findById(overlappingApplication.getId())
+                .orElseThrow();
+
+        // 선택된 지원은 ACCEPTED
+        assertEquals(
+                ApplicationStatus.ACCEPTED,
+                acceptedApplication.getStatus()
+        );
+
+        // 같은 동행인의 시간이 겹치는 다른 지원은 자동 REJECTED
+        assertEquals(
+                ApplicationStatus.REJECTED,
+                rejectedApplication.getStatus()
+        );
+
+        // 선정된 공고는 MATCHED
+        Post matchedPost = postRepository
+                .findById(testPostId)
+                .orElseThrow();
+
+        assertEquals(
+                PostStatus.MATCHED,
+                matchedPost.getPostStatus()
+        );
+
+        // 다른 공고 자체는 계속 모집 가능
+        Post otherPost = postRepository
+                .findById(overlappingPostId)
+                .orElseThrow();
+
+        assertEquals(
+                PostStatus.OPEN,
+                otherPost.getPostStatus()
+        );
+    }
+
+    @Test
+    @DisplayName("[ApplicationController] 지원 승인 - 같은 동행인의 시간이 겹치지 않는 다른 지원은 대기 유지")
+    void t16() throws Exception {
+
+        User client = userRepository.findByUsername("client1")
+                .orElseThrow();
+
+        // 기존 testPost와 시간이 겹치지 않는 두 번째 공고 생성
+        Post nonOverlappingPost = Post.builder()
+                .client(client)
+                .title("시간 안 겹치는 테스트 공고")
+                .content("동행 시간이 겹치지 않는 공고입니다.")
+                .region("수원")
+                .hospitalName("성빈센트병원")
+                .hospitalAddress("경기도 수원시")
+                .hospitalLat(BigDecimal.valueOf(37.2770))
+                .hospitalLng(BigDecimal.valueOf(127.0276))
+                .pickupAddress("경기도 수원시")
+                .pickupLat(BigDecimal.valueOf(37.2700))
+                .pickupLng(BigDecimal.valueOf(127.0300))
+                .hourlyPay(15000)
+                .recruitStartAt(LocalDateTime.now().plusDays(1))
+                .recruitEndAt(LocalDateTime.now().plusDays(2))
+
+                // 기존 testPost: 3일 뒤 ~ 3일 뒤 + 3시간
+                // 새 공고:3일 뒤 + 4시간 ~ 3일 뒤 + 6시간
+                // -> 시간이 겹치지 않음
+                .escortStartAt(LocalDateTime.now().plusDays(3).plusHours(4))
+                .escortEndAt(LocalDateTime.now().plusDays(3).plusHours(6))
+
+                .patientNote("테스트 환자")
+                .reportRequired(false)
+                .build();
+
+        Long nonOverlappingPostId =
+                postRepository.save(nonOverlappingPost).getId();
+
+        // 같은 동행인이 첫 번째 공고에 지원
+        mvc.perform(
+                        post("/api/v1/applications/{postId}", testPostId)
+                                .cookie(escortAccessTokenCookie)
+                )
+                .andExpect(status().isCreated());
+
+        // 같은 동행인이 시간이 안 겹치는 두 번째 공고에도 지원
+        mvc.perform(
+                        post("/api/v1/applications/{postId}", nonOverlappingPostId)
+                                .cookie(escortAccessTokenCookie)
+                )
+                .andExpect(status().isCreated());
+
+        // 첫 번째 공고 지원 조회
+        Application firstApplication = applicationRepository
+                .findAllByPostIdWithEscort(testPostId)
+                .get(0);
+
+        // 두 번째 공고 지원 조회
+        Application secondApplication = applicationRepository
+                .findAllByPostIdWithEscort(nonOverlappingPostId)
+                .get(0);
+
+        // 첫 번째 공고에서 동행인 선정
+        mvc.perform(
+                        patch("/api/v1/applications/{applicationId}/accept",
+                                firstApplication.getId())
+                                .cookie(clientAccessTokenCookie)
+                )
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        // DB 상태 다시 조회
+        Application acceptedApplication = applicationRepository
+                .findById(firstApplication.getId())
+                .orElseThrow();
+
+        Application pendingApplication = applicationRepository
+                .findById(secondApplication.getId())
+                .orElseThrow();
+
+        // 첫 번째 지원은 ACCEPTED
+        assertEquals(
+                ApplicationStatus.ACCEPTED,
+                acceptedApplication.getStatus()
+        );
+
+        // 시간이 겹치지 않는 다른 지원은 PENDING 유지
+        assertEquals(
+                ApplicationStatus.PENDING,
+                pendingApplication.getStatus()
+        );
+
+        // 첫 번째 공고는 MATCHED
+        Post matchedPost = postRepository
+                .findById(testPostId)
+                .orElseThrow();
+
+        assertEquals(
+                PostStatus.MATCHED,
+                matchedPost.getPostStatus()
+        );
+
+        // 두 번째 공고는 계속 OPEN
+        Post otherPost = postRepository
+                .findById(nonOverlappingPostId)
+                .orElseThrow();
+
+        assertEquals(
+                PostStatus.OPEN,
+                otherPost.getPostStatus()
+        );
+    }
+
+    @Test
+    @DisplayName("[ApplicationController] 지원 승인 - 이미 승인된 다른 공고와 시간이 겹치면 승인 불가")
+    void t17() throws Exception {
+
+        // 첫 번째 공고에 동행인이 지원
+        mvc.perform(
+                        post("/api/v1/applications/{postId}", testPostId)
+                                .cookie(escortAccessTokenCookie)
+                )
+                .andExpect(status().isCreated());
+
+        Application firstApplication = applicationRepository
+                .findAllByPostIdWithEscort(testPostId)
+                .get(0);
+
+        // 첫 번째 공고에서 동행인 승인
+        mvc.perform(
+                        patch("/api/v1/applications/{applicationId}/accept",
+                                firstApplication.getId())
+                                .cookie(clientAccessTokenCookie)
+                )
+                .andExpect(status().isOk());
+
+        // 첫 번째 지원이 실제 ACCEPTED인지 확인
+        Application acceptedApplication = applicationRepository
+                .findById(firstApplication.getId())
+                .orElseThrow();
+
+        assertEquals(
+                ApplicationStatus.ACCEPTED,
+                acceptedApplication.getStatus()
+        );
+
+        // 두 번째 의뢰인 생성
+        User client2 = new User(
+                "client2",
+                passwordEncoder.encode("testPassword"),
+                "client2@test.com",
+                "의뢰인2",
+                Role.CLIENT,
+                Gender.MALE,
+                LocalDate.of(1990, 1, 1),
+                "010-3333-3333",
+                "서울"
+        );
+
+        userRepository.save(client2);
+
+        // 두 번째 의뢰인 로그인
+        Cookie client2AccessTokenCookie = mvc.perform(
+                        post("/api/v1/auth/login")
+                                .contentType("application/json")
+                                .content("""
+                                    {
+                                      "username": "client2",
+                                      "password": "testPassword"
+                                    }
+                                    """)
+                )
+                .andReturn()
+                .getResponse()
+                .getCookie("accessToken");
+
+        // 첫 번째 공고와 시간이 겹치는 두 번째 공고 생성
+        Post overlappingPost = Post.builder()
+                .client(client2)
+                .title("시간 겹치는 두 번째 공고")
+                .content("이미 승인된 일정과 겹치는 공고입니다.")
+                .region("수원")
+                .hospitalName("성빈센트병원")
+                .hospitalAddress("경기도 수원시")
+                .hospitalLat(BigDecimal.valueOf(37.2770))
+                .hospitalLng(BigDecimal.valueOf(127.0276))
+                .pickupAddress("경기도 수원시")
+                .pickupLat(BigDecimal.valueOf(37.2700))
+                .pickupLng(BigDecimal.valueOf(127.0300))
+                .hourlyPay(15000)
+                .recruitStartAt(LocalDateTime.now().plusDays(1))
+                .recruitEndAt(LocalDateTime.now().plusDays(2))
+
+                // 기존 testPost: 3일 뒤 ~ 3일 뒤 + 3시간
+                // 새 공고: 3일 뒤 + 1시간 ~ 3일 뒤 + 4시간
+                // -> 시간 겹침
+                .escortStartAt(LocalDateTime.now().plusDays(3).plusHours(1))
+                .escortEndAt(LocalDateTime.now().plusDays(3).plusHours(4))
+
+                .patientNote("테스트 환자")
+                .reportRequired(false)
+                .build();
+
+        Long overlappingPostId =
+                postRepository.save(overlappingPost).getId();
+
+        // 이미 다른 공고에서 ACCEPTED된 동행인이
+        // 시간이 겹치는 새 공고에 지원
+        mvc.perform(
+                        post("/api/v1/applications/{postId}", overlappingPostId)
+                                .cookie(escortAccessTokenCookie)
+                )
+                .andExpect(status().isCreated());
+
+        Application overlappingApplication = applicationRepository
+                .findAllByPostIdWithEscort(overlappingPostId)
+                .get(0);
+
+        // 두 번째 의뢰인이 해당 동행인을 선정하려고 시도
+        ResultActions resultActions = mvc.perform(
+                patch("/api/v1/applications/{applicationId}/accept",
+                        overlappingApplication.getId())
+                        .cookie(client2AccessTokenCookie)
+        ).andDo(print());
+
+        // 이미 승인된 일정과 시간이 겹치므로 승인 실패
+        resultActions
+                .andExpect(handler().handlerType(ApplicationController.class))
+                .andExpect(handler().methodName("accept"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.statusCode").value("400"))
+                .andExpect(jsonPath("$.msg")
+                        .value("이미 매칭된 다른 공고와 동행 시간이 겹칩니다."));
+
+        // 승인 실패했으므로 두 번째 지원은 PENDING 유지
+        Application pendingApplication = applicationRepository
+                .findById(overlappingApplication.getId())
+                .orElseThrow();
+
+        assertEquals(
+                ApplicationStatus.PENDING,
+                pendingApplication.getStatus()
+        );
+
+        // 두 번째 공고 역시 OPEN 유지
+        Post stillOpenPost = postRepository
+                .findById(overlappingPostId)
+                .orElseThrow();
+
+        assertEquals(
+                PostStatus.OPEN,
+                stillOpenPost.getPostStatus()
+        );
+    }
+
+    @Test
+    @DisplayName("[ApplicationController] 지원 거절 - 정상 거절")
+    void t18() throws Exception {
+
+        // 동행인이 먼저 지원
+        mvc.perform(post("/api/v1/applications/{postId}", testPostId)
+                        .cookie(escortAccessTokenCookie))
+                .andExpect(status().isCreated());
+
+        Application application = applicationRepository
+                .findAllByPostIdWithEscort(testPostId)
+                .get(0);
+
+        // 의뢰인이 지원 거절
+        ResultActions resultActions = mvc.perform(
+                patch("/api/v1/applications/{applicationId}/reject", application.getId())
+                        .cookie(clientAccessTokenCookie)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(ApplicationController.class))
+                .andExpect(handler().methodName("reject"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-1"))
+                .andExpect(jsonPath("$.msg").value("지원 거절이 완료되었습니다."));
+
+        Application rejectedApplication = applicationRepository
+                .findById(application.getId())
+                .orElseThrow();
+
+        assertEquals(
+                ApplicationStatus.REJECTED,
+                rejectedApplication.getStatus()
+        );
+    }
+
+    @Test
+    @DisplayName("[ApplicationController] 지원 거절 - 다른 의뢰인이 거절 시 403 반환")
+    void t19() throws Exception {
+
+        // 동행인이 먼저 지원
+        mvc.perform(
+                        post("/api/v1/applications/{postId}", testPostId)
+                                .cookie(escortAccessTokenCookie)
+                )
+                .andExpect(status().isCreated());
+
+        Application application = applicationRepository
+                .findAllByPostIdWithEscort(testPostId)
+                .get(0);
+
+        // 다른 의뢰인 생성
+        User otherClient = new User(
+                "client2",
+                passwordEncoder.encode("testPassword"),
+                "client2@test.com",
+                "의뢰인2",
+                Role.CLIENT,
+                Gender.MALE,
+                LocalDate.of(1990, 1, 1),
+                "010-3333-3333",
+                "서울"
+        );
+
+        userRepository.save(otherClient);
+
+        // 다른 의뢰인 로그인
+        Cookie otherClientAccessTokenCookie = mvc.perform(
+                        post("/api/v1/auth/login")
+                                .contentType("application/json")
+                                .content("""
+                                    {
+                                      "username": "client2",
+                                      "password": "testPassword"
+                                    }
+                                    """)
+                )
+                .andReturn()
+                .getResponse()
+                .getCookie("accessToken");
+
+        // 다른 의뢰인이 지원 거절 시도
+        ResultActions resultActions = mvc.perform(
+                patch("/api/v1/applications/{applicationId}/reject",
+                        application.getId())
+                        .cookie(otherClientAccessTokenCookie)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(ApplicationController.class))
+                .andExpect(handler().methodName("reject"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.statusCode").value("403-1"))
+                .andExpect(jsonPath("$.msg")
+                        .value("본인 공고의 지원만 거절할 수 있습니다."));
+
+        // 실패했으므로 상태는 여전히 PENDING
+        Application pendingApplication = applicationRepository
+                .findById(application.getId())
+                .orElseThrow();
+
+        assertEquals(
+                ApplicationStatus.PENDING,
+                pendingApplication.getStatus()
+        );
+    }
+
+    @Test
+    @DisplayName("[ApplicationController] 지원 거절 - 이미 거절된 지원 재거절 시 400 반환")
+    void t20() throws Exception {
+
+        // 동행인이 먼저 지원
+        mvc.perform(
+                        post("/api/v1/applications/{postId}", testPostId)
+                                .cookie(escortAccessTokenCookie)
+                )
+                .andExpect(status().isCreated());
+
+        Application application = applicationRepository
+                .findAllByPostIdWithEscort(testPostId)
+                .get(0);
+
+        // 첫 번째 거절
+        mvc.perform(
+                        patch("/api/v1/applications/{applicationId}/reject",
+                                application.getId())
+                                .cookie(clientAccessTokenCookie)
+                )
+                .andExpect(status().isOk());
+
+        // 같은 지원을 다시 거절
+        ResultActions resultActions = mvc.perform(
+                patch("/api/v1/applications/{applicationId}/reject",
+                        application.getId())
+                        .cookie(clientAccessTokenCookie)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(ApplicationController.class))
+                .andExpect(handler().methodName("reject"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.statusCode").value("400"))
+                .andExpect(jsonPath("$.msg")
+                        .value("대기 중인 지원만 거절할 수 있습니다."));
+
+        // 상태는 그대로 REJECTED
+        Application rejectedApplication = applicationRepository
+                .findById(application.getId())
+                .orElseThrow();
+
+        assertEquals(
+                ApplicationStatus.REJECTED,
+                rejectedApplication.getStatus()
+        );
+    }
+
+    @Test
+    @DisplayName("[ApplicationController] 지원 거절 - 존재하지 않는 지원 거절 시 404 반환")
+    void t21() throws Exception {
+
+        Long notExistingApplicationId = 999L;
+
+        ResultActions resultActions = mvc.perform(
+                patch("/api/v1/applications/{applicationId}/reject",
+                        notExistingApplicationId)
+                        .cookie(clientAccessTokenCookie)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(ApplicationController.class))
+                .andExpect(handler().methodName("reject"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.statusCode").value("404"))
                 .andExpect(jsonPath("$.msg")
