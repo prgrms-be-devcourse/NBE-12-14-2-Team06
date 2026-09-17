@@ -5,11 +5,11 @@ import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-public enum RideStatus {
-    PROCESSING("이동수단 선택 전"),
-    ACCEPTED("이동수단 선택 완료"),
-    IN_PROGRESS("이동 중"),
-    COMPLETED("이동 완료");
+public enum RideSelect {
+    WALK("도보"),
+    BUS("버스"),
+    TAXI("택시"),
+    OWN_CAR("자차");
 
     private final String description;
 }
