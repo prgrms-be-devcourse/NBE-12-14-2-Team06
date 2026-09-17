@@ -1,5 +1,6 @@
 package com.back.nbe12142team06.domain.application.controller;
 
+import com.back.nbe12142team06.domain.application.dto.ApplicationAcceptResponse;
 import com.back.nbe12142team06.domain.application.dto.ApplicationApplyResponse;
 import com.back.nbe12142team06.domain.application.dto.ApplicationListResponse;
 import com.back.nbe12142team06.domain.application.service.ApplicationService;
@@ -42,6 +43,20 @@ public class ApplicationController {
             "200-1",
             "지원 목록 조회가 완료되었습니다.",
                 responses
+        );
+    }
+
+    @PatchMapping("/{applicationId}/accept")
+    public RsData<ApplicationAcceptResponse> accept(
+            @PathVariable Long applicationId,
+            @AuthenticationPrincipal SecurityUser actor) {
+
+        ApplicationAcceptResponse response = applicationService.accept(applicationId, actor.getId());
+
+        return new RsData<>(
+            "200-1",
+            "지원 승인이 완료되었습니다.",
+            response
         );
     }
 
