@@ -7,6 +7,7 @@ import com.back.nbe12142team06.domain.review.dto.ReviewWriteRequest;
 import com.back.nbe12142team06.domain.review.entity.Review;
 import com.back.nbe12142team06.domain.review.entity.ReviewTag;
 import com.back.nbe12142team06.domain.review.repository.ReviewRepository;
+import com.back.nbe12142team06.domain.user.repository.UserRepository;
 import com.back.nbe12142team06.global.exception.DuplicatedException;
 import com.back.nbe12142team06.global.exception.ForbiddenException;
 import com.back.nbe12142team06.global.exception.InvalidException;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Service
@@ -25,6 +27,7 @@ public class ReviewService {
 
     private final ReviewRepository reviewRepository;
     private final ApplicationRepository applicationRepository;
+    private final UserRepository userRepository;
 
     @Transactional // 쓰기 작업을 수행하는 메서드에는 readOnly 해제
     public Review write(Long applicationId, Long actorId, ReviewWriteRequest request) {
@@ -57,5 +60,16 @@ public class ReviewService {
                         .content(request.content())
                         .build()
         );
+    }
+
+    // 특정 동행인이 받은 리뷰 목록 조회 (클래스의 readOnly 적용)
+    public List<Review> findAllByEscortId(Long escortId) {
+
+        // 리뷰가 0건인 것은 정상이므로, 회원 존재 여부만 확인
+        if (!userRepository.existsById(escortId)) {
+            throw new NotFoundException(2, "존재하지 않는 회원입니다.");
+        }
+
+        return reviewRepository.findAllByEscortIdWithApplication(escortId);
     }
 }

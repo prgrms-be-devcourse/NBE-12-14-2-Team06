@@ -7,10 +7,10 @@ import com.back.nbe12142team06.domain.application.service.ApplicationService;
 import com.back.nbe12142team06.global.response.RsData;
 import com.back.nbe12142team06.global.security.SecurityUser;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -33,15 +33,19 @@ public class ApplicationController {
     }
 
     @GetMapping("/posts/{postId}")
-    public RsData<List<ApplicationListResponse>> list(
+    public RsData<Page<ApplicationListResponse>> list(
             @PathVariable Long postId,
-            @AuthenticationPrincipal SecurityUser actor) {
+            @AuthenticationPrincipal SecurityUser actor,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
 
-        List<ApplicationListResponse> responses = applicationService.list(postId, actor.getId());
+        Page<ApplicationListResponse> responses =
+                applicationService.list(postId, actor.getId(), PageRequest.of(page, size));
 
         return new RsData<>(
-            "200-1",
-            "지원 목록 조회가 완료되었습니다.",
+                "200-1",
+                "지원 목록 조회가 완료되었습니다.",
                 responses
         );
     }
