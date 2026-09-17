@@ -88,9 +88,10 @@ public class ReportControllerTest {
                 .pickupLat(BigDecimal.valueOf(37.2636))
                 .pickupLng(BigDecimal.valueOf(127.0286))
                 .hourlyPay(15000)
-                .escortStartAt(LocalDateTime.of(2026, 9, 17, 10, 0))
-                .escortEndAt(LocalDateTime.of(2026, 9, 17, 13, 0))
-                .deadlineAt(LocalDateTime.of(2026, 9, 16, 10, 0))
+                .recruitStartAt(LocalDateTime.now())
+                .recruitEndAt(LocalDateTime.now().plusDays(1))
+                .escortStartAt(LocalDateTime.now().plusDays(2))
+                .escortEndAt(LocalDateTime.now().plusDays(2).plusHours(3))
                 .build();
         postRepository.save(post);
 

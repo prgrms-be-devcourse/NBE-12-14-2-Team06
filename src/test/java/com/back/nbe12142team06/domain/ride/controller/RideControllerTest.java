@@ -93,24 +93,25 @@ class RideControllerTest {
         BigDecimal pickupLat = BigDecimal.valueOf(37.5160000);
         BigDecimal pickupLng = BigDecimal.valueOf(127.0200000);
         int hourlyPay = 15_000;
+        LocalDateTime recruitStartAt = LocalDateTime.now().plusDays(1);
+        LocalDateTime recruitEndAt = LocalDateTime.now().plusDays(6);
         LocalDateTime escortStartAt = LocalDateTime.now().plusDays(7);
         LocalDateTime escortEndAt = LocalDateTime.now().plusDays(7).plusHours(4);
-        LocalDateTime deadlineAt = LocalDateTime.now().plusDays(6);
         PostWriteRequest postWriteRequest1 = new PostWriteRequest(
                 title, content, postRegion, hospitalName, hospitalAddress, hospitalLat, hospitalLng,
-                pickupAddress, pickupLat, pickupLng, hourlyPay, escortStartAt, escortEndAt, deadlineAt,
+                pickupAddress, pickupLat, pickupLng, hourlyPay, recruitStartAt, recruitEndAt, escortStartAt, escortEndAt,
                 "", true
         );
 
-        Post post1 = postService.write(user1, postWriteRequest1);
+        Post post1 = postService.write(user1.getId(), postWriteRequest1);
 
         PostWriteRequest postWriteRequest2 = new PostWriteRequest(
                 title + "2", content + "2", postRegion + "2", hospitalName + "2", hospitalAddress + "2",
-                hospitalLat, hospitalLng, pickupAddress + "2", pickupLat, pickupLng, hourlyPay, escortStartAt, escortEndAt, deadlineAt,
+                hospitalLat, hospitalLng, pickupAddress + "2", pickupLat, pickupLng, hourlyPay, recruitStartAt, recruitEndAt, escortStartAt, escortEndAt,
                 "", true
         );
 
-        Post post2 = postService.write(user1, postWriteRequest2);
+        Post post2 = postService.write(user1.getId(), postWriteRequest2);
 
         savedUser1Id = user1.getId();
         savedUser2Id = user2.getId();
