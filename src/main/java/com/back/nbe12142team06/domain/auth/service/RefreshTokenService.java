@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
-import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -73,11 +72,20 @@ public class RefreshTokenService {
     }
 
     @Transactional
-    public void revokeAllByUser(Long userId) {
-        List<RefreshToken> myRefreshTokenList = this.refreshTokenRepository.findAllByUserIdAndRevokedAtIsNull(userId);
-        for (RefreshToken refreshToken : myRefreshTokenList) {
-            refreshToken.revoke();
+    public void revoke(String rawToken) {
+        // 빈 토큰 검사
+        if (rawToken.isBlank()) {
+            return;
         }
+
+        String hash = RefreshTokenGenerator.hash(rawToken);
+
+        Optional<RefreshToken> opRefreshToken = this.refreshTokenRepository.findByTokenHash(hash);
+
+        if (opRefreshToken.isPresent()) {
+            opRefreshToken.get().revoke();
+        }
+
     }
 
 }

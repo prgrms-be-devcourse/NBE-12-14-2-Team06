@@ -284,12 +284,12 @@ public class UserControllerTest {
                 .andExpect(cookie().exists("refreshToken")) // refreshToken이 왔는지 검증
                 .andExpect(cookie().httpOnly("accessToken", true))  // js의 쿠키 접근 차단 검증
                 .andExpect(cookie().path("accessToken", "/"))   // access Token의 요청 Path가 전체인지 검증
-                .andExpect(cookie().path("refreshToken", "/api/v1/auth/refresh"));  // refresh Token의 요청 Path가 /api/v1/auth/refresh인지 검증
+                .andExpect(cookie().path("refreshToken", "/api/v1/auth"));  // refresh Token의 요청 Path가 /api/v1/auth/refresh인지 검증
     }
 
 
     @Test
-    @DisplayName("[UserController] 로그인 - 회원가입 한 아이디로 정상 로그인")
+    @DisplayName("[AuthController] 로그인 - 회원가입 한 아이디로 정상 로그인")
     void t8() throws Exception {
         String signUpBody = """
         {
@@ -320,7 +320,7 @@ public class UserControllerTest {
 
         // 로그인
         ResultActions resultActions = mvc.perform(
-                post("/api/v1/users/login")
+                post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body)
                 )
@@ -337,11 +337,11 @@ public class UserControllerTest {
                 .andExpect(cookie().exists("accessToken"))
                 .andExpect(cookie().exists("refreshToken"))
                 .andExpect(cookie().path("accessToken", "/"))   // access Token의 요청 Path가 전체인지 검증
-                .andExpect(cookie().path("refreshToken", "/api/v1/auth/refresh"));  // refresh Token의 요청 Path가 /api/v1/auth/refresh인지 검증
+                .andExpect(cookie().path("refreshToken", "/api/v1/auth"));  // refresh Token의 요청 Path가 /api/v1/auth/refresh인지 검증
     }
 
     @Test
-    @DisplayName("[UserController] 로그인 - 존재하지 않는 아이디로 로그인 시도 시 401")
+    @DisplayName("[AuthController] 로그인 - 존재하지 않는 아이디로 로그인 시도 시 401")
     void t9() throws Exception {
         String body = """
         {
@@ -352,7 +352,7 @@ public class UserControllerTest {
 
         // 로그인
         ResultActions resultActions = mvc.perform(
-                        post("/api/v1/users/login")
+                        post("/api/v1/auth/login")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(body)
                 )
@@ -370,7 +370,7 @@ public class UserControllerTest {
 
 
     @Test
-    @DisplayName("[UserController] 로그인 - 아이디는 존재하지만 비밀번호가 옳지 않은 로그인 시도 시 401")
+    @DisplayName("[AuthController] 로그인 - 아이디는 존재하지만 비밀번호가 옳지 않은 로그인 시도 시 401")
     void t10() throws Exception {
         String signUpBody = """
         {
@@ -401,7 +401,7 @@ public class UserControllerTest {
 
         // 로그인
         ResultActions resultActions = mvc.perform(
-                        post("/api/v1/users/login")
+                        post("/api/v1/auth/login")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(body)
                 )
@@ -449,7 +449,7 @@ public class UserControllerTest {
 
         // 로그인
         Cookie accessToken = mvc.perform(
-                        post("/api/v1/users/login")
+                        post("/api/v1/auth/login")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(body)
                 )
@@ -564,7 +564,7 @@ public class UserControllerTest {
     }
 
     @Test
-    @DisplayName("[UserController] 로그아웃 - 로그아웃 시 토큰 폐기")
+    @DisplayName("[AuthController] 로그아웃 - 로그아웃 시 토큰 폐기")
     void t17() throws Exception {
         String signUpBody = """
         {
@@ -590,8 +590,9 @@ public class UserControllerTest {
         Cookie rawRefreshToken = signUpResult.getResponse().getCookie("refreshToken");
 
         ResultActions resultActions = mvc.perform(
-                delete("/api/v1/users/logout")
+                delete("/api/v1/auth/logout")
                         .cookie(accessToken)
+                        .cookie(rawRefreshToken)
                 )
                 .andDo(print());
 
@@ -612,7 +613,7 @@ public class UserControllerTest {
                     Cookie newRefreshToken = result.getResponse().getCookie("refreshToken");
                     assertThat(newRefreshToken.getValue()).isEmpty();
                     assertThat(newRefreshToken.getMaxAge()).isEqualTo(0);
-                    assertThat(newRefreshToken.getPath()).isEqualTo("/api/v1/auth/refresh");
+                    assertThat(newRefreshToken.getPath()).isEqualTo("/api/v1/auth");
                 });
 
         // 캐시 비우고 실제로 DB에서 조회
