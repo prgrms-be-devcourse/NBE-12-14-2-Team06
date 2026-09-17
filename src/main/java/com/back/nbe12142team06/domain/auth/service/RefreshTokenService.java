@@ -70,4 +70,22 @@ public class RefreshTokenService {
 
         return this.userService.genAccessToken(refreshToken.getUser());
     }
+
+    @Transactional
+    public void revoke(String rawToken) {
+        // 빈 토큰 검사
+        if (rawToken.isBlank()) {
+            return;
+        }
+
+        String hash = RefreshTokenGenerator.hash(rawToken);
+
+        Optional<RefreshToken> opRefreshToken = this.refreshTokenRepository.findByTokenHash(hash);
+
+        if (opRefreshToken.isPresent()) {
+            opRefreshToken.get().revoke();
+        }
+
+    }
+
 }
