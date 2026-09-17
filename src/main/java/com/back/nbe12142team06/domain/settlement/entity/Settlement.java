@@ -1,11 +1,11 @@
 package com.back.nbe12142team06.domain.settlement.entity;
 
+import com.back.nbe12142team06.domain.application.entity.Application;
 import com.back.nbe12142team06.domain.payment.entity.Payment;
+import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.global.entity.BaseSoftDeleteTimeEntity;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
@@ -14,15 +14,17 @@ import java.time.LocalDateTime;
  * 플랫폼 -> 동행 매니저 정산
  */
 @Entity
-//@Table(
-//        uniqueConstraints = {@UniqueConstraint(
-//                name = "UK_payment_application",
-//                columnNames = {
-//                        "payment_id",
-//                        "application_id"
-//                }
-//        )}
-//)
+@Builder
+@Getter
+@Table(
+        uniqueConstraints = {@UniqueConstraint(
+                name = "UK_payment_application",
+                columnNames = {
+                        "payment_id",
+                        "application_id"
+                }
+        )}
+)
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Settlement extends BaseSoftDeleteTimeEntity {
@@ -47,26 +49,28 @@ public class Settlement extends BaseSoftDeleteTimeEntity {
     // 정산 상태
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private SettlementStatus settlementStatus = SettlementStatus.PENDING;
 
     // 정산 일자
     private LocalDateTime settledAt;
 
-    // 결제, Settlement 생성은 Payment 상태가 DONE이 되면 생성
-//    @OneToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "payment_id")
-//    @Column(nullable = false)
-//    private Payment payment;
+    // 결제, Settlement 생성은 지원 승인이 되면 생성 -> 지원이 취소되면 정산도 삭제
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "payment_id")
+    private Payment payment;
 
     // 의뢰 지원
-//    @OneToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "application_id")
-//    @Column(nullable = false)
-//    private Application application;
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "application_id")
+    private Application application;
 
     // 동행 매니저
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "escort_id")
-//    @Column(nullable = false)
-//    private User escort;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "escort_id")
+    private User escort;
+
+    public void settlementDone() {
+        this.settlementStatus = SettlementStatus.COMPLETED;
+    }
 }
