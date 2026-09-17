@@ -1,6 +1,9 @@
 package com.back.nbe12142team06.domain.user.controller;
 
+import com.back.nbe12142team06.domain.auth.entity.RefreshToken;
+import com.back.nbe12142team06.domain.auth.repository.RefreshTokenRepository;
 import com.back.nbe12142team06.global.security.JwtProvider;
+import com.back.nbe12142team06.global.security.RefreshTokenGenerator;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -12,13 +15,14 @@ import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -33,6 +37,9 @@ public class UserControllerTest {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private RefreshTokenRepository refreshTokenRepository;
 
     @Value("${custom.jwt.secret-key}")
     private String secretKey;
@@ -550,5 +557,64 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.statusCode").value("200-2"))
                 .andExpect(jsonPath("$.msg").value("이미 사용 중인 아이디입니다."))
                 .andExpect(jsonPath("$.data").value("false"));
+    }
+
+    @Test
+    @DisplayName("[UserController] 로그아웃 - 로그아웃 시 토큰 폐기")
+    void t17() throws Exception {
+        String signUpBody = """
+        {
+            "username": "user1",
+            "password": "pwd1",
+            "email": "first@test.test",
+            "name": "김춘식",
+            "role": "CLIENT",
+            "gender": "MALE",
+            "birthDate": "1990-05-20",
+            "phoneNum": "010-1234-5678",
+            "region": "서울시"
+        }
+        """;
+
+        // 회원 가입
+        MvcResult signUpResult = mvc.perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(signUpBody))
+                .andReturn();
+
+        Cookie accessToken = signUpResult.getResponse().getCookie("accessToken");
+        Cookie refreshToken = signUpResult.getResponse().getCookie("refreshToken");
+
+        ResultActions resultActions = mvc.perform(
+                delete("/api/v1/users/logout")
+                        .cookie(accessToken)
+                        .cookie(refreshToken)
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-3"))
+                .andExpect(jsonPath("$.msg").value("로그아웃 되었습니다."))
+                .andExpect(result -> {
+
+                    // accessToken 폐기 확인
+                    Cookie newAccessToken = result.getResponse().getCookie("accessToken");
+                    assertThat(newAccessToken.getValue()).isEmpty();
+                    assertThat(newAccessToken.getMaxAge()).isEqualTo(0);
+                    assertThat(newAccessToken.getPath()).isEqualTo("/");
+                    assertThat(newAccessToken.isHttpOnly()).isTrue();
+
+                    // accessToken 폐기 확인
+                    Cookie newRefreshToken = result.getResponse().getCookie("refreshToken");
+                    assertThat(newRefreshToken.getValue()).isEmpty();
+                    assertThat(newRefreshToken.getMaxAge()).isEqualTo(0);
+                    assertThat(newRefreshToken.getPath()).isEqualTo("/api/v1/auth/refresh");
+                });
+
+        // DB에서 폐기 확인
+        String hash = RefreshTokenGenerator.hash(refreshToken.getValue());
+        RefreshToken saved = this.refreshTokenRepository.findByTokenHash(hash).orElseThrow();
+        assertThat(saved.isRevoked()).isTrue();
     }
 }
