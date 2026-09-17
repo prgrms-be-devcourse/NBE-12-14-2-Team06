@@ -15,8 +15,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-
-
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/posts")
@@ -85,6 +83,7 @@ public class PostController {
                 "%d번 게시물이 삭제되었습니다.".formatted(postId)
         );
     }
+    //매치된 공고 취소
     @PatchMapping("/{postId}/matchedCancel")
     public RsData<PostDto> matchedCancel(
             @AuthenticationPrincipal SecurityUser actor,
