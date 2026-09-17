@@ -5,6 +5,7 @@ import com.back.nbe12142team06.domain.user.enums.Role;
 import com.back.nbe12142team06.global.entity.BaseSoftDeleteTimeEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.SQLRestriction;
@@ -59,6 +60,7 @@ public class User extends BaseSoftDeleteTimeEntity {
     @Column(nullable = false, length = 50)
     private String region;
 
+    @Builder
     public User(String username, String password, String email, String name, Role role, Gender gender, LocalDate birthDate, String phoneNum, String region) {
         this.username = username;
         this.password = password;

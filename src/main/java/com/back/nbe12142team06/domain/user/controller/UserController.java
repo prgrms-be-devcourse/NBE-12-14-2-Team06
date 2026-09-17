@@ -3,6 +3,7 @@ package com.back.nbe12142team06.domain.user.controller;
 import com.back.nbe12142team06.domain.auth.service.RefreshTokenService;
 import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpRequest;
 import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpResponse;
+import com.back.nbe12142team06.domain.user.dto.user.UserProfileUpdateRequest;
 import com.back.nbe12142team06.domain.user.dto.user.UserResponse;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.service.UserService;
@@ -68,4 +69,17 @@ public class UserController {
         );
     }
 
+    // 회원 정보 수정
+    @PatchMapping("/profile")
+    public RsData<UserResponse> updateProfile(
+            @AuthenticationPrincipal SecurityUser me,
+            @Valid @RequestBody UserProfileUpdateRequest request
+    ) {
+        // User user = this.userService.updateMyProfile(me.getId(), request);
+
+        return new RsData<>(
+                "200-3",
+                "회원 정보가 수정되었습니다."
+        );
+    }
 }
