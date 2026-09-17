@@ -39,11 +39,11 @@ public class SettlementController {
                                                            @RequestParam LocalDate startDate,
                                                            @RequestParam LocalDate endDate,
                                                            @RequestParam(defaultValue = "0") int page,
-                                                           @RequestParam(defaultValue = "10") int offset,
+                                                           @RequestParam(defaultValue = "10") int size,
                                                            @RequestParam(defaultValue = "DESC") Sort.Direction sort) {
         Long userId = actor.getId();
 
-        Page<Settlement> settlements = settlementService.findAll(userId, startDate, endDate, PageRequest.of(page, offset,
+        Page<Settlement> settlements = settlementService.findAll(userId, startDate, endDate, PageRequest.of(page, size,
                 Sort.by(sort, "application.post.escortStartAt")));
 
         return new RsData<>("200-31", "정산 목록을 가져왔습니다.",
