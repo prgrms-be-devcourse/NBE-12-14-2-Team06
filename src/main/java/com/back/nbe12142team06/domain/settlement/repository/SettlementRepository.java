@@ -30,4 +30,7 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long> {
                                             Pageable pageable);
 
 
+    @Query("select s from Settlement s " +
+            "where (s.settlementStatus='PENDING' or s.settlementStatus='FAILED') and s.settledDate <= current_date")
+    List<Settlement> findAllByStatusAndDate();
 }

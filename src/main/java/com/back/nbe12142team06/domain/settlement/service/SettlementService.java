@@ -6,7 +6,8 @@ import com.back.nbe12142team06.domain.settlement.client.SettlementClientRequest;
 import com.back.nbe12142team06.domain.settlement.client.SettlementClientResponse;
 import com.back.nbe12142team06.domain.settlement.entity.Settlement;
 import com.back.nbe12142team06.domain.settlement.repository.SettlementRepository;
-import com.back.nbe12142team06.domain.user.entity.User;
+import com.back.nbe12142team06.domain.user.dto.db.AccountDto;
+import com.back.nbe12142team06.domain.user.repository.UserRepository;
 import com.back.nbe12142team06.global.exception.ForbiddenException;
 import com.back.nbe12142team06.global.exception.InternalServerErrorException;
 import com.back.nbe12142team06.global.exception.InvalidException;
@@ -18,7 +19,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +29,7 @@ import java.util.List;
 public class SettlementService {
 
     private final SettlementRepository settlementRepository;
+    private final UserRepository userRepository;
 
     // 정산 API
     private final SettlementClient settlementClient;
@@ -47,15 +51,10 @@ public class SettlementService {
             throw new InvalidException(30, "아직 완료되지 않은 동행 의뢰입니다.");
         }
 
-        // 정산 외부 API 로직(목으로 대체)
+        String name = settlement.getEscort().getName();
+        String account = userRepository.findAccountById(settlement.getEscort().getId());
 
-        User escort = settlement.getEscort();
-//        String account = escort.getAccount();
-        String account = "계좌 필드 생기면 위에껄로 대체";
-        String name = escort.getName();
-        int amount = settlement.getPayoutAmount();
-        SettlementClientResponse response =
-                (SettlementClientResponse) settlementClient.settlementRequest(new SettlementClientRequest(account, name, amount));
+        SettlementClientResponse response = settlementApi(settlement, name, account);
 
         // 정산 완료 상태 변경
         if (response.res_cnt() < 1) {
@@ -67,6 +66,7 @@ public class SettlementService {
         return settlement;
     }
 
+    // 정산 외부 API 로직(목으로 대체)
     public Page<Settlement> findAll(Long userId, LocalDate startDate, LocalDate endDate, Pageable pageable) {
         return settlementRepository.findAllByUserIdAndDate(userId, startDate, endDate, pageable);
     }
@@ -80,5 +80,40 @@ public class SettlementService {
         }
 
         return settlement;
+    }
+
+    public int[] settlementProcess() {
+        List<Settlement> settlements = settlementRepository.findAllByStatusAndDate();
+        int count = 0;
+
+        List<Long> ids = settlements.stream()
+                .map(s -> s.getEscort().getId())
+                .distinct()
+                .toList();
+        List<AccountDto> accountByIds = userRepository.findAccountByIds(ids);
+        Map<String, String> accountMap = new HashMap<>();
+
+        for (AccountDto accountById : accountByIds) {
+            accountMap.put(accountById.name(), accountById.account());
+        }
+
+        for (Settlement settlement : settlements) {
+            String name = settlement.getEscort().getName();
+            SettlementClientResponse response = settlementApi(settlement, name, accountMap.get(name));
+
+            // 정산 성공
+            if (response.res_cnt() >= 1) {
+                ++count;
+            }
+        }
+
+        return new int[]{settlements.size(), count, settlements.size() - count};
+    }
+
+    private SettlementClientResponse settlementApi(Settlement settlement, String name, String account) {
+        int amount = settlement.getPayoutAmount();
+        SettlementClientResponse response =
+                (SettlementClientResponse) settlementClient.settlementRequest(new SettlementClientRequest(account, name, amount));
+        return response;
     }
 }

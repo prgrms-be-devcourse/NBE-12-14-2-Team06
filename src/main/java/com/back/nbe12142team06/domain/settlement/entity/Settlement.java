@@ -7,6 +7,7 @@ import com.back.nbe12142team06.global.entity.BaseSoftDeleteTimeEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -53,7 +54,7 @@ public class Settlement extends BaseSoftDeleteTimeEntity {
     private SettlementStatus settlementStatus = SettlementStatus.PENDING;
 
     // 정산 일자
-    private LocalDateTime settledAt;
+    private LocalDate settledDate;
 
     // 결제, Settlement 생성은 지원 승인이 되면 생성 -> 지원이 취소되면 정산도 삭제
     @OneToOne(fetch = FetchType.LAZY)

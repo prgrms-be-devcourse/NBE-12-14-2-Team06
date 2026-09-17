@@ -1,8 +1,10 @@
 package com.back.nbe12142team06.domain.application.service;
 
+import com.back.nbe12142team06.domain.application.dto.ApplicationAcceptResponse;
 import com.back.nbe12142team06.domain.application.dto.ApplicationApplyResponse;
 import com.back.nbe12142team06.domain.application.dto.ApplicationListResponse;
 import com.back.nbe12142team06.domain.application.entity.Application;
+import com.back.nbe12142team06.domain.application.enums.ApplicationStatus;
 import com.back.nbe12142team06.domain.application.repository.ApplicationRepository;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.entity.PostStatus;
@@ -10,10 +12,7 @@ import com.back.nbe12142team06.domain.post.repository.PostRepository;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Role;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
-import com.back.nbe12142team06.global.exception.BusinessException;
-import com.back.nbe12142team06.global.exception.DuplicatedException;
-import com.back.nbe12142team06.global.exception.InvalidException;
-import com.back.nbe12142team06.global.exception.NotFoundException;
+import com.back.nbe12142team06.global.exception.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -67,7 +66,7 @@ public class ApplicationService {
                 () -> new NotFoundException("공고를 찾을 수 없습니다."));
 
         if (!post.getClient().getId().equals(userId)) {
-            throw new BusinessException("403-1", "본인 공고의 지원 목록만 조회할 수 있습니다.");
+            throw new ForbiddenException("본인 공고의 지원 목록만 조회할 수 있습니다.");
         }
 
         List<Application> applications = applicationRepository.findAllByPostIdWithEscort(postId);
@@ -75,5 +74,106 @@ public class ApplicationService {
         return applications.stream()
                 .map(ApplicationListResponse::new)
                 .toList();
+    }
+
+    @Transactional
+    public ApplicationAcceptResponse accept(Long applicationId, Long userId){
+
+        Application application = applicationRepository.findById(applicationId).orElseThrow(
+                () -> new NotFoundException("지원을 찾을 수 없습니다."));
+
+        Post post = application.getPost();
+        User escort = application.getEscort();
+
+        // 본인 공고에 들어온 지원만 승인 가능
+        if (!post.getClient().getId().equals(userId)) {
+            throw new ForbiddenException("본인 공고의 지원만 승인할 수 있습니다.");
+        }
+
+        // 대기 중인 지원만 승인 가능
+        if (application.getStatus() != ApplicationStatus.PENDING) {
+            throw new InvalidException("대기 중인 지원만 승인할 수 있습니다.");
+        }
+
+        // 모집 중인 공고만 매칭 가능
+        if (post.getPostStatus() != PostStatus.OPEN) {
+            throw new InvalidException("모집 중인 공고만 매칭할 수 있습니다.");
+        }
+
+        // 이미 ACCEPTED된 다른 공고와 동행 시간이 겹치는지 확인
+        List<Application> acceptedApplications =
+                applicationRepository.findAllByEscortAndStatus(
+                        escort,
+                        ApplicationStatus.ACCEPTED
+                );
+
+        boolean hasTimeConflict = acceptedApplications.stream()
+                .anyMatch(acceptedApplication ->
+                        isTimeOverlapping(post, acceptedApplication.getPost())
+                );
+
+        if (hasTimeConflict) {
+            throw new InvalidException("이미 매칭된 다른 공고와 동행 시간이 겹칩니다.");
+        }
+
+        // 현재 공고의 다른 PENDING 지원자 조회
+        List<Application> samePostPendingApplications =
+                applicationRepository.findAllByPostAndStatus(
+                        post,
+                        ApplicationStatus.PENDING
+                );
+
+        // 같은 동행인이 지원한 다른 PENDING 공고 조회
+        List<Application> escortPendingApplications =
+                applicationRepository.findAllByEscortAndStatus(
+                        escort,
+                        ApplicationStatus.PENDING
+                );
+
+        // 선택된 지원 승인 + 공고 매칭
+        application.accept();
+        post.match();
+
+        // 같은 공고의 나머지 지원자 자동 거절
+        samePostPendingApplications.stream()
+                .filter(otherApplication ->
+                        !otherApplication.getId().equals(applicationId))
+                .forEach(Application::reject);
+
+        // 같은 동행인의 다른 지원 중 시간이 겹치는 지원 자동 거절
+        escortPendingApplications.stream()
+                .filter(otherApplication ->
+                        !otherApplication.getId().equals(applicationId))
+                .filter(otherApplication ->
+                        isTimeOverlapping(post, otherApplication.getPost()))
+                .forEach(Application::reject);
+
+        return new ApplicationAcceptResponse(application);
+    }
+
+    @Transactional
+    public void reject(Long applicationId, Long userId) {
+
+        Application application = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new NotFoundException("지원을 찾을 수 없습니다."));
+
+        Post post = application.getPost();
+
+        // 본인 공고에 들어온 지원만 거절 가능
+        if (!post.getClient().getId().equals(userId)) {
+            throw new ForbiddenException("본인 공고의 지원만 거절할 수 있습니다.");
+        }
+
+        // 대기 중인 지원만 거절 가능
+        if (application.getStatus() != ApplicationStatus.PENDING) {
+            throw new InvalidException("대기 중인 지원만 거절할 수 있습니다.");
+        }
+
+        application.reject();
+    }
+
+    private boolean isTimeOverlapping(Post firstPost, Post secondPost) {
+        return firstPost.getEscortStartAt().isBefore(secondPost.getEscortEndAt())
+                && firstPost.getEscortEndAt().isAfter(secondPost.getEscortStartAt());
     }
 }
