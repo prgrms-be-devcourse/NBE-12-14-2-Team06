@@ -83,7 +83,7 @@ public class UserController {
 
         return new RsData<>(
                 "200-2",
-                isAvailable ? "사용 가능한 아이디입니다." : "이미 사용중인 아이디입니다.",
+                isAvailable ? "사용 가능한 아이디입니다." : "이미 사용 중인 아이디입니다.",
                 isAvailable
         );
     }

@@ -548,7 +548,7 @@ public class UserControllerTest {
         resultActions
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value("200-2"))
-                .andExpect(jsonPath("$.msg").value("이미 사용중인 아이디입니다."))
+                .andExpect(jsonPath("$.msg").value("이미 사용 중인 아이디입니다."))
                 .andExpect(jsonPath("$.data").value("false"));
     }
 }
