@@ -19,7 +19,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
-
+import com.back.nbe12142team06.domain.payment.entity.Payment;
+import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -39,6 +40,8 @@ public class PostControllerTest {
     private UserRepository userRepository;
     @Autowired
     private PostRepository postRepository;
+    @Autowired
+    private PaymentRepository paymentRepository;
     @Autowired
     private PasswordEncoder passwordEncoder;
 
@@ -448,5 +451,139 @@ public class PostControllerTest {
                 .andExpect(handler().methodName("matchedCancel"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value("200-1"));
+    }
+    @Test
+    @DisplayName("[PostController] 공고 취소 - 의뢰인 본인이 매칭된 공고 취소 성공")
+    void t12() throws Exception {
+        Long postId = registerPost();
+        Post post = postRepository.findById(postId).orElseThrow();
+        post.match();
+        postRepository.saveAndFlush(post);
+
+        ResultActions resultActions = mvc
+                .perform(patch("/api/v1/posts/{postId}/matchedCancel", postId)
+                        .cookie(accessTokenCookie))
+                .andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(PostController.class))
+                .andExpect(handler().methodName("matchedCancel"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-1"));
+    }
+    @Test
+    @DisplayName("[PostController] 공고 취소 - 매칭 안 된 상태에서 취소 시도 시 400 반환")
+    void t13() throws Exception {
+        Long postId = registerPost(); // OPEN 상태 그대로
+
+        ResultActions resultActions = mvc
+                .perform(patch("/api/v1/posts/{postId}/matchedCancel", postId)
+                        .cookie(accessTokenCookie))
+                .andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(PostController.class))
+                .andExpect(handler().methodName("matchedCancel"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.statusCode").value("400-13"));
+    }
+    @Test
+    @DisplayName("[PostController] 공고 취소 - 본인이 작성한 공고가 아닌 경우 401 반환")
+    void t14() throws Exception {
+        Long postId = registerPost();
+        Post post = postRepository.findById(postId).orElseThrow();
+        post.match();
+        postRepository.saveAndFlush(post);
+
+        String otherUsername = "otherUser2";
+        String otherPassword = "otherPassword2";
+        User otherUser = new User(
+                otherUsername, passwordEncoder.encode(otherPassword),
+                "other2@test.com", "다른유저2", Role.CLIENT, Gender.MALE,
+                LocalDate.of(1990, 1, 1), "010-1111-2222", "부산"
+        );
+        userRepository.save(otherUser);
+        Cookie otherAccessTokenCookie = login(otherUsername, otherPassword);
+
+        ResultActions resultActions = mvc
+                .perform(patch("/api/v1/posts/{postId}/matchedCancel", postId)
+                        .cookie(otherAccessTokenCookie))
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.statusCode").value("401-16"));
+    }
+    @Test
+    @DisplayName("[PostController] 공고 취소 - 동행인(ESCORT) 역할은 취소 권한 없음 401 반환")
+    void t15() throws Exception {
+        Long postId = registerPost();
+        Post post = postRepository.findById(postId).orElseThrow();
+        post.match();
+        postRepository.saveAndFlush(post);
+
+        String escortUsername = "escortUser";
+        String escortPassword = "escortPassword";
+        User escortUser = new User(
+                escortUsername, passwordEncoder.encode(escortPassword),
+                "escort@test.com", "동행인", Role.ESCORT, Gender.MALE,
+                LocalDate.of(1990, 1, 1), "010-3333-4444", "인천"
+        );
+        userRepository.save(escortUser);
+        Cookie escortAccessTokenCookie = login(escortUsername, escortPassword);
+
+        ResultActions resultActions = mvc
+                .perform(patch("/api/v1/posts/{postId}/matchedCancel", postId)
+                        .cookie(escortAccessTokenCookie))
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.statusCode").value("401-15"));
+    }
+    @Test
+    @DisplayName("[PostController] 공고 목록 조회 - 결제 취소된 공고는 제외")
+    void t16() throws Exception {
+        Long postId = registerPost();
+
+        Payment payment = paymentRepository.findAll().stream()
+                .filter(p -> p.getPost().getId().equals(postId))
+                .findFirst()
+                .orElseThrow();
+        payment.cancelPayment("테스트 취소");
+        paymentRepository.saveAndFlush(payment);
+
+        ResultActions resultActions = mvc
+                .perform(get("/api/v1/posts")
+                        .cookie(new Cookie("accessToken", "")))
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content.length()").value(0));
+    }
+    @Test
+    @DisplayName("[PostController] 공고 목록 조회 - 취소 후 재결제되면 다시 노출")
+    void t17() throws Exception {
+        Long postId = registerPost();
+
+        Payment payment = paymentRepository.findAll().stream()
+                .filter(p -> p.getPost().getId().equals(postId))
+                .findFirst()
+                .orElseThrow();
+        Payment repayment = payment.cancelPayment("테스트 취소"); // 기존 건 취소 + 재결제용 새 객체 반환
+        paymentRepository.saveAndFlush(payment);   // 취소 처리 저장
+        paymentRepository.save(repayment);         // 재결제 건 저장
+
+        ResultActions resultActions = mvc
+                .perform(get("/api/v1/posts")
+                        .cookie(new Cookie("accessToken", "")))
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content.length()").value(1))
+                .andExpect(jsonPath("$.data.content[0].id").value(postId));
     }
 }

@@ -24,12 +24,7 @@ public class PostController {
 
     private final PostService postService;
     private final UserRepository userRepository;
-//TODO:공고등록OPEN>매칭MATCHED>동행시작IN_PROGRESS>종료COMPLETED
-//TODO:공고등록>취소CANCELED 1.의뢰인취소 2.관리자취소 -> 한 플로우
-//TODO:공고등록>의뢰인이결제완료>매칭MATCHED(지원자 한명선택)>지원상태(지원승인)>취소(모집중 상태에서만 취소 가능 : 신청 동행인 에게 알림 서비스)
-//TODO:공고등록> 모집마감시간까지 매칭안됨 >. 만료(오늘날짜확인해서 배치or스케쥴러)
-//TODO:공고목록>결제취소된애들은 안보이게
-    //결제 취소시 기존행 취소일자 update 되고 새행이 새로 생기므로 즉 결제 행 2개 생성 됨
+
     //공고목록조회
     @GetMapping
     public RsData<Page<PostDto>> list(
