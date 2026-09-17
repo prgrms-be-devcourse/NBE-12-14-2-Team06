@@ -499,4 +499,56 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.statusCode").value("401-3"))
                 .andExpect(jsonPath("$.msg").value("유효하지 않은 토큰입니다."));
     }
+
+    @Test
+    @DisplayName("[UserController] Username 중복 검사 - 사용 가능한 username은 true")
+    void t15() throws Exception {
+        ResultActions resultActions = mvc.perform(
+                get("/api/v1/users/username")
+                        .param("username", "user1")
+        )
+        .andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-2"))
+                .andExpect(jsonPath("$.msg").value("사용 가능한 아이디입니다."))
+                .andExpect(jsonPath("$.data").value("true"));
+    }
+
+    @Test
+    @DisplayName("[UserController] Username 중복 검사 - 이미 존재하는 username은 false")
+    void t16() throws Exception {
+        String signUpBody = """
+        {
+            "username": "user1",
+            "password": "pwd1",
+            "email": "first@test.test",
+            "name": "김춘식",
+            "role": "CLIENT",
+            "gender": "MALE",
+            "birthDate": "1990-05-20",
+            "phoneNum": "010-1234-5678",
+            "region": "서울시"
+        }
+        """;
+
+        // 회원 가입
+        mvc.perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(signUpBody))
+                .andDo(print());
+
+        ResultActions resultActions = mvc.perform(
+                        get("/api/v1/users/username")
+                                .param("username", "user1")
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-2"))
+                .andExpect(jsonPath("$.msg").value("이미 사용 중인 아이디입니다."))
+                .andExpect(jsonPath("$.data").value("false"));
+    }
 }
