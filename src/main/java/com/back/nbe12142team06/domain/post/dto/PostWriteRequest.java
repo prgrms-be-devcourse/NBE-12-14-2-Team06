@@ -32,12 +32,14 @@ public record PostWriteRequest(
         BigDecimal pickupLng,
         @Min(value = 1, message = "시급은 1원 이상이어야 합니다.")
         int hourlyPay,
+        @NotNull(message = "모집 시작 시간은 필수 항목입니다.")
+        LocalDateTime recruitStartAt,
+        @NotNull(message = "모집 마감 시간은 필수 항목입니다.")
+        LocalDateTime recruitEndAt,
         @NotNull(message = "동행 시작 시간은 필수 항목입니다.")
         LocalDateTime escortStartAt,
         @NotNull(message = "동행 종료 시간은 필수 항목입니다.")
         LocalDateTime escortEndAt,
-        @NotNull(message = "모집 마감 시간은 필수 항목입니다.")
-        LocalDateTime deadlineAt,
         String patientNote,       // nullable - 선택 항목
         boolean reportRequired    // 기본값 true
 ) {
