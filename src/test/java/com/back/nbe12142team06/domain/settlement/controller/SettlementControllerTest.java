@@ -1,5 +1,8 @@
 package com.back.nbe12142team06.domain.settlement.controller;
 
+import com.back.nbe12142team06.domain.application.dto.ApplicationAcceptResponse;
+import com.back.nbe12142team06.domain.application.dto.ApplicationApplyResponse;
+import com.back.nbe12142team06.domain.application.service.ApplicationService;
 import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
 import com.back.nbe12142team06.domain.post.dto.PostWriteRequest;
 import com.back.nbe12142team06.domain.post.entity.Post;
@@ -11,10 +14,13 @@ import com.back.nbe12142team06.domain.settlement.entity.SettlementStatus;
 import com.back.nbe12142team06.domain.settlement.repository.SettlementRepository;
 import com.back.nbe12142team06.domain.settlement.service.SettlementService;
 import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpRequest;
+import com.back.nbe12142team06.domain.user.entity.EscortProfile;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Gender;
 import com.back.nbe12142team06.domain.user.enums.Role;
+import com.back.nbe12142team06.domain.user.repository.EscortRepository;
 import com.back.nbe12142team06.domain.user.service.UserService;
+import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,17 +65,31 @@ class SettlementControllerTest {
     @Autowired
     private PostService postService;
     @Autowired
+    private ApplicationService applicationService;
+    @Autowired
     private SettlementRepository settlementRepository;
+    @Autowired
+    private SettlementService settlementService;
+    @Autowired
+    private EscortRepository escortRepository;
 
-    private Long savedUser1Id;
-    private Long savedUser2Id;
+    private User savedUser1;
+    private User savedUser2;
+    private Long savedUser3Id;
+    private User savedUser4;
     private Long savedPayment1Id;
     private Long savedPayment2Id;
+    private Settlement savedSettlement1;
+    private Long savedSettlement1Id;
+    private Long savedSettlement2Id;
+    private Post savedPost1;
+    private Post savedPost2;
+    private Long savedApplication1Id;
+    private Long savedApplication2Id;
     private Cookie accessTokenCookie1;
     private Cookie accessTokenCookie2;
-
-
-    // TODO: 아래 테스트 init데이터에서 정산 데이터 생겨야 테스트 가능
+    private Cookie accessTokenCookie3;
+    private Cookie accessTokenCookie4;
 
     @BeforeEach
     public void init() throws Exception {
@@ -77,25 +97,38 @@ class SettlementControllerTest {
         String password = "testPassword";
         String email = "testEmail@test.test";
         String name = "김춘식";
-        String role = "CLIENT";
+        String roleClient = "CLIENT";
+        String roleEscort = "ESCORT";
         String gender = "MALE";
         String birthDate = "1990-05-20";
         String phoneNum = "010-1234-5678";
         String region = "서울시";
 
-        User user1 = userService.signUp(new UserSignUpRequest(
-                username, password, email, name, Role.valueOf(role),
+        savedUser1 = userService.signUp(new UserSignUpRequest(
+                username, password, email, name, Role.valueOf(roleClient),
                 Gender.valueOf(gender),
                 LocalDate.parse(birthDate, DateTimeFormatter.ISO_LOCAL_DATE),
                 phoneNum, region));
-        savedUser1Id = user1.getId();
 
-        User user2 = userService.signUp(new UserSignUpRequest(
-                username + "2", password + "2", email + "2", name + "2", Role.valueOf(role),
+        savedUser2 = userService.signUp(new UserSignUpRequest(
+                username + "2", password + "2", email + "2", name + "2", Role.valueOf(roleClient),
                 Gender.valueOf(gender),
                 LocalDate.parse(birthDate, DateTimeFormatter.ISO_LOCAL_DATE),
-                "010-9999-9999", region));
-        savedUser2Id = user2.getId();
+                "010-9999-9991", region));
+
+        User user3 = userService.signUp(new UserSignUpRequest(
+                username+"3", password+"3", email+"3", name+"3", Role.valueOf(roleEscort),
+                Gender.valueOf(gender),
+                LocalDate.parse(birthDate, DateTimeFormatter.ISO_LOCAL_DATE),
+                "010-9999-9992", region));
+        savedUser3Id = user3.getId();
+
+        User user4 = userService.signUp(new UserSignUpRequest(
+                username+"4", password+"4", email+"4", name+"4", Role.valueOf(roleEscort),
+                Gender.valueOf(gender),
+                LocalDate.parse(birthDate, DateTimeFormatter.ISO_LOCAL_DATE),
+                "010-9999-9993", region));
+        savedUser4 = user4;
 
         String title = "정형외과 동행 구합니다";
         String content = "무릎 수술 후 검진 예약이 있어 동행인이 필요합니다.";
@@ -118,7 +151,7 @@ class SettlementControllerTest {
                 "", true
         );
 
-        Post post1 = postService.write(user1.getId(), postWriteRequest1);
+        savedPost1 = postService.write(savedUser1.getId(), postWriteRequest1);
 
         PostWriteRequest postWriteRequest2 = new PostWriteRequest(
                 title + "2", content + "2", postRegion + "2", hospitalName + "2", hospitalAddress + "2",
@@ -126,11 +159,29 @@ class SettlementControllerTest {
                 "", true
         );
 
-        Post post2 = postService.write(user1.getId(), postWriteRequest2);
+        savedPost2 = postService.write(savedUser1.getId(), postWriteRequest2);
+
+        ApplicationApplyResponse applyResponse1 = applicationService.apply(savedPost1.getId(), savedUser3Id);
+        ApplicationAcceptResponse acceptResponse1 = applicationService.accept(applyResponse1.id(), savedUser1.getId());
+        savedApplication1Id = acceptResponse1.applicationId();
+
+        savedSettlement1 = settlementRepository.findByApplicationId(savedApplication1Id).get();
+        savedSettlement1Id = savedSettlement1.getId();
+
+        ApplicationApplyResponse applyResponse2 = applicationService.apply(savedPost2.getId(), savedUser4.getId());
+        ApplicationAcceptResponse acceptResponse2 = applicationService.accept(applyResponse2.id(), savedUser1.getId());
+        savedApplication2Id = acceptResponse2.applicationId();
+
+        savedSettlement2Id = settlementRepository.findByApplicationId(savedApplication2Id).get().getId();
+
+        EscortProfile escortProfile1 = new EscortProfile(user3).updateAccount("오픈은행", user3.getName(), "000-1234567-000");
+        escortRepository.save(escortProfile1);
+        EscortProfile escortProfile2 = new EscortProfile(user4).updateAccount("오픈은행", user4.getName(), "111-7654321-111");
+        escortRepository.save(escortProfile2);
 
         // user1로 로그인해 인증 쿠키 확보
         accessTokenCookie1 = mvc.perform(
-                        post("/api/v1/users/login")
+                        post("/api/v1/auth/login")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
                                         {
@@ -144,7 +195,7 @@ class SettlementControllerTest {
                 .getCookie("accessToken");
 
         accessTokenCookie2 = mvc.perform(
-                        post("/api/v1/users/login")
+                        post("/api/v1/auth/login")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
                                         {
@@ -156,15 +207,45 @@ class SettlementControllerTest {
                 .andReturn()
                 .getResponse()
                 .getCookie("accessToken");
+
+        accessTokenCookie3 = mvc.perform(
+                        post("/api/v1/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                            "username": "%s",
+                                            "password": "%s"
+                                        }
+                                        """.formatted(username + "3", password + "3"))
+                )
+                .andReturn()
+                .getResponse()
+                .getCookie("accessToken");
+
+        accessTokenCookie4 = mvc.perform(
+                        post("/api/v1/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                            "username": "%s",
+                                            "password": "%s"
+                                        }
+                                        """.formatted(username + "4", password + "4"))
+                )
+                .andReturn()
+                .getResponse()
+                .getCookie("accessToken");
     }
 
     @Test
     @DisplayName("[SettlementController] 정산 요청 - 성공")
     void settlementReq() throws Exception {
-        Long settlementId = 1L;
+
+        savedPost1.complete();
+
         ResultActions resultActions = mvc.perform(
-                        post("/api/v1/settlements/%s".formatted(settlementId))
-                                .cookie(accessTokenCookie1))
+                        post("/api/v1/settlements/%s".formatted(savedSettlement1Id))
+                                .cookie(accessTokenCookie3))
                 .andDo(print());
 
         resultActions.andExpect(handler().handlerType(SettlementController.class));
@@ -172,7 +253,7 @@ class SettlementControllerTest {
         resultActions.andExpect(jsonPath("$.statusCode").value("200-30"));
         resultActions.andExpect(jsonPath("$.msg").value("정산에 성공했습니다."));
 
-        Settlement settlement = settlementRepository.findById(settlementId).get();
+        Settlement settlement = settlementRepository.findById(savedSettlement1Id).get();
         Assertions.assertEquals(SettlementStatus.COMPLETED, settlement.getSettlementStatus());
     }
 
@@ -182,7 +263,7 @@ class SettlementControllerTest {
         Long settlementId = 10000L;
         ResultActions resultActions = mvc.perform(
                         post("/api/v1/settlements/%s".formatted(settlementId))
-                                .cookie(accessTokenCookie1))
+                                .cookie(accessTokenCookie3))
                 .andDo(print());
 
         resultActions.andExpect(handler().handlerType(SettlementController.class));
@@ -194,10 +275,9 @@ class SettlementControllerTest {
     @Test
     @DisplayName("[SettlementController] 정산 요청 - 실패 권한 부족")
     void settlementReqFailForbidden() throws Exception {
-        Long settlementId = 1L;
         ResultActions resultActions = mvc.perform(
-                        post("/api/v1/settlements/%s".formatted(settlementId))
-                                .cookie(accessTokenCookie2))
+                        post("/api/v1/settlements/%s".formatted(savedSettlement1Id))
+                                .cookie(accessTokenCookie4))
                 .andDo(print());
 
         resultActions.andExpect(handler().handlerType(SettlementController.class));
@@ -209,10 +289,9 @@ class SettlementControllerTest {
     @Test
     @DisplayName("[SettlementController] 정산 요청 - 실패 완료되지 않은 동행")
     void settlementReqFailInvalid() throws Exception {
-        Long settlementId = 2L;
         ResultActions resultActions = mvc.perform(
-                        post("/api/v1/settlements/%s".formatted(settlementId))
-                                .cookie(accessTokenCookie1))
+                        post("/api/v1/settlements/%s".formatted(savedSettlement2Id))
+                                .cookie(accessTokenCookie4))
                 .andDo(print());
 
         resultActions.andExpect(handler().handlerType(SettlementController.class));
@@ -226,22 +305,7 @@ class SettlementControllerTest {
     void settlementList() throws Exception {
         ResultActions resultActions = mvc.perform(
                         get("/api/v1/settlements")
-                                .cookie(accessTokenCookie1))
-                .andDo(print());
-
-        resultActions.andExpect(handler().handlerType(SettlementController.class));
-        resultActions.andExpect(handler().methodName("settlementList"));
-        resultActions.andExpect(jsonPath("$.statusCode").value("200-31"));
-        resultActions.andExpect(jsonPath("$.msg").value("정산 목록을 가져왔습니다."));
-        resultActions.andExpect(jsonPath("$.data[0]").exists());
-    }
-
-    @Test
-    @DisplayName("[SettlementController] 정산 목록 조회 - 아무것도 없음")
-    void settlementListNothing() throws Exception {
-        ResultActions resultActions = mvc.perform(
-                        get("/api/v1/settlements")
-                                .cookie(accessTokenCookie2))
+                                .cookie(accessTokenCookie3))
                 .andDo(print());
 
         resultActions.andExpect(handler().handlerType(SettlementController.class));
@@ -254,10 +318,9 @@ class SettlementControllerTest {
     @Test
     @DisplayName("[SettlementController] 정산 상세 조회 - 성공")
     void settlementDetail() throws Exception {
-        Long settlementId = 1L;
         ResultActions resultActions = mvc.perform(
-                        get("/api/v1/settlements/%s".formatted(settlementId))
-                                .cookie(accessTokenCookie1))
+                        get("/api/v1/settlements/%s".formatted(savedSettlement1Id))
+                                .cookie(accessTokenCookie3))
                 .andDo(print());
 
         resultActions.andExpect(handler().handlerType(SettlementController.class));
@@ -273,7 +336,7 @@ class SettlementControllerTest {
         Long settlementId = 10000L;
         ResultActions resultActions = mvc.perform(
                         get("/api/v1/settlements/%s".formatted(settlementId))
-                                .cookie(accessTokenCookie1))
+                                .cookie(accessTokenCookie3))
                 .andDo(print());
 
         resultActions.andExpect(handler().handlerType(SettlementController.class));
@@ -285,15 +348,37 @@ class SettlementControllerTest {
     @Test
     @DisplayName("[SettlementController] 정산 상세 조회 - 실패 권한 부족")
     void settlementDetailFailForbidden() throws Exception {
-        Long settlementId = 1L;
         ResultActions resultActions = mvc.perform(
-                        get("/api/v1/settlements/%s".formatted(settlementId))
-                                .cookie(accessTokenCookie2))
+                        get("/api/v1/settlements/%s".formatted(savedSettlement1Id))
+                                .cookie(accessTokenCookie4))
                 .andDo(print());
 
         resultActions.andExpect(handler().handlerType(SettlementController.class));
         resultActions.andExpect(handler().methodName("settlementDetail"));
         resultActions.andExpect(jsonPath("$.statusCode").value("403-30"));
         resultActions.andExpect(jsonPath("$.msg").value("정산 요청할 권한이 없습니다."));
+    }
+
+    @Test
+    @DisplayName("[SettlementService] 자동 정산 - 성공")
+    void settlementScheduler() {
+
+        Settlement settlement = Settlement.builder()
+                .payoutAmount(1000)
+                .settlementStatus(SettlementStatus.PENDING)
+                .settledDate(LocalDate.now())
+                .payment(null)
+                .application(null)
+                .escort(savedUser4)
+                .build();
+
+        Settlement save = settlementRepository.save(settlement);
+
+        int[] counts = settlementService.settlementProcess();
+
+        assertEquals(SettlementStatus.COMPLETED, save.getSettlementStatus());
+        assertEquals(1, counts[0]);
+        assertEquals(1, counts[1]);
+        assertEquals(0, counts[2]);
     }
 }

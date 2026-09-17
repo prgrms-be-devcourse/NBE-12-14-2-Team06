@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -67,7 +68,7 @@ public class SettlementService {
     }
 
     // 정산 외부 API 로직(목으로 대체)
-    public Page<Settlement> findAll(Long userId, LocalDate startDate, LocalDate endDate, Pageable pageable) {
+    public Page<Settlement> findAll(Long userId, LocalDateTime startDate, LocalDateTime endDate, Pageable pageable) {
         return settlementRepository.findAllByUserIdAndDate(userId, startDate, endDate, pageable);
     }
 
@@ -94,7 +95,7 @@ public class SettlementService {
         Map<String, String> accountMap = new HashMap<>();
 
         for (AccountDto accountById : accountByIds) {
-            accountMap.put(accountById.name(), accountById.account());
+            accountMap.put(accountById.name(), accountById.accountNumber());
         }
 
         for (Settlement settlement : settlements) {
@@ -103,6 +104,7 @@ public class SettlementService {
 
             // 정산 성공
             if (response.res_cnt() >= 1) {
+                settlement.settlementDone();
                 ++count;
             }
         }

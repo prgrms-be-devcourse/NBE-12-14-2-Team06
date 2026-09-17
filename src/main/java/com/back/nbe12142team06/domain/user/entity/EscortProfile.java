@@ -66,4 +66,12 @@ public class EscortProfile extends BaseTimeEntity {
     public EscortProfile(User user){
         this.user = user;
     }
+
+    // 계좌 정보 업데이트
+    public EscortProfile updateAccount(String bankName, String accountHolder, String accountNumber) {
+        this.bankName = bankName;
+        this.accountHolder = accountHolder;
+        this.accountNumber = accountNumber;
+        return this;
+    }
 }

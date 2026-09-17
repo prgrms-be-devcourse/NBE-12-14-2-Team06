@@ -13,6 +13,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -36,12 +37,15 @@ public class SettlementController {
     // 정산 목록 조회 기능
     @GetMapping
     public RsData<Page<SettlementResponse>> settlementList(@AuthenticationPrincipal SecurityUser actor,
-                                                           @RequestParam LocalDate startDate,
-                                                           @RequestParam LocalDate endDate,
+                                                           @RequestParam(required = false) LocalDateTime startDate,
+                                                           @RequestParam(required = false) LocalDateTime endDate,
                                                            @RequestParam(defaultValue = "0") int page,
                                                            @RequestParam(defaultValue = "10") int size,
                                                            @RequestParam(defaultValue = "DESC") Sort.Direction sort) {
         Long userId = actor.getId();
+
+        startDate = startDate == null ? LocalDateTime.now().minusMonths(1) : startDate;
+        endDate = endDate == null ? LocalDateTime.now() : endDate;
 
         Page<Settlement> settlements = settlementService.findAll(userId, startDate, endDate, PageRequest.of(page, size,
                 Sort.by(sort, "application.post.escortStartAt")));

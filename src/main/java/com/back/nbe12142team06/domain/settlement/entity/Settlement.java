@@ -74,4 +74,8 @@ public class Settlement extends BaseSoftDeleteTimeEntity {
     public void settlementDone() {
         this.settlementStatus = SettlementStatus.COMPLETED;
     }
+
+    public void settlementDateUpdate(LocalDate updateDate) {
+        this.settledDate = updateDate;
+    }
 }

@@ -23,10 +23,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
     // DB에 해당 전화번호가 존재하는지 확인
     boolean existsByPhoneNum(String phoneNum);
 
-    @Query("select e.account, u.name from User u join EscortProfile e on u.id=e.userId where e.userId in :ids")
+    @Query("select e.accountNumber, u.name from User u join EscortProfile e on u.id=e.userId where e.userId in :ids")
     List<AccountDto> findAccountByIds(@Param("ids") List<Long> ids);
 
-    @Query("select e.account from User u join EscortProfile e on u.id=e.userId where e.userId=:userId")
+    @Query("select e.accountNumber from User u join EscortProfile e on u.id=e.userId where e.userId=:userId")
     String findAccountById(@Param("userId") Long userId);
 
 //    @Query("select e.account from User u join EscortProfile e on u.id=e.userId where e.userId=:userId")
