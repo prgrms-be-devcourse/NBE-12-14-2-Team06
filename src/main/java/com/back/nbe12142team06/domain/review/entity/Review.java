@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -34,7 +35,9 @@ public class Review extends BaseTimeEntity {  // createdAt, updatedAt 상속
     private Integer rating;  // 별점 (CHECK 1~5)
 
     // 선택형 후기 태그 (다중 선택 최대 5개 / review_tag 테이블에 별도 저장)
+    // 선택형 후기 태그 (다중 선택 최대 5개 / review_tag 테이블에 별도 저장)
     @Builder.Default
+    @BatchSize(size = 100)   // 목록 조회 시 태그 N+1 방지
     @Enumerated(EnumType.STRING)  // DB에 ENUM 문자열로 저장 (예: "KIND")
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(

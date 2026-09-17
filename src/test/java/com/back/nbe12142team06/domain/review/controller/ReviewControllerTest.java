@@ -32,6 +32,7 @@ import java.time.LocalDateTime;
 import java.util.Set;
 
 import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -63,6 +64,8 @@ public class ReviewControllerTest {
     private Long acceptedApplicationId;   // 매칭 확정된 동행 건
     private Long pendingApplicationId;    // 아직 확정되지 않은 동행 건
 
+    private Long escortId;                // 리뷰 대상 동행인
+
     private Cookie clientCookie;   // 해당 공고를 등록한 의뢰인
     private Cookie otherCookie;    // 동행 건과 무관한 제3자
 
@@ -82,6 +85,7 @@ public class ReviewControllerTest {
                 LocalDate.of(1995, 1, 1), "010-2222-2222", "수원"
         );
         userRepository.save(escort);
+        escortId = escort.getId();
 
         User other = new User(
                 "other1", passwordEncoder.encode("testPassword"), "other1@test.com",
@@ -152,6 +156,8 @@ public class ReviewControllerTest {
                 .getResponse()
                 .getCookie("accessToken");
     }
+
+    // ── 리뷰 작성 ──────────────────────────────
 
     @Test
     @DisplayName("[ReviewController] 리뷰 작성 - 정상 등록")
@@ -324,5 +330,95 @@ public class ReviewControllerTest {
         ).andDo(print());
 
         resultActions.andExpect(status().isBadRequest());
+    }
+
+    // ── 리뷰 목록 조회 ──────────────────────────
+
+    @Test
+    @DisplayName("[ReviewController] 리뷰 목록 조회 - 정상 조회")
+    void 리뷰_목록_조회_성공() throws Exception {
+
+        reviewRepository.save(
+                Review.builder()
+                        .application(applicationRepository.findById(acceptedApplicationId).orElseThrow())
+                        .rating(5)
+                        .tags(Set.of(ReviewTag.KIND, ReviewTag.PUNCTUAL))
+                        .content("어머니를 세심하게 챙겨주셨습니다.")
+                        .build()
+        );
+
+        ResultActions resultActions = mvc.perform(
+                get("/api/v1/users/%d/reviews".formatted(escortId))
+                        .cookie(clientCookie)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-1"))
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].rating").value(5))
+                .andExpect(jsonPath("$.data[0].tags", hasSize(2)));
+    }
+
+    @Test
+    @DisplayName("[ReviewController] 리뷰 목록 조회 - 리뷰가 없을 때 빈 배열 반환")
+    void 리뷰_목록_조회_빈배열() throws Exception {
+
+        ResultActions resultActions = mvc.perform(
+                get("/api/v1/users/%d/reviews".formatted(escortId))
+                        .cookie(clientCookie)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-1"))
+                .andExpect(jsonPath("$.data", hasSize(0)));
+    }
+
+    @Test
+    @DisplayName("[ReviewController] 리뷰 목록 조회 - 존재하지 않는 회원일 때 404-2 반환")
+    void 리뷰_목록_조회_회원_없음() throws Exception {
+
+        ResultActions resultActions = mvc.perform(
+                get("/api/v1/users/999999/reviews")
+                        .cookie(clientCookie)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.statusCode").value("404-2"));
+    }
+
+    @Test
+    @DisplayName("[ReviewController] 리뷰 목록 조회 - 다른 동행인의 리뷰는 포함되지 않는다")
+    void 리뷰_목록_조회_동행인별_분리() throws Exception {
+
+        // acceptedApplication 의 동행인(escort1)에게 리뷰 작성
+        reviewRepository.save(
+                Review.builder()
+                        .application(applicationRepository.findById(acceptedApplicationId).orElseThrow())
+                        .rating(5)
+                        .content("escort1 리뷰")
+                        .build()
+        );
+
+        // pendingApplication 의 동행인(other1)에게 리뷰 작성
+        reviewRepository.save(
+                Review.builder()
+                        .application(applicationRepository.findById(pendingApplicationId).orElseThrow())
+                        .rating(1)
+                        .content("other1 리뷰")
+                        .build()
+        );
+
+        ResultActions resultActions = mvc.perform(
+                get("/api/v1/users/%d/reviews".formatted(escortId))
+                        .cookie(clientCookie)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].content").value("escort1 리뷰"));
     }
 }
