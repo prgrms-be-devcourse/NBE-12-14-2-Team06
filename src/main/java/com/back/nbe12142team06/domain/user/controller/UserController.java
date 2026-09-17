@@ -76,4 +76,15 @@ public class UserController {
         );
     }
 
+    // username 중복 검사
+    @GetMapping
+    public RsData<Boolean> checkUsername(@RequestParam String username) {
+        Boolean isAvailable = this.userService.isUsernameAvailable(username);
+
+        return new RsData<>(
+                "200-2",
+                isAvailable ? "사용 가능한 아이디입니다." : "이미 사용중인 아이디입니다.",
+                isAvailable
+        );
+    }
 }
