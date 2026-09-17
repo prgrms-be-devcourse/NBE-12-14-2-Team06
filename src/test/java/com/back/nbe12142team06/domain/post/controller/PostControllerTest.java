@@ -102,7 +102,8 @@ public class PostControllerTest {
     @DisplayName("[PostController] 공고 목록 조회 - 정상 조회")
     void t1() throws Exception {
         ResultActions resultActions = mvc
-                .perform(get("/api/v1/posts"))
+                .perform(get("/api/v1/posts")
+                        .cookie(new Cookie("accessToken", "")))
                 .andDo(print());
 
         resultActions
@@ -119,7 +120,8 @@ public class PostControllerTest {
     @DisplayName("[PostController] 공고 목록 조회 - 데이터 없을 때 빈 배열 반환")
     void t2() throws Exception {
         ResultActions resultActions = mvc
-                .perform(get("/api/v1/posts"))
+                .perform(get("/api/v1/posts")
+                        .cookie(new Cookie("accessToken", "")))
                 .andDo(print());
 
         resultActions
@@ -152,7 +154,8 @@ public class PostControllerTest {
 
         // 등록된 공고 조회
         ResultActions resultActions = mvc
-                .perform(get("/api/v1/posts/{id}", postId))
+                .perform(get("/api/v1/posts/{id}", postId)
+                        .cookie(new Cookie("accessToken", "")))
                 .andDo(print());
 
         resultActions
@@ -172,7 +175,8 @@ public class PostControllerTest {
         Long notExistingId = 999L;
 
         ResultActions resultActions = mvc
-                .perform(get("/api/v1/posts/{id}", notExistingId))
+                .perform(get("/api/v1/posts/{id}", notExistingId)
+                        .cookie(new Cookie("accessToken", "")))
                 .andDo(print());
 
         resultActions
@@ -319,17 +323,18 @@ public class PostControllerTest {
     @Test
     @DisplayName("[PostController] 공고 등록 - 동행 시작 시간이 종료 시간보다 늦을 때 400 반환")
     void t8() throws Exception {
-        // 의도적으로 순서를 깨뜨리는 테스트라 고정값 유지 (escortStartAt > escortEndAt)
+        // escortStartAt > escortEndAt만 위반하고, 나머지는 현재 시각 기준 상대값으로 설정
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime recruitStartAt = now.plusDays(1);
+        LocalDateTime recruitEndAt = now.plusDays(2);
+        LocalDateTime escortEndAt = now.plusDays(3);
+        LocalDateTime escortStartAt = escortEndAt.plusHours(3); // 일부러 종료 시간보다 늦게 설정
+
         ResultActions resultActions = mvc
                 .perform(post("/api/v1/posts")
                         .cookie(accessTokenCookie)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(validPostJson(
-                                LocalDateTime.parse("2026-09-16T09:00:00"),
-                                LocalDateTime.parse("2026-09-16T10:00:00"),
-                                LocalDateTime.parse("2026-09-17T13:00:00"),
-                                LocalDateTime.parse("2026-09-17T10:00:00")
-                        )))
+                        .content(validPostJson(recruitStartAt, recruitEndAt, escortStartAt, escortEndAt)))
                 .andDo(print());
 
         resultActions
@@ -397,7 +402,7 @@ public class PostControllerTest {
                 .andExpect(handler().handlerType(PostController.class))
                 .andExpect(handler().methodName("delete"))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.statusCode").value("401-9"))
+                .andExpect(jsonPath("$.statusCode").value("401-14"))
                 .andExpect(jsonPath("$.msg").value("본인이 작성한 공고만 삭제할 수 있습니다."));
     }
 
