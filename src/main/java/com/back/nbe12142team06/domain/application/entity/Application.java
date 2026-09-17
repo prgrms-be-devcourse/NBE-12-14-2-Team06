@@ -37,4 +37,13 @@ public class Application extends BaseTimeEntity {
     // 최종 승인된 공고 ID
     @Column(name = "accepted_post_id", unique = true)
     private Long acceptedPostId;
+
+    public void accept() {
+        this.status = ApplicationStatus.ACCEPTED;
+        this.acceptedPostId = this.post.getId();
+    }
+
+    public void reject() {
+        this.status = ApplicationStatus.REJECTED;
+    }
 }

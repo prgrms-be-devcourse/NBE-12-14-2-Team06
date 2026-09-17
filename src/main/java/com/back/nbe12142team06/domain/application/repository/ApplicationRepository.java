@@ -1,6 +1,7 @@
 package com.back.nbe12142team06.domain.application.repository;
 
 import com.back.nbe12142team06.domain.application.entity.Application;
+import com.back.nbe12142team06.domain.application.enums.ApplicationStatus;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -12,6 +13,7 @@ import java.util.List;
 public interface ApplicationRepository extends JpaRepository<Application, Long> {
     // 중복 지원 방지(post+escort)
     boolean existsByPostAndEscort(Post post, User escort);
+
     // 공고별 지원 목록 조회
     @Query("""
             SELECT a
@@ -19,5 +21,13 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
             JOIN FETCH a.escort
             WHERE a.post.id = :postId
             """)
+
+    //
     List<Application> findAllByPostIdWithEscort(@Param("postId") Long postId);
+
+    //
+    List<Application> findAllByPostAndStatus(Post post, ApplicationStatus status);
+
+    // 같은 동행인의 특정 상태 지원 조회
+    List<Application> findAllByEscortAndStatus(User escort, ApplicationStatus status);
 }
