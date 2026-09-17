@@ -8,5 +8,5 @@ import java.util.Optional;
 public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long> {
     // 토큰의 해시값으로 조회
     Optional<RefreshToken> findByTokenHash(String tokenHash);
-    // List<RefreshToken> findAllByUserAndRevokedAtIsNull(User user);
+    // List<RefreshToken> findAllByUserIdAndRevokedAtIsNull(Long userId);
 }
