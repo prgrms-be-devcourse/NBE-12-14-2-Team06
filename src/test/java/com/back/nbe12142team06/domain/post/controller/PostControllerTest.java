@@ -1,5 +1,7 @@
 package com.back.nbe12142team06.domain.post.controller;
 
+import com.back.nbe12142team06.domain.post.entity.Post;
+import com.back.nbe12142team06.domain.post.repository.PostRepository;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Gender;
 import com.back.nbe12142team06.domain.user.enums.Role;
@@ -35,6 +37,8 @@ public class PostControllerTest {
     private MockMvc mvc;
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private PostRepository postRepository;
     @Autowired
     private PasswordEncoder passwordEncoder;
 
@@ -405,5 +409,44 @@ public class PostControllerTest {
                 .andExpect(jsonPath("$.statusCode").value("401-14"))
                 .andExpect(jsonPath("$.msg").value("본인이 작성한 공고만 삭제할 수 있습니다."));
     }
+    @Test
+    @DisplayName("[PostController] 공고 취소 - 관리자는 소유자가 아니어도 매칭된 공고 취소 가능")
+    void t11() throws Exception {
+        // testUser로 공고 등록
+        Long postId = registerPost();
 
+        // TODO : 매칭 로직은 아직 미구현이라 테스트에서 직접 MATCHED로 전환
+        Post post = postRepository.findById(postId).orElseThrow();
+        post.match();
+        postRepository.saveAndFlush(post);
+
+        // 관리자 계정 생성 후 로그인
+        String adminUsername = "adminUser";
+        String adminPassword = "adminPassword";
+        User admin = new User(
+                adminUsername,
+                passwordEncoder.encode(adminPassword),
+                "admin@test.com",
+                "관리자",
+                Role.ADMIN,
+                Gender.MALE,
+                LocalDate.of(1990, 1, 1),
+                "010-0000-0000",
+                "서울"
+        );
+        userRepository.save(admin);
+        Cookie adminAccessTokenCookie = login(adminUsername, adminPassword);
+
+        // 소유자가 아닌 관리자 계정으로 매칭 취소 시도 -> 성공해야 함
+        ResultActions resultActions = mvc
+                .perform(patch("/api/v1/posts/{postId}/matchedCancel", postId)
+                        .cookie(adminAccessTokenCookie))
+                .andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(PostController.class))
+                .andExpect(handler().methodName("matchedCancel"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-1"));
+    }
 }
