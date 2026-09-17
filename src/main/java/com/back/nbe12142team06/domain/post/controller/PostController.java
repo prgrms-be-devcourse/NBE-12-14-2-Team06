@@ -85,4 +85,16 @@ public class PostController {
                 "%d번 게시물이 삭제되었습니다.".formatted(postId)
         );
     }
+    @PatchMapping("/{postId}/matchedCancel")
+    public RsData<PostDto> matchedCancel(
+            @AuthenticationPrincipal SecurityUser actor,
+            @PathVariable Long postId) {
+
+        postService.matchedCancel(postId,actor.getId());
+
+        return new RsData<>(
+                "200-1",
+                "%d번 게시물의 매칭이 취소되었습니다.".formatted(postId)
+        );
+    }
 }
