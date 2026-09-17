@@ -56,7 +56,7 @@ public class PostControllerTest {
 
     private Cookie login(String username, String password) throws Exception {
         return mvc.perform(
-                        post("/api/v1/users/login")
+                        post("/api/v1/auth/login")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
                                         {
