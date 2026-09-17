@@ -109,7 +109,7 @@ public class ApplicationControllerTest {
         testPostId = postRepository.save(post).getId();
 
         clientAccessTokenCookie = mvc.perform(
-                        post("/api/v1/users/login")
+                        post("/api/v1/auth/login")
                                 .contentType("application/json")
                                 .content("""
                                 {
@@ -123,7 +123,7 @@ public class ApplicationControllerTest {
                 .getCookie("accessToken");
 
         escortAccessTokenCookie = mvc.perform(
-                        post("/api/v1/users/login")
+                        post("/api/v1/auth/login")
                                 .contentType("application/json")
                                 .content("""
                                 {
@@ -351,7 +351,7 @@ public class ApplicationControllerTest {
         userRepository.save(otherClient);
 
         Cookie otherClientAccessTokenCookie = mvc.perform(
-                        post("/api/v1/users/login")
+                        post("/api/v1/auth/login")
                                 .contentType("application/json")
                                 .content("""
                                     {

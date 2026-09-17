@@ -27,7 +27,7 @@ public class SecurityConfig {
                     .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")   // 관리자
                     .requestMatchers(HttpMethod.POST, "/api/v1/users").permitAll()  // 회원가입
                     .requestMatchers(HttpMethod.GET, "/api/v1/users/username").permitAll()  // username 중복 검사
-                    .requestMatchers(HttpMethod.POST, "/api/v1/users/login").permitAll()  // 로그인
+                    .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()  // 로그인
                     .requestMatchers(HttpMethod.POST, "/api/v1/auth/refresh").permitAll()   // access 토큰 재발급
                     .requestMatchers(HttpMethod.GET, "/api/v1/posts", "/api/v1/posts/**").permitAll()
                     .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()

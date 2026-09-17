@@ -16,7 +16,6 @@ import com.back.nbe12142team06.domain.user.enums.Role;
 import com.back.nbe12142team06.domain.user.service.UserService;
 import com.back.nbe12142team06.global.exception.InvalidException;
 import com.back.nbe12142team06.global.exception.NotFoundException;
-import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.Cookie;
 import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.BeforeEach;
@@ -138,7 +137,7 @@ class PaymentControllerTest {
 
         // user1로 로그인해 인증 쿠키 확보
         accessTokenCookie1 = mvc.perform(
-                        post("/api/v1/users/login")
+                        post("/api/v1/auth/login")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
                                         {
@@ -152,7 +151,7 @@ class PaymentControllerTest {
                 .getCookie("accessToken");
 
         accessTokenCookie2 = mvc.perform(
-                        post("/api/v1/users/login")
+                        post("/api/v1/auth/login")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
                                         {

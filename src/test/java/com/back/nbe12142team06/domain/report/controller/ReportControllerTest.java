@@ -10,6 +10,7 @@ import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Gender;
 import com.back.nbe12142team06.domain.user.enums.Role;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -34,7 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @ActiveProfiles("test")
-@AutoConfigureMockMvc(addFilters = false)
+@AutoConfigureMockMvc
 @Transactional
 public class ReportControllerTest {
 
@@ -58,8 +59,12 @@ public class ReportControllerTest {
 
     private Long testApplicationId;
 
+    private Cookie clientCookie;   // 해당 동행 건의 의뢰인
+    private Cookie escortCookie;   // 해당 동행 건의 동행인
+    private Cookie otherCookie;    // 동행 건과 무관한 제3자
+
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
 
         User client = new User(
                 "client1", passwordEncoder.encode("testPassword"), "client1@test.com",
@@ -74,6 +79,13 @@ public class ReportControllerTest {
                 LocalDate.of(1995, 1, 1), "010-2222-2222", "수원"
         );
         userRepository.save(escort);
+
+        User other = new User(
+                "other1", passwordEncoder.encode("testPassword"), "other1@test.com",
+                "제3자1", Role.ESCORT, Gender.MALE,
+                LocalDate.of(1990, 1, 1), "010-3333-3333", "수원"
+        );
+        userRepository.save(other);
 
         Post post = Post.builder()
                 .client(client)
@@ -102,6 +114,27 @@ public class ReportControllerTest {
         applicationRepository.save(application);
 
         testApplicationId = application.getId();
+
+        clientCookie = login("client1");
+        escortCookie = login("escort1");
+        otherCookie = login("other1");
+    }
+
+    // 로그인 후 accessToken 쿠키 획득
+    private Cookie login(String username) throws Exception {
+        return mvc.perform(
+                        post("/api/v1/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                          "username": "%s",
+                                          "password": "testPassword"
+                                        }
+                                        """.formatted(username))
+                )
+                .andReturn()
+                .getResponse()
+                .getCookie("accessToken");
     }
 
     @Test
@@ -110,6 +143,7 @@ public class ReportControllerTest {
 
         ResultActions resultActions = mvc.perform(
                 post("/api/v1/applications/%d/report".formatted(testApplicationId))
+                        .cookie(escortCookie)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -126,11 +160,12 @@ public class ReportControllerTest {
     }
 
     @Test
-    @DisplayName("[ReportController] 진료 보고서 작성 - 존재하지 않는 동행 건일 때 404 반환")
+    @DisplayName("[ReportController] 진료 보고서 작성 - 존재하지 않는 동행 건일 때 404-1 반환")
     void 보고서_작성_동행건_없음() throws Exception {
 
         ResultActions resultActions = mvc.perform(
                 post("/api/v1/applications/999999/report")
+                        .cookie(escortCookie)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -146,7 +181,28 @@ public class ReportControllerTest {
     }
 
     @Test
-    @DisplayName("[ReportController] 진료 보고서 작성 - 이미 보고서가 존재할 때 409 반환")
+    @DisplayName("[ReportController] 진료 보고서 작성 - 해당 동행인이 아닐 때 403-1 반환")
+    void 보고서_작성_권한_없음() throws Exception {
+
+        ResultActions resultActions = mvc.perform(
+                post("/api/v1/applications/%d/report".formatted(testApplicationId))
+                        .cookie(otherCookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "title": "제목",
+                                    "originContent": "내용"
+                                }
+                                """)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.statusCode").value("403-1"));
+    }
+
+    @Test
+    @DisplayName("[ReportController] 진료 보고서 작성 - 이미 보고서가 존재할 때 409-1 반환")
     void 보고서_작성_중복() throws Exception {
 
         reportRepository.save(
@@ -159,6 +215,7 @@ public class ReportControllerTest {
 
         ResultActions resultActions = mvc.perform(
                 post("/api/v1/applications/%d/report".formatted(testApplicationId))
+                        .cookie(escortCookie)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -179,6 +236,7 @@ public class ReportControllerTest {
 
         ResultActions resultActions = mvc.perform(
                 post("/api/v1/applications/%d/report".formatted(testApplicationId))
+                        .cookie(escortCookie)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -191,9 +249,8 @@ public class ReportControllerTest {
         resultActions.andExpect(status().isBadRequest());
     }
 
-
     @Test
-    @DisplayName("[ReportController] 진료 보고서 조회 - 정상 조회")
+    @DisplayName("[ReportController] 진료 보고서 조회 - 의뢰인 정상 조회")
     void 보고서_조회_성공() throws Exception {
 
         reportRepository.save(
@@ -206,6 +263,7 @@ public class ReportControllerTest {
 
         ResultActions resultActions = mvc.perform(
                 get("/api/v1/applications/%d/report".formatted(testApplicationId))
+                        .cookie(clientCookie)
         ).andDo(print());
 
         resultActions
@@ -216,11 +274,34 @@ public class ReportControllerTest {
     }
 
     @Test
+    @DisplayName("[ReportController] 진료 보고서 조회 - 제3자가 조회 시 403-2 반환")
+    void 보고서_조회_권한_없음() throws Exception {
+
+        reportRepository.save(
+                Report.builder()
+                        .application(applicationRepository.findById(testApplicationId).orElseThrow())
+                        .title("정형외과 진료 결과")
+                        .originContent("무릎 통증으로 내원하셨습니다.")
+                        .build()
+        );
+
+        ResultActions resultActions = mvc.perform(
+                get("/api/v1/applications/%d/report".formatted(testApplicationId))
+                        .cookie(otherCookie)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.statusCode").value("403-2"));
+    }
+
+    @Test
     @DisplayName("[ReportController] 진료 보고서 조회 - 존재하지 않는 동행 건일 때 404-1 반환")
     void 보고서_조회_동행건_없음() throws Exception {
 
         ResultActions resultActions = mvc.perform(
                 get("/api/v1/applications/999999/report")
+                        .cookie(clientCookie)
         ).andDo(print());
 
         resultActions
@@ -234,6 +315,7 @@ public class ReportControllerTest {
 
         ResultActions resultActions = mvc.perform(
                 get("/api/v1/applications/%d/report".formatted(testApplicationId))
+                        .cookie(clientCookie)
         ).andDo(print());
 
         resultActions

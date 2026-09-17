@@ -1,8 +1,6 @@
 package com.back.nbe12142team06.domain.user.controller;
 
 import com.back.nbe12142team06.domain.auth.service.RefreshTokenService;
-import com.back.nbe12142team06.domain.user.dto.login.common.UserLoginRequest;
-import com.back.nbe12142team06.domain.user.dto.login.common.UserLoginResponse;
 import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpRequest;
 import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpResponse;
 import com.back.nbe12142team06.domain.user.dto.user.UserResponse;
@@ -25,6 +23,18 @@ public class UserController {
     private final RefreshTokenService refreshTokenService;
     private final Rq rq;
 
+    // username 중복 검사
+    @GetMapping("/username")
+    public RsData<Boolean> checkUsername(@RequestParam String username) {
+        Boolean isAvailable = this.userService.isUsernameAvailable(username);
+
+        return new RsData<>(
+                "200-2",
+                isAvailable ? "사용 가능한 아이디입니다." : "이미 사용 중인 아이디입니다.",
+                isAvailable
+        );
+    }
+
     // 회원가입
     @PostMapping
     public RsData<UserSignUpResponse> signUp(@RequestBody @Valid UserSignUpRequest request) {
@@ -46,24 +56,6 @@ public class UserController {
         );
     }
 
-    // 로그인
-    @PostMapping("/login")
-    public RsData<UserLoginResponse> login(@RequestBody @Valid UserLoginRequest request) {
-        User user = this.userService.login(request);
-
-        String accessToken = this.userService.genAccessToken(user);
-        String refreshToken = this.refreshTokenService.generate(user);
-
-        this.rq.setAccessTokenCookie(accessToken);
-        this.rq.setRefreshTokenCookie(refreshToken);
-
-        return new RsData<>(
-                "200-1",
-                "%s님 반갑습니다.".formatted(user.getName()),
-                new UserLoginResponse(user)
-        );
-    }
-
     // 내 정보 조회
     @GetMapping("/profile")
     public RsData<UserResponse> profile(@AuthenticationPrincipal SecurityUser me) {
@@ -76,15 +68,4 @@ public class UserController {
         );
     }
 
-    // username 중복 검사
-    @GetMapping("/username")
-    public RsData<Boolean> checkUsername(@RequestParam String username) {
-        Boolean isAvailable = this.userService.isUsernameAvailable(username);
-
-        return new RsData<>(
-                "200-2",
-                isAvailable ? "사용 가능한 아이디입니다." : "이미 사용 중인 아이디입니다.",
-                isAvailable
-        );
-    }
 }

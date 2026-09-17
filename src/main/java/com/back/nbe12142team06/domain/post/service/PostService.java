@@ -136,14 +136,16 @@ public class PostService {
         if (user.getRole() != Role.CLIENT && user.getRole() != Role.ADMIN) {
             throw new UnauthorizedException(11, "공고 수정 권한이 없습니다. 의뢰인으로 로그인 해주세요.");
         }
-        if (!post.getClient().getId().equals(user.getId())) {
-            throw new UnauthorizedException(12, "본인이 작성한 공고만 수정할 수 있습니다.");
-        }
-        if (!LocalDateTime.now().isBefore(post.getRecruitStartAt())) {
-            throw new InvalidException(8, "모집이 시작된 이후에는 공고를 수정할 수 없습니다. 모집 삭제 후 재등록해주세요.");
-        }
-        if (post.getPostStatus() != PostStatus.OPEN){
-            throw new InvalidException(9,"모집 중 상태에서만 수정이 가능합니다.");
+        if (user.getRole() == Role.CLIENT) {
+            if (!post.getClient().getId().equals(user.getId())) {
+                throw new UnauthorizedException(12, "본인이 작성한 공고만 수정할 수 있습니다.");
+            }
+            if (!LocalDateTime.now().isBefore(post.getRecruitStartAt())) {
+                throw new InvalidException(8, "모집이 시작된 이후에는 공고를 수정할 수 없습니다. 모집 삭제 후 재등록해주세요.");
+            }
+            if (post.getPostStatus() != PostStatus.OPEN){
+                throw new InvalidException(9,"모집 중 상태에서만 수정이 가능합니다.");
+            }
         }
 
         validateTime(request.recruitStartAt(), request.recruitEndAt(),
@@ -158,7 +160,7 @@ public class PostService {
                 request.recruitStartAt(), request.recruitEndAt(),
                 request.escortStartAt(), request.escortEndAt(),
                 request.patientNote(), request.reportRequired()
-        ); //더티체킹으로 자동 updatec 쿼리 생성
+        ); //더티체킹으로 자동 update 쿼리 생성
     }
     @Transactional
     public void delete(Long postId, Long userId) {
@@ -168,12 +170,43 @@ public class PostService {
         if (user.getRole() != Role.CLIENT && user.getRole() != Role.ADMIN) {
             throw new UnauthorizedException(13, "공고 삭제 권한이 없습니다.");
         }
-        if (!post.getClient().getId().equals(user.getId())) {
-            throw new UnauthorizedException(14, "본인이 작성한 공고만 삭제할 수 있습니다.");
-        }
-        if (post.getPostStatus() != PostStatus.OPEN && post.getPostStatus() != PostStatus.EXPIRED) {
-            throw new InvalidException(10, "모집 중이거나 만료 상태에서만 삭제가 가능합니다.");
+        if (user.getRole() == Role.CLIENT) {
+            if (!post.getClient().getId().equals(user.getId())) {
+                throw new UnauthorizedException(14, "본인이 작성한 공고만 삭제할 수 있습니다.");
+            }
+            if (post.getPostStatus() != PostStatus.OPEN && post.getPostStatus() != PostStatus.EXPIRED) {
+                throw new InvalidException(10, "모집 중이거나 만료 상태에서만 삭제가 가능합니다.");
+            }
         }
         postRepository.deleteById(postId);
+    }
+    @Transactional
+    public void matchedCancel(Long postId, Long userId) {
+        User user = getUser(userId);
+        Post post = findById(postId);
+
+        if (user.getRole() != Role.CLIENT && user.getRole() != Role.ADMIN) {
+            throw new UnauthorizedException(15, "공고 취소 권한이 없습니다.");
+        }
+
+        // 의뢰인만 소유자/상태 검증. 관리자는 무조건 통과.
+        if (user.getRole() == Role.CLIENT) {
+            if (!post.getClient().getId().equals(user.getId())) {
+                throw new UnauthorizedException(16, "본인이 작성한 공고만 취소할 수 있습니다.");
+            }
+            if (post.getPostStatus() != PostStatus.MATCHED) {
+                throw new InvalidException(13, "매칭된 상태에서만 취소할 수 있습니다.");
+            }
+        }
+
+        post.matchedCancel();
+    }
+    @Transactional
+    public void expireOverduePosts() {
+        List<Post> targets = postRepository.findAllByPostStatusAndRecruitEndAtBefore(
+                PostStatus.OPEN, LocalDateTime.now());
+
+        targets.forEach(post -> post.expire());
+        // 변경 감지(더티체킹)로 트랜잭션 끝날 때 자동으로 UPDATE 쿼리 나감
     }
 }
