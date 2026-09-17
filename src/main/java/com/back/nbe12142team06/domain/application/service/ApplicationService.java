@@ -12,10 +12,7 @@ import com.back.nbe12142team06.domain.post.repository.PostRepository;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Role;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
-import com.back.nbe12142team06.global.exception.BusinessException;
-import com.back.nbe12142team06.global.exception.DuplicatedException;
-import com.back.nbe12142team06.global.exception.InvalidException;
-import com.back.nbe12142team06.global.exception.NotFoundException;
+import com.back.nbe12142team06.global.exception.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -69,7 +66,7 @@ public class ApplicationService {
                 () -> new NotFoundException("공고를 찾을 수 없습니다."));
 
         if (!post.getClient().getId().equals(userId)) {
-            throw new BusinessException("403-1", "본인 공고의 지원 목록만 조회할 수 있습니다.");
+            throw new ForbiddenException("본인 공고의 지원 목록만 조회할 수 있습니다.");
         }
 
         List<Application> applications = applicationRepository.findAllByPostIdWithEscort(postId);
@@ -89,8 +86,8 @@ public class ApplicationService {
         User escort = application.getEscort();
 
         // 본인 공고에 들어온 지원만 승인 가능
-        if(!post.getClient().getId().equals(userId)){
-            throw new BusinessException("403-1", "본인 공고의 지원만 승인할 수 있습니다.");
+        if (!post.getClient().getId().equals(userId)) {
+            throw new ForbiddenException("본인 공고의 지원만 승인할 수 있습니다.");
         }
 
         // 대기 중인 지원만 승인 가능
@@ -164,7 +161,7 @@ public class ApplicationService {
 
         // 본인 공고에 들어온 지원만 거절 가능
         if (!post.getClient().getId().equals(userId)) {
-            throw new BusinessException("403-1", "본인 공고의 지원만 거절할 수 있습니다.");
+            throw new ForbiddenException("본인 공고의 지원만 거절할 수 있습니다.");
         }
 
         // 대기 중인 지원만 거절 가능

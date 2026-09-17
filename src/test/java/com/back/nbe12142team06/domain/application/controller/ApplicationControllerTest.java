@@ -380,7 +380,7 @@ public class ApplicationControllerTest {
 
         resultActions
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.statusCode").value("403-1"))
+                .andExpect(jsonPath("$.statusCode").value("403"))
                 .andExpect(jsonPath("$.msg")
                         .value("본인 공고의 지원 목록만 조회할 수 있습니다."));
     }
@@ -491,7 +491,7 @@ public class ApplicationControllerTest {
 
         resultActions
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.statusCode").value("403-1"))
+                .andExpect(jsonPath("$.statusCode").value("403"))
                 .andExpect(jsonPath("$.msg")
                         .value("본인 공고의 지원만 승인할 수 있습니다."));
     }
@@ -1122,7 +1122,7 @@ public class ApplicationControllerTest {
                 .andExpect(handler().handlerType(ApplicationController.class))
                 .andExpect(handler().methodName("reject"))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.statusCode").value("403-1"))
+                .andExpect(jsonPath("$.statusCode").value("403"))
                 .andExpect(jsonPath("$.msg")
                         .value("본인 공고의 지원만 거절할 수 있습니다."));
 
