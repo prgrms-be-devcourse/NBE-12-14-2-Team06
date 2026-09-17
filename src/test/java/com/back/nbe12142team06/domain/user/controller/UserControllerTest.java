@@ -499,4 +499,19 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.statusCode").value("401-3"))
                 .andExpect(jsonPath("$.msg").value("유효하지 않은 토큰입니다."));
     }
+
+    @Test
+    @DisplayName("[UserController] Username 중복 검사 - 사용 가능한 username은 true")
+    void t15() throws Exception {
+        ResultActions resultActions = mvc.perform(
+                get("/api/v1/users/username?username=user1")
+        )
+        .andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-2"))
+                .andExpect(jsonPath("$.msg").value("사용 가능한 아이디입니다."))
+                .andExpect(jsonPath("$.data").value("true"));
+    }
 }

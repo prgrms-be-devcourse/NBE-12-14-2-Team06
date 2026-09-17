@@ -77,7 +77,7 @@ public class UserController {
     }
 
     // username 중복 검사
-    @GetMapping
+    @GetMapping("/username")
     public RsData<Boolean> checkUsername(@RequestParam String username) {
         Boolean isAvailable = this.userService.isUsernameAvailable(username);
 
