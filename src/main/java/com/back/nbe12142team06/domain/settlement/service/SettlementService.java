@@ -70,4 +70,15 @@ public class SettlementService {
     public Page<Settlement> findAll(Long userId, LocalDate startDate, LocalDate endDate, Pageable pageable) {
         return settlementRepository.findAllByUserIdAndDate(userId, startDate, endDate, pageable);
     }
+
+    public Settlement findSettlement(Long userId, Long settlementId) {
+        Settlement settlement = settlementRepository.findById(settlementId)
+                .orElseThrow(() -> new NotFoundException(30, "찾으시는 정산 데이터가 없습니다."));
+
+        if (!settlement.getEscort().getId().equals(userId)) {
+            throw new ForbiddenException(30, "정산 요청할 권한이 없습니다.");
+        }
+
+        return settlement;
+    }
 }
