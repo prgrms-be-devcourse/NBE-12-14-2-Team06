@@ -25,6 +25,18 @@ public class UserController {
     private final RefreshTokenService refreshTokenService;
     private final Rq rq;
 
+    // username 중복 검사
+    @GetMapping("/username")
+    public RsData<Boolean> checkUsername(@RequestParam String username) {
+        Boolean isAvailable = this.userService.isUsernameAvailable(username);
+
+        return new RsData<>(
+                "200-2",
+                isAvailable ? "사용 가능한 아이디입니다." : "이미 사용 중인 아이디입니다.",
+                isAvailable
+        );
+    }
+
     // 회원가입
     @PostMapping
     public RsData<UserSignUpResponse> signUp(@RequestBody @Valid UserSignUpRequest request) {
@@ -76,15 +88,4 @@ public class UserController {
         );
     }
 
-    // username 중복 검사
-    @GetMapping("/username")
-    public RsData<Boolean> checkUsername(@RequestParam String username) {
-        Boolean isAvailable = this.userService.isUsernameAvailable(username);
-
-        return new RsData<>(
-                "200-2",
-                isAvailable ? "사용 가능한 아이디입니다." : "이미 사용 중인 아이디입니다.",
-                isAvailable
-        );
-    }
 }
