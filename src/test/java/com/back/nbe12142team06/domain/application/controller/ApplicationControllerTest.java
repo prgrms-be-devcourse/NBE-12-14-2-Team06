@@ -296,11 +296,15 @@ public class ApplicationControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value("200-1"))
                 .andExpect(jsonPath("$.msg").value("지원 목록 조회가 완료되었습니다."))
-                .andExpect(jsonPath("$.data.length()").value(1))
-                .andExpect(jsonPath("$.data[0].applicationId").exists())
-                .andExpect(jsonPath("$.data[0].escortId").exists())
-                .andExpect(jsonPath("$.data[0].escortName").value("동행인1"))
-                .andExpect(jsonPath("$.data[0].status").value("PENDING"));
+                .andExpect(jsonPath("$.data.content.length()").value(1))
+                .andExpect(jsonPath("$.data.content[0].applicationId").exists())
+                .andExpect(jsonPath("$.data.content[0].escortId").exists())
+                .andExpect(jsonPath("$.data.content[0].escortName").value("동행인1"))
+                .andExpect(jsonPath("$.data.content[0].status").value("PENDING"))
+                .andExpect(jsonPath("$.data.number").value(0))
+                .andExpect(jsonPath("$.data.size").value(10))
+                .andExpect(jsonPath("$.data.totalElements").value(1))
+                .andExpect(jsonPath("$.data.totalPages").value(1));
     }
 
     @Test
@@ -318,8 +322,88 @@ public class ApplicationControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value("200-1"))
                 .andExpect(jsonPath("$.msg").value("지원 목록 조회가 완료되었습니다."))
-                .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.data").isEmpty());
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content").isEmpty())
+                .andExpect(jsonPath("$.data.number").value(0))
+                .andExpect(jsonPath("$.data.size").value(10))
+                .andExpect(jsonPath("$.data.totalElements").value(0))
+                .andExpect(jsonPath("$.data.totalPages").value(0));
+    }
+
+    @Test
+    @DisplayName("[ApplicationController] 공고별 지원 목록 조회 - 페이징 정상 동작")
+    void t7_1() throws Exception {
+
+        Post post = postRepository.findById(testPostId)
+                .orElseThrow();
+
+        User escort1 = userRepository.findByUsername("escort1")
+                .orElseThrow();
+
+        User escort2 = new User(
+                "escort2",
+                passwordEncoder.encode("testPassword"),
+                "escort2@test.com",
+                "동행인2",
+                Role.ESCORT,
+                Gender.MALE,
+                LocalDate.of(1995, 2, 2),
+                "010-2222-3333",
+                "서울"
+        );
+
+        User escort3 = new User(
+                "escort3",
+                passwordEncoder.encode("testPassword"),
+                "escort3@test.com",
+                "동행인3",
+                Role.ESCORT,
+                Gender.FEMALE,
+                LocalDate.of(1995, 3, 3),
+                "010-2222-4444",
+                "인천"
+        );
+
+        userRepository.save(escort2);
+        userRepository.save(escort3);
+
+        applicationRepository.save(
+                Application.builder()
+                        .post(post)
+                        .escort(escort1)
+                        .build()
+        );
+
+        applicationRepository.save(
+                Application.builder()
+                        .post(post)
+                        .escort(escort2)
+                        .build()
+        );
+
+        applicationRepository.save(
+                Application.builder()
+                        .post(post)
+                        .escort(escort3)
+                        .build()
+        );
+
+        ResultActions resultActions = mvc.perform(
+                get("/api/v1/applications/posts/{postId}", testPostId)
+                        .param("page", "0")
+                        .param("size", "2")
+                        .cookie(clientAccessTokenCookie)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content.length()").value(2))
+                .andExpect(jsonPath("$.data.number").value(0))
+                .andExpect(jsonPath("$.data.size").value(2))
+                .andExpect(jsonPath("$.data.totalElements").value(3))
+                .andExpect(jsonPath("$.data.totalPages").value(2))
+                .andExpect(jsonPath("$.data.content[0].escortName").value("동행인3"))
+                .andExpect(jsonPath("$.data.content[1].escortName").value("동행인2"));
     }
 
     @Test
