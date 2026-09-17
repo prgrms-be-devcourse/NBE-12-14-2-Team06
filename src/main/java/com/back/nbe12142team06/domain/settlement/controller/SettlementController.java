@@ -25,7 +25,7 @@ public class SettlementController {
     // 정산 요청 기능
     @PostMapping("/{settlementId}")
     public RsData<?> settlementRequest(@AuthenticationPrincipal SecurityUser actor,
-                                        @PathVariable Long settlementId) {
+                                       @PathVariable Long settlementId) {
         Long userId = actor.getId();
 
         settlementService.request(userId, settlementId);
@@ -33,7 +33,7 @@ public class SettlementController {
         return new RsData<>("200-30", "정산에 성공했습니다.");
     }
 
-    // 정산 목록 기능
+    // 정산 목록 조회 기능
     @GetMapping
     public RsData<Page<SettlementResponse>> settlementList(@AuthenticationPrincipal SecurityUser actor,
                                                            @RequestParam LocalDate startDate,
@@ -48,5 +48,18 @@ public class SettlementController {
 
         return new RsData<>("200-31", "정산 목록을 가져왔습니다.",
                 settlements.map(SettlementResponse::new));
+    }
+
+    // 정산 조회 기능
+    @GetMapping("/{settlementId}")
+    public RsData<SettlementResponse> settlementDetail(@AuthenticationPrincipal SecurityUser actor,
+                                                       @PathVariable Long settlementId) {
+
+        Long userId = actor.getId();
+
+        Settlement settlement = settlementService.findSettlement(userId, settlementId);
+
+        return new RsData<>("200-32", "정산 상세 데이터를 조회했습니다.",
+                new SettlementResponse(settlement));
     }
 }

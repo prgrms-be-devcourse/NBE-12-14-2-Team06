@@ -251,4 +251,49 @@ class SettlementControllerTest {
         resultActions.andExpect(jsonPath("$.data[0]").doesNotExist());
     }
 
+    @Test
+    @DisplayName("[SettlementController] 정산 상세 조회 - 성공")
+    void settlementDetail() throws Exception {
+        Long settlementId = 1L;
+        ResultActions resultActions = mvc.perform(
+                        get("/api/v1/settlements/%s".formatted(settlementId))
+                                .cookie(accessTokenCookie1))
+                .andDo(print());
+
+        resultActions.andExpect(handler().handlerType(SettlementController.class));
+        resultActions.andExpect(handler().methodName("settlementDetail"));
+        resultActions.andExpect(jsonPath("$.statusCode").value("200-32"));
+        resultActions.andExpect(jsonPath("$.msg").value("정산 상세 데이터를 조회했습니다."));
+        resultActions.andExpect(jsonPath("$.data").exists());
+    }
+
+    @Test
+    @DisplayName("[SettlementController] 정산 상세 조회 - 실패 찾을 수 없음")
+    void settlementDetailFailNotFound() throws Exception {
+        Long settlementId = 10000L;
+        ResultActions resultActions = mvc.perform(
+                        get("/api/v1/settlements/%s".formatted(settlementId))
+                                .cookie(accessTokenCookie1))
+                .andDo(print());
+
+        resultActions.andExpect(handler().handlerType(SettlementController.class));
+        resultActions.andExpect(handler().methodName("settlementDetail"));
+        resultActions.andExpect(jsonPath("$.statusCode").value("404-30"));
+        resultActions.andExpect(jsonPath("$.msg").value("찾으시는 정산 데이터가 없습니다."));
+    }
+
+    @Test
+    @DisplayName("[SettlementController] 정산 상세 조회 - 실패 권한 부족")
+    void settlementDetailFailForbidden() throws Exception {
+        Long settlementId = 1L;
+        ResultActions resultActions = mvc.perform(
+                        get("/api/v1/settlements/%s".formatted(settlementId))
+                                .cookie(accessTokenCookie2))
+                .andDo(print());
+
+        resultActions.andExpect(handler().handlerType(SettlementController.class));
+        resultActions.andExpect(handler().methodName("settlementDetail"));
+        resultActions.andExpect(jsonPath("$.statusCode").value("403-30"));
+        resultActions.andExpect(jsonPath("$.msg").value("정산 요청할 권한이 없습니다."));
+    }
 }
