@@ -88,4 +88,17 @@ public class UserController {
         );
     }
 
+    // 로그아웃
+    @DeleteMapping("/logout")
+    public RsData<Void> logout(@AuthenticationPrincipal SecurityUser me) {
+
+        this.refreshTokenService.revokeAllByUser(me.getId());
+
+        this.rq.clearTokenCookies();
+
+        return new RsData<>(
+                "200-3",
+                "로그아웃 되었습니다."
+        );
+    }
 }

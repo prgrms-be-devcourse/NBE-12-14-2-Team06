@@ -4,6 +4,7 @@ import com.back.nbe12142team06.domain.auth.entity.RefreshToken;
 import com.back.nbe12142team06.domain.auth.repository.RefreshTokenRepository;
 import com.back.nbe12142team06.global.security.JwtProvider;
 import com.back.nbe12142team06.global.security.RefreshTokenGenerator;
+import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -37,6 +38,9 @@ public class UserControllerTest {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private EntityManager em;
 
     @Autowired
     private RefreshTokenRepository refreshTokenRepository;
@@ -583,12 +587,11 @@ public class UserControllerTest {
                 .andReturn();
 
         Cookie accessToken = signUpResult.getResponse().getCookie("accessToken");
-        Cookie refreshToken = signUpResult.getResponse().getCookie("refreshToken");
+        Cookie rawRefreshToken = signUpResult.getResponse().getCookie("refreshToken");
 
         ResultActions resultActions = mvc.perform(
                 delete("/api/v1/users/logout")
                         .cookie(accessToken)
-                        .cookie(refreshToken)
                 )
                 .andDo(print());
 
@@ -605,15 +608,19 @@ public class UserControllerTest {
                     assertThat(newAccessToken.getPath()).isEqualTo("/");
                     assertThat(newAccessToken.isHttpOnly()).isTrue();
 
-                    // accessToken 폐기 확인
+                    // refreshToken 폐기 확인
                     Cookie newRefreshToken = result.getResponse().getCookie("refreshToken");
                     assertThat(newRefreshToken.getValue()).isEmpty();
                     assertThat(newRefreshToken.getMaxAge()).isEqualTo(0);
                     assertThat(newRefreshToken.getPath()).isEqualTo("/api/v1/auth/refresh");
                 });
 
+        // 캐시 비우고 실제로 DB에서 조회
+        em.flush();
+        em.clear();
+
         // DB에서 폐기 확인
-        String hash = RefreshTokenGenerator.hash(refreshToken.getValue());
+        String hash = RefreshTokenGenerator.hash(rawRefreshToken.getValue());
         RefreshToken saved = this.refreshTokenRepository.findByTokenHash(hash).orElseThrow();
         assertThat(saved.isRevoked()).isTrue();
     }
