@@ -14,6 +14,8 @@ import com.back.nbe12142team06.domain.user.enums.Role;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
 import com.back.nbe12142team06.global.exception.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -60,7 +62,7 @@ public class ApplicationService {
     }
 
     @Transactional(readOnly = true)
-    public List<ApplicationListResponse> list(Long postId, Long userId) {
+    public Page<ApplicationListResponse> list(Long postId, Long userId, Pageable pageable) {
 
         Post post = postRepository.findById(postId).orElseThrow(
                 () -> new NotFoundException("공고를 찾을 수 없습니다."));
@@ -69,11 +71,9 @@ public class ApplicationService {
             throw new ForbiddenException("본인 공고의 지원 목록만 조회할 수 있습니다.");
         }
 
-        List<Application> applications = applicationRepository.findAllByPostIdWithEscort(postId);
-
-        return applications.stream()
-                .map(ApplicationListResponse::new)
-                .toList();
+        return applicationRepository
+                .findAllByPostIdWithEscort(postId, pageable)
+                .map(ApplicationListResponse::new);
     }
 
     @Transactional
