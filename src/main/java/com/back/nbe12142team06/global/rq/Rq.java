@@ -14,7 +14,7 @@ import org.springframework.web.context.annotation.RequestScope;
 public class Rq {
     private static final String ACCESS_TOKEN = "accessToken";
     private static final String REFRESH_TOKEN = "refreshToken";
-    private static final String REFRESH_PATH = "/api/v1/auth/refresh";
+    private static final String REFRESH_PATH = "/api/v1/auth";
 
     private final HttpServletRequest request;
     private final HttpServletResponse response;

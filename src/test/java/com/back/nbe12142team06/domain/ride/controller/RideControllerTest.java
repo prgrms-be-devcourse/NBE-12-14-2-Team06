@@ -4,7 +4,6 @@ import com.back.nbe12142team06.domain.post.dto.PostWriteRequest;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.service.PostService;
 import com.back.nbe12142team06.domain.ride.dto.RideUpdateRequest;
-import com.back.nbe12142team06.domain.ride.entity.RideSelect;
 import com.back.nbe12142team06.domain.ride.service.RideService;
 import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpRequest;
 import com.back.nbe12142team06.domain.user.entity.User;
@@ -30,7 +29,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -122,7 +120,7 @@ class RideControllerTest {
 
         // user1로 로그인해 인증 쿠키 확보
         accessTokenCookie1 = mvc.perform(
-                        post("/api/v1/users/login")
+                        post("/api/v1/auth/login")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
                                         {
@@ -136,7 +134,7 @@ class RideControllerTest {
                 .getCookie("accessToken");
 
         accessTokenCookie2 = mvc.perform(
-                        post("/api/v1/users/login")
+                        post("/api/v1/auth/login")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
                                         {
