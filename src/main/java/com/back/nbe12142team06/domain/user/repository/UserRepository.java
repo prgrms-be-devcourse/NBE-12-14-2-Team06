@@ -19,4 +19,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
     // DB에 해당 전화번호가 존재하는지 확인
     boolean existsByPhoneNum(String phoneNum);
 
+    // 회원정보 수정 시 이메일 중복 체크용
+    boolean existsByEmailAndIdNot(String email, Long id);
+
+    // 회원정보 수정 시 전화번호 중복 체크용
+    boolean existsByPhoneNumAndIdNot(String phoneNum, Long id);
 }
