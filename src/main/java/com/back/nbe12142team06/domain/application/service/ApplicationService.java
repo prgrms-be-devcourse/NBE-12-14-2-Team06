@@ -176,4 +176,26 @@ public class ApplicationService {
         return firstPost.getEscortStartAt().isBefore(secondPost.getEscortEndAt())
                 && firstPost.getEscortEndAt().isAfter(secondPost.getEscortStartAt());
     }
+
+    @Transactional
+    public void cancel(Long applicationId, Long userId) {
+
+        // PENDING 상태에서 취소
+        Application application = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new NotFoundException("지원을 찾을 수 없습니다."));
+
+        // 본인이 지원한 내역만 취소 가능
+        if (!application.getEscort().getId().equals(userId)) {
+            throw new ForbiddenException("본인이 지원한 내역만 취소할 수 있습니다.");
+        }
+
+        // 대기 중인 지원만 취소 가능
+        if (application.getStatus() != ApplicationStatus.PENDING) {
+            throw new InvalidException("대기 중인 지원만 취소할 수 있습니다.");
+        }
+
+        application.cancel();
+
+        // ACCEPTED 상태에서 취소
+    }
 }

@@ -1290,4 +1290,45 @@ public class ApplicationControllerTest {
                 .andExpect(jsonPath("$.msg")
                         .value("지원을 찾을 수 없습니다."));
     }
+
+    @Test
+    @DisplayName("[ApplicationController] 지원 취소 - 정상 취소")
+    void t22() throws Exception {
+
+        // 동행인이 먼저 지원
+        mvc.perform(
+                        post("/api/v1/applications/{postId}", testPostId)
+                                .cookie(escortAccessTokenCookie)
+                )
+                .andExpect(status().isCreated());
+
+        Application application = applicationRepository
+                .findAllByPostIdWithEscort(testPostId)
+                .get(0);
+
+        // 동행인이 본인의 지원 취소
+        ResultActions resultActions = mvc.perform(
+                patch("/api/v1/applications/{applicationId}/cancel",
+                        application.getId())
+                        .cookie(escortAccessTokenCookie)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(ApplicationController.class))
+                .andExpect(handler().methodName("cancel"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-1"))
+                .andExpect(jsonPath("$.msg")
+                        .value("지원 취소가 완료되었습니다."));
+
+        // 실제 DB 상태 확인
+        Application canceledApplication = applicationRepository
+                .findById(application.getId())
+                .orElseThrow();
+
+        assertEquals(
+                ApplicationStatus.CANCELED,
+                canceledApplication.getStatus()
+        );
+    }
 }
