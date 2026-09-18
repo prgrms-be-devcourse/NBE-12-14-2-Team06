@@ -3,11 +3,8 @@ package com.back.nbe12142team06.domain.user.controller;
 import com.back.nbe12142team06.domain.auth.entity.RefreshToken;
 import com.back.nbe12142team06.domain.auth.repository.RefreshTokenRepository;
 import com.back.nbe12142team06.domain.user.entity.User;
-import com.back.nbe12142team06.domain.user.enums.Gender;
-import com.back.nbe12142team06.domain.user.enums.Role;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
 import com.back.nbe12142team06.global.security.JwtProvider;
-import com.back.nbe12142team06.global.security.RefreshTokenGenerator;
 import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.DisplayName;
@@ -57,21 +54,6 @@ public class UserControllerTest {
     @Value("${custom.jwt.secret-key}")
     private String secretKey;
 
-    // 관리자 계정 주입
-    void createTestAdmin(){
-        User user = new User(
-                "adminTest",
-                passwordEncoder.encode("adminTest"),
-                "admin@admin.admin",
-                "관리자",
-                Role.ADMIN,
-                Gender.MALE,
-                LocalDate.of(2001, 1, 1),
-                "010-9898-9898",
-                "서울시"
-        );
-        this.userRepository.save(user);
-    }
 
     @Test
     @DisplayName("[UserController] 회원가입 -  정상 가입")
@@ -110,7 +92,7 @@ public class UserControllerTest {
                 .andExpect(handler().methodName("signUp"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.statusCode").value("201-1"))
-                .andExpect(jsonPath("$.msg").value("회원가입이 완료되었습니다."))
+                .andExpect(jsonPath("$.msg").value("회원 가입이 완료되었습니다."))
                 .andExpect(jsonPath("$.data.id").exists())
                 .andExpect(jsonPath("$.data.name").value(name))
                 .andExpect(jsonPath("$.data.password").doesNotExist());
@@ -313,134 +295,6 @@ public class UserControllerTest {
     }
 
 
-    @Test
-    @DisplayName("[AuthController] 로그인 - 회원가입 한 아이디로 정상 로그인")
-    void t8() throws Exception {
-        String signUpBody = """
-        {
-            "username": "user1",
-            "password": "pwd1",
-            "email": "first@test.test",
-            "name": "김춘식",
-            "role": "CLIENT",
-            "gender": "MALE",
-            "birthDate": "1990-05-20",
-            "phoneNum": "010-1234-5678",
-            "region": "서울시"
-        }
-        """;
-
-        String body = """
-        {
-            "username": "user1",
-            "password": "pwd1"
-        }
-        """;
-
-        // 회원 가입
-        mvc.perform(post("/api/v1/users")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(signUpBody))
-                .andDo(print());
-
-        // 로그인
-        ResultActions resultActions = mvc.perform(
-                post("/api/v1/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body)
-                )
-                .andDo(
-                        print()
-                );
-
-        resultActions
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value("200-1"))
-                .andExpect(jsonPath("$.msg").value("김춘식님 반갑습니다."))
-                .andExpect(jsonPath("$.data.id").exists())
-                .andExpect(jsonPath("$.data.name").value("김춘식"))
-                .andExpect(cookie().exists("accessToken"))
-                .andExpect(cookie().exists("refreshToken"))
-                .andExpect(cookie().path("accessToken", "/"))   // access Token의 요청 Path가 전체인지 검증
-                .andExpect(cookie().path("refreshToken", "/api/v1/auth"));  // refresh Token의 요청 Path가 /api/v1/auth/refresh인지 검증
-    }
-
-    @Test
-    @DisplayName("[AuthController] 로그인 - 존재하지 않는 아이디로 로그인 시도 시 401")
-    void t9() throws Exception {
-        String body = """
-        {
-            "username": "user1",
-            "password": "pwd1"
-        }
-        """;
-
-        // 로그인
-        ResultActions resultActions = mvc.perform(
-                        post("/api/v1/auth/login")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(body)
-                )
-                .andDo(
-                        print()
-                );
-
-        resultActions
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.statusCode").value("401"))
-                .andExpect(jsonPath("$.msg").value("아이디 또는 비밀번호가 올바르지 않습니다."))
-                .andExpect(cookie().doesNotExist("accessToken"))
-                .andExpect(cookie().doesNotExist("refreshToken"));
-    }
-
-
-    @Test
-    @DisplayName("[AuthController] 로그인 - 아이디는 존재하지만 비밀번호가 옳지 않은 로그인 시도 시 401")
-    void t10() throws Exception {
-        String signUpBody = """
-        {
-            "username": "user1",
-            "password": "pwd1",
-            "email": "first@test.test",
-            "name": "김춘식",
-            "role": "CLIENT",
-            "gender": "MALE",
-            "birthDate": "1990-05-20",
-            "phoneNum": "010-1234-5678",
-            "region": "서울시"
-        }
-        """;
-
-        String body = """
-        {
-            "username": "user1",
-            "password": "pwd999999999999999999999"
-        }
-        """;
-
-        // 회원 가입
-        mvc.perform(post("/api/v1/users")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(signUpBody))
-                .andDo(print());
-
-        // 로그인
-        ResultActions resultActions = mvc.perform(
-                        post("/api/v1/auth/login")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(body)
-                )
-                .andDo(
-                        print()
-                );
-
-        resultActions
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.statusCode").value("401"))
-                .andExpect(jsonPath("$.msg").value("아이디 또는 비밀번호가 올바르지 않습니다."))
-                .andExpect(cookie().doesNotExist("accessToken"))
-                .andExpect(cookie().doesNotExist("refreshToken"));
-    }
 
     @Test
     @DisplayName("[UserController] 내 정보 조회 - 존재하는 아이디로 정상 로그인 후 내 정보 조회 요청")
@@ -598,68 +452,6 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.data").value("false"));
     }
 
-    @Test
-    @DisplayName("[AuthController] 로그아웃 - 로그아웃 시 토큰 폐기")
-    void t17() throws Exception {
-        String signUpBody = """
-        {
-            "username": "user1",
-            "password": "pwd1",
-            "email": "first@test.test",
-            "name": "김춘식",
-            "role": "CLIENT",
-            "gender": "MALE",
-            "birthDate": "1990-05-20",
-            "phoneNum": "010-1234-5678",
-            "region": "서울시"
-        }
-        """;
-
-        // 회원 가입
-        MvcResult signUpResult = mvc.perform(post("/api/v1/users")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(signUpBody))
-                .andReturn();
-
-        Cookie accessToken = signUpResult.getResponse().getCookie("accessToken");
-        Cookie rawRefreshToken = signUpResult.getResponse().getCookie("refreshToken");
-
-        ResultActions resultActions = mvc.perform(
-                delete("/api/v1/auth/logout")
-                        .cookie(accessToken)
-                        .cookie(rawRefreshToken)
-                )
-                .andDo(print());
-
-        resultActions
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value("200-3"))
-                .andExpect(jsonPath("$.msg").value("로그아웃 되었습니다."))
-                .andExpect(result -> {
-
-                    // accessToken 폐기 확인
-                    Cookie newAccessToken = result.getResponse().getCookie("accessToken");
-                    assertThat(newAccessToken.getValue()).isEmpty();
-                    assertThat(newAccessToken.getMaxAge()).isEqualTo(0);
-                    assertThat(newAccessToken.getPath()).isEqualTo("/");
-                    assertThat(newAccessToken.isHttpOnly()).isTrue();
-
-                    // refreshToken 폐기 확인
-                    Cookie newRefreshToken = result.getResponse().getCookie("refreshToken");
-                    assertThat(newRefreshToken.getValue()).isEmpty();
-                    assertThat(newRefreshToken.getMaxAge()).isEqualTo(0);
-                    assertThat(newRefreshToken.getPath()).isEqualTo("/api/v1/auth");
-                });
-
-        // 캐시 비우고 실제로 DB에서 조회
-        em.flush();
-        em.clear();
-
-        // DB에서 폐기 확인
-        String hash = RefreshTokenGenerator.hash(rawRefreshToken.getValue());
-        RefreshToken saved = this.refreshTokenRepository.findByTokenHash(hash).orElseThrow();
-        assertThat(saved.isRevoked()).isTrue();
-    }
 
     @Test
     @DisplayName("[UserController] 회원 정보 수정 - 정상 수정은 200-3 반환")
@@ -1289,7 +1081,7 @@ public class UserControllerTest {
         resultActions
                 .andExpect(status().isNoContent())
                 .andExpect(jsonPath("$.statusCode").value("204-1"))
-                .andExpect(jsonPath("$.msg").value("회원탈퇴가 완료되었습니다."))
+                .andExpect(jsonPath("$.msg").value("회원 탈퇴가 완료되었습니다."))
                 .andExpect(result -> {
 
                     // accessToken 폐기 확인
@@ -1524,74 +1316,4 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.statusCode").value("401-1"))
                 .andExpect(jsonPath("$.msg").value("로그인 후 이용해주세요."));
     }
-
-    @Test
-    @DisplayName("[UserController] [관리자 전용] 회원 단건 조회 - 관리자가 정상적으로 단건 조회 시 200-1 반환")
-    void t33() throws Exception {
-        String adminLoginBody = """
-                {
-                    "username": "adminTest",
-                    "password": "adminTest"
-                }
-                """;
-
-        createTestAdmin();
-
-        String user1Body = """
-        {
-            "username": "user1",
-            "password": "testPassword",
-            "email": "user1@user.user",
-            "name": "김춘식",
-            "role": "CLIENT",
-            "gender": "MALE",
-            "birthDate": "1990-05-20",
-            "phoneNum": "010-8080-0000",
-            "region": "서울시"
-        }
-        """;
-
-        // user1 가입
-        mvc.perform(post("/api/v1/users")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(user1Body))
-                .andExpect(status().isCreated());
-
-
-        Long user1Id = this.userRepository.findByUsername("user1").get().getId();
-
-
-        // 관리자 로그인
-        MvcResult signUp2Result = mvc.perform(post("/api/v1/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(adminLoginBody))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        Cookie accessToken = signUp2Result.getResponse().getCookie("accessToken");
-
-        assertThat(accessToken).isNotNull();
-
-        // 회원 단건 조회
-        ResultActions resultActions = mvc.perform(
-                get("/api/v1/admin/users/{id}", user1Id)
-                        .cookie(accessToken)
-        ).andDo(print());
-
-        resultActions
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value("200-1"))
-                .andExpect(jsonPath("$.msg").value("회원정보 조회가 완료되었습니다."))
-                .andExpect(jsonPath("$.data.username").value("user1"))
-                .andExpect(jsonPath("$.data.email").value("user1@user.user"))
-                .andExpect(jsonPath("$.data.name").value("김춘식"))
-                .andExpect(jsonPath("$.data.role").value("CLIENT"))
-                .andExpect(jsonPath("$.data.gender").value("MALE"))
-                .andExpect(jsonPath("$.data.birthDate").value("1990-05-20"))
-                .andExpect(jsonPath("$.data.phoneNum").value("010-8080-0000"))
-                .andExpect(jsonPath("$.data.region").value("서울시"))
-                .andExpect(jsonPath("$.data.createdAt").exists())
-                .andExpect(jsonPath("$.data.password").doesNotExist());
-    }
-
 }

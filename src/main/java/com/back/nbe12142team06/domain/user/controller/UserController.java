@@ -52,7 +52,7 @@ public class UserController {
 
         return new RsData<>(
                 "201-1",
-                "회원가입이 완료되었습니다.",
+                "회원 가입이 완료되었습니다.",
                 new UserSignUpResponse(createUser)
         );
     }
@@ -95,10 +95,7 @@ public class UserController {
 
         return new RsData<>(
                 "204-1",
-                "회원탈퇴가 완료되었습니다."
+                "회원 탈퇴가 완료되었습니다."
         );
     }
-
-    // [ADMIN] 회원 정보 단건 조회
-
 }
