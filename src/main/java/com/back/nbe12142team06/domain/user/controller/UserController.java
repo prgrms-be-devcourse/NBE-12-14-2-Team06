@@ -83,4 +83,19 @@ public class UserController {
                 new UserResponse(user)
         );
     }
+
+    // 회원 탈퇴 -> 해당 회원의 모든 리프레시, 억세스 토큰 폐기 처리
+    @DeleteMapping("/profile")
+    public RsData<Void> deleteProfile(@AuthenticationPrincipal SecurityUser me) {
+
+        // 유저 정보 삭제
+        this.userService.deleteMyProfile(me.getId());
+
+        this.rq.clearTokenCookies();
+
+        return new RsData<>(
+                "204-1",
+                "회원탈퇴가 완료되었습니다."
+        );
+    }
 }
