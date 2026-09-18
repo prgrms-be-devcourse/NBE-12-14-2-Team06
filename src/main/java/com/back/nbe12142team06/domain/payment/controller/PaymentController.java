@@ -31,20 +31,9 @@ public class PaymentController {
                                                          @PathVariable Long paymentId,
                                                          HttpSession session) {
         Long userId = actor.getId();
+        String amount = (String) session.getAttribute("amount");
 
-        // 결제 정보 검증
-        verifyAmount(session, new SaveAmountRequest(request.orderId(), request.amount()));
-
-        // 결제 승인 요청 로직, 실패 시 예외(400-11) 발생
-        try {
-            paymentService.confirm(request, paymentId, userId);
-        } catch (InvalidException e) {
-            throw e;
-        } catch (Exception e) {
-            // 기타 DB 저장 하다 예외 발생하는 경우 -> 결제 취소
-            cancelPayment(actor, paymentId, new PaymentCancelRequest("서버 에러 발생"));
-            throw new InternalServerErrorException(10, "결제 승인 도중 서버 에러가 발생했습니다.");
-        }
+        paymentService.confirm(request, paymentId, userId, amount);
 
         return new RsData<>("200-10", "결제 승인에 성공했습니다.",
                 new PaymentConfirmResponse(request));
@@ -63,9 +52,7 @@ public class PaymentController {
         String orderId = (String) session.getAttribute("orderId");
         String amount = (String) session.getAttribute("amount");
 
-        if (amount == null || !amount.equals(request.amount())) {
-            throw new InvalidException(10, "결제 금액 정보가 유효하지 않습니다.");
-        }
+        paymentService.verifyAmount(amount, request);
 
         return new RsData<>("200-n", "결제 정보가 유효합니다.");
     }
