@@ -27,8 +27,6 @@ import java.util.List;
 public class PaymentService {
 
     private final PaymentRepository paymentRepository;
-    private final ObjectMapper objectMapper;
-    private final RestClient tossRestClient;
     private final PaymentPersistenceService paymentPersistenceService;
     private final TossPaymentClient tossPaymentClient;
 
