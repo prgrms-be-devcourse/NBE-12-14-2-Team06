@@ -8,7 +8,6 @@ import com.back.nbe12142team06.domain.user.enums.Role;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
 import com.back.nbe12142team06.global.exception.BusinessException;
 import com.back.nbe12142team06.global.exception.DuplicatedException;
-import com.back.nbe12142team06.global.exception.NotFoundException;
 import com.back.nbe12142team06.global.exception.UnauthorizedException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -84,7 +83,7 @@ public class UserService {
     // 상세정보 조회
     public User myProfile(Long id) {
         return this.userRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("존재하지 않는 사용자입니다."));
+                .orElseThrow(() -> new UnauthorizedException("회원 정보를 찾을 수 없습니다. 다시 로그인해주세요."));
     }
 
     // username 중복 검사
@@ -113,13 +112,14 @@ public class UserService {
     @Transactional
     public User updateMyProfile(Long id, @Valid UserProfileUpdateRequest request) {
 
-        User user = this.userRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("존재하지 않는 사용자입니다."));
 
-        if (!user.getEmail().equals(request.email()) && userRepository.existsByEmail(request.email())) {
+        User user = this.userRepository.findById(id)
+                .orElseThrow(() -> new UnauthorizedException("회원 정보를 찾을 수 없습니다. 다시 로그인해주세요."));
+
+        if (this.userRepository.existsByEmailAndIdNot(request.email(), id)) {
             throw new DuplicatedException(DUPLICATED_EMAIL, "이미 사용 중인 이메일입니다.");
         }
-        if (!user.getPhoneNum().equals(request.phoneNum()) && userRepository.existsByPhoneNum(request.phoneNum())) {
+        if (this.userRepository.existsByPhoneNumAndIdNot(request.phoneNum(), id)) {
             throw new DuplicatedException(DUPLICATED_PHONE_NUM, "이미 사용 중인 전화번호입니다.");
         }
 

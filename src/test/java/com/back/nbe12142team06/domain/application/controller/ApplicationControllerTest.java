@@ -3,6 +3,8 @@ package com.back.nbe12142team06.domain.application.controller;
 import com.back.nbe12142team06.domain.application.entity.Application;
 import com.back.nbe12142team06.domain.application.enums.ApplicationStatus;
 import com.back.nbe12142team06.domain.application.repository.ApplicationRepository;
+import com.back.nbe12142team06.domain.payment.entity.Payment;
+import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.entity.PostStatus;
 import com.back.nbe12142team06.domain.post.repository.PostRepository;
@@ -55,6 +57,9 @@ public class ApplicationControllerTest {
 
     @Autowired
     private ApplicationRepository applicationRepository;
+
+    @Autowired
+    private PaymentRepository paymentRepository;
 
     private Long testPostId;
     private Cookie clientAccessTokenCookie;
@@ -116,6 +121,16 @@ public class ApplicationControllerTest {
                 .build();
 
         testPostId = postRepository.save(post).getId();
+
+        // 테스트 과정에 결제 데이터가 필요해서 추가했습니다!
+        Payment payment = Payment.builder()
+                .amount(post.getTotalPay().intValue())
+                .hourlyPaySnapshot(post.getHourlyPay())
+                .hours(post.getEscortHours())
+                .post(post)
+                .build();
+
+        paymentRepository.save(payment);
 
         clientAccessTokenCookie = mvc.perform(
                         post("/api/v1/auth/login")
