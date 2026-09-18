@@ -3,6 +3,7 @@ package com.back.nbe12142team06.domain.user.dto.user;
 import jakarta.validation.constraints.*;
 
 import java.time.LocalDate;
+import java.util.Locale;
 
 public record UserProfileUpdateRequest(
         @NotBlank(message = "비밀번호는 필수 항목입니다.")
@@ -26,4 +27,9 @@ public record UserProfileUpdateRequest(
         @Size(max= 50)
         String region
 ) {
+        public UserProfileUpdateRequest {
+                if (email != null) {
+                        email = email.strip().toLowerCase(Locale.ROOT);
+                }
+        }
 }

@@ -241,7 +241,7 @@ class SettlementControllerTest {
     @DisplayName("[SettlementController] 정산 요청 - 성공")
     void settlementReq() throws Exception {
 
-        savedPost1.complete();
+        savedPost1.complete(LocalDateTime.now()); //post.complete() 변경으로 now() 추가
 
         ResultActions resultActions = mvc.perform(
                         post("/api/v1/settlements/%s".formatted(savedSettlement1Id))

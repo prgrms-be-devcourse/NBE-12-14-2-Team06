@@ -145,12 +145,15 @@ public class Post extends BaseSoftDeleteTimeEntity {  // createdAt, updatedAt, d
     public void match() {
         this.postStatus = PostStatus.MATCHED;
     }
-    // 매칭된 공고 동행진행중 처리
-    public void startProgress() {
+    // 매칭된 공고 동행진행중 + 실제동행시작시간 update 처리
+    public void startProgress(LocalDateTime departedAt) {
+        this.escortStartAt = departedAt;
         this.postStatus = PostStatus.IN_PROGRESS;}
-    // 매칭된 공고 동행완료 처리
-    public void complete() {
-        this.postStatus = PostStatus.COMPLETED;}
+    // 매칭된 공고 동행완료 + 실제동행마감시간 update 처리
+    public void complete(LocalDateTime arrivedAt) {
+        this.escortEndAt = arrivedAt;
+        this.postStatus = PostStatus.COMPLETED;
+    }
     // 매칭된 공고 취소 처리 (MATCHED -> CANCELED)
     public void matchedCancel() {
         this.postStatus = PostStatus.CANCELED;
@@ -158,5 +161,10 @@ public class Post extends BaseSoftDeleteTimeEntity {  // createdAt, updatedAt, d
     // 모집마감시간 초과 처리 (OPEN -> EXPIRED)
     public void expire() {
         this.postStatus = PostStatus.EXPIRED;
+    }
+
+    // 매칭 후 동행인 취소 시 공고 재오픈
+    public void reopen() {
+        this.postStatus = PostStatus.OPEN;
     }
 }

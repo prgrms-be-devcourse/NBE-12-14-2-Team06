@@ -78,4 +78,18 @@ public class ApplicationController {
         );
     }
 
+    @PatchMapping("/{applicationId}/cancel")
+    public RsData<Void> cancel(
+            @PathVariable Long applicationId,
+            @AuthenticationPrincipal SecurityUser actor) {
+
+        applicationService.cancel(applicationId, actor.getId());
+
+        return new RsData<>(
+                "200-1",
+                "지원 취소가 완료되었습니다.",
+                null
+        );
+    }
+
 }
