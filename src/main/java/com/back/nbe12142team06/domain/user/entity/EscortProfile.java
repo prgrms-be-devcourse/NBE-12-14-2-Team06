@@ -74,4 +74,9 @@ public class EscortProfile extends BaseTimeEntity {
         this.accountNumber = accountNumber;
         return this;
     }
+
+    // 노쇼 횟수 증가
+    public void increaseNoShowCount() {
+        this.noShowCount++;
+    }
 }

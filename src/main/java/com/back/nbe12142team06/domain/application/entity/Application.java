@@ -50,4 +50,10 @@ public class Application extends BaseTimeEntity {
     public void cancel() {
         this.status = ApplicationStatus.CANCELED;
     }
+
+    public void noShow() {
+        this.status = ApplicationStatus.NO_SHOW;
+        // 재매칭을 위해 승인된 공고 ID 초기화
+        this.acceptedPostId = null;
+    }
 }

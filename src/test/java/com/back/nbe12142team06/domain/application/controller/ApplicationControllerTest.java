@@ -8,9 +8,11 @@ import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.entity.PostStatus;
 import com.back.nbe12142team06.domain.post.repository.PostRepository;
+import com.back.nbe12142team06.domain.user.entity.EscortProfile;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Gender;
 import com.back.nbe12142team06.domain.user.enums.Role;
+import com.back.nbe12142team06.domain.user.repository.EscortRepository;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,10 +32,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -60,6 +60,9 @@ public class ApplicationControllerTest {
 
     @Autowired
     private PaymentRepository paymentRepository;
+
+    @Autowired
+    private EscortRepository escortRepository;
 
     private Long testPostId;
     private Cookie clientAccessTokenCookie;
@@ -98,6 +101,10 @@ public class ApplicationControllerTest {
 
         userRepository.save(escort);
 
+        // 테스트용 동행인 프로필 생성
+        EscortProfile escortProfile = new EscortProfile(escort);
+        escortRepository.save(escortProfile);
+
         // 테스트용 공고
         Post post = Post.builder()
                 .client(client)
@@ -122,7 +129,7 @@ public class ApplicationControllerTest {
 
         testPostId = postRepository.save(post).getId();
 
-        // 테스트 과정에 결제 데이터가 필요해서 추가했습니다!
+        // 테스트 과정에 결제 데이터가 필요해서 추가
         Payment payment = Payment.builder()
                 .amount(post.getTotalPay().intValue())
                 .hourlyPaySnapshot(post.getHourlyPay())
@@ -132,6 +139,7 @@ public class ApplicationControllerTest {
 
         paymentRepository.save(payment);
 
+        // 의뢰인 로그인
         clientAccessTokenCookie = mvc.perform(
                         post("/api/v1/auth/login")
                                 .contentType("application/json")
@@ -146,6 +154,7 @@ public class ApplicationControllerTest {
                 .getResponse()
                 .getCookie("accessToken");
 
+        // 동행인 로그인
         escortAccessTokenCookie = mvc.perform(
                         post("/api/v1/auth/login")
                                 .contentType("application/json")
@@ -1345,5 +1354,336 @@ public class ApplicationControllerTest {
                 ApplicationStatus.CANCELED,
                 canceledApplication.getStatus()
         );
+    }
+
+    @Test
+    @DisplayName("[ApplicationController] 지원 취소 - 승인 후 모집 마감 전 취소")
+    void t23() throws Exception {
+
+        // 동행인이 공고에 지원
+        mvc.perform(
+                        post("/api/v1/applications/{postId}", testPostId)
+                                .cookie(escortAccessTokenCookie)
+                )
+                .andExpect(status().isCreated());
+
+        Application application = applicationRepository
+                .findAllByPostIdWithEscort(testPostId)
+                .get(0);
+
+        // 의뢰인이 지원 승인
+        mvc.perform(
+                        patch("/api/v1/applications/{applicationId}/accept",
+                                application.getId())
+                                .cookie(clientAccessTokenCookie)
+                )
+                .andExpect(status().isOk());
+
+        // 취소 전 노쇼 횟수 확인
+        EscortProfile escortProfile = escortRepository
+                .findById(application.getEscort().getId())
+                .orElseThrow();
+
+        int beforeNoShowCount = escortProfile.getNoShowCount();
+
+        // 승인된 동행인이 취소
+        ResultActions resultActions = mvc.perform(
+                patch("/api/v1/applications/{applicationId}/cancel",
+                        application.getId())
+                        .cookie(escortAccessTokenCookie)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(ApplicationController.class))
+                .andExpect(handler().methodName("cancel"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-1"))
+                .andExpect(jsonPath("$.msg")
+                        .value("지원 취소가 완료되었습니다."));
+
+        // 취소 후 지원 상태 확인
+        Application canceledApplication = applicationRepository
+                .findById(application.getId())
+                .orElseThrow();
+
+        // 취소 후 공고 상태 확인
+        Post reopenedPost = postRepository
+                .findById(testPostId)
+                .orElseThrow();
+
+        // 취소 후 동행인 프로필 확인
+        EscortProfile updatedEscortProfile = escortRepository
+                .findById(application.getEscort().getId())
+                .orElseThrow();
+
+        // 승인된 지원은 NO_SHOW 처리
+        assertEquals(
+                ApplicationStatus.NO_SHOW,
+                canceledApplication.getStatus()
+        );
+
+        // 재매칭을 위해 acceptedPostId 초기화
+        assertNull(canceledApplication.getAcceptedPostId());
+
+        // 동행인 노쇼 횟수 1 증가
+        assertEquals(
+                beforeNoShowCount + 1,
+                updatedEscortProfile.getNoShowCount()
+        );
+
+        // 모집 마감 전이므로 공고 다시 OPEN
+        assertEquals(
+                PostStatus.OPEN,
+                reopenedPost.getPostStatus()
+        );
+    }
+
+    @Test
+    @DisplayName("[ApplicationController] 지원 취소 - 승인 후 모집 마감 후 취소")
+    void t24() throws Exception {
+
+        User client = userRepository.findByUsername("client1")
+                .orElseThrow();
+
+        User escort = userRepository.findByUsername("escort1")
+                .orElseThrow();
+
+        // 모집 마감 시간이 이미 지난 매칭 공고 생성
+        Post expiredMatchedPost = Post.builder()
+                .client(client)
+                .title("모집 마감 지난 공고")
+                .content("모집 마감 후 동행인 취소 테스트")
+                .region("수원")
+                .hospitalName("아주대학교병원")
+                .hospitalAddress("경기도 수원시")
+                .hospitalLat(BigDecimal.valueOf(37.2795))
+                .hospitalLng(BigDecimal.valueOf(127.0476))
+                .pickupAddress("경기도 수원시 팔달구")
+                .pickupLat(BigDecimal.valueOf(37.2636))
+                .pickupLng(BigDecimal.valueOf(127.0286))
+                .hourlyPay(15000)
+
+                // 모집 마감 시간이 이미 지남
+                .recruitStartAt(LocalDateTime.now().minusDays(2))
+                .recruitEndAt(LocalDateTime.now().minusMinutes(1))
+
+                // 실제 동행 시간은 아직 미래
+                .escortStartAt(LocalDateTime.now().plusDays(1))
+                .escortEndAt(LocalDateTime.now().plusDays(1).plusHours(3))
+
+                .patientNote("테스트 환자")
+                .reportRequired(false)
+                .postStatus(PostStatus.MATCHED)
+                .build();
+
+        postRepository.save(expiredMatchedPost);
+
+        // 이미 승인된 지원 생성
+        Application application = Application.builder()
+                .post(expiredMatchedPost)
+                .escort(escort)
+                .build();
+
+        application.accept();
+        applicationRepository.save(application);
+
+        // 취소 전 노쇼 횟수
+        EscortProfile escortProfile = escortRepository
+                .findById(escort.getId())
+                .orElseThrow();
+
+        int beforeNoShowCount = escortProfile.getNoShowCount();
+
+        // 승인된 동행인이 취소
+        ResultActions resultActions = mvc.perform(
+                patch("/api/v1/applications/{applicationId}/cancel",
+                        application.getId())
+                        .cookie(escortAccessTokenCookie)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(ApplicationController.class))
+                .andExpect(handler().methodName("cancel"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-1"))
+                .andExpect(jsonPath("$.msg")
+                        .value("지원 취소가 완료되었습니다."));
+
+        // 취소 후 지원 확인
+        Application canceledApplication = applicationRepository
+                .findById(application.getId())
+                .orElseThrow();
+
+        // 취소 후 공고 확인
+        Post canceledPost = postRepository
+                .findById(expiredMatchedPost.getId())
+                .orElseThrow();
+
+        // 취소 후 동행인 프로필 확인
+        EscortProfile updatedEscortProfile = escortRepository
+                .findById(escort.getId())
+                .orElseThrow();
+
+        // 승인된 지원은 NO_SHOW
+        assertEquals(
+                ApplicationStatus.NO_SHOW,
+                canceledApplication.getStatus()
+        );
+
+        // 재매칭할 수 없으므로 기존 승인 공고 ID 초기화
+        assertNull(canceledApplication.getAcceptedPostId());
+
+        // 노쇼 횟수 +1
+        assertEquals(
+                beforeNoShowCount + 1,
+                updatedEscortProfile.getNoShowCount()
+        );
+
+        // 모집 마감 후이므로 공고 취소
+        assertEquals(
+                PostStatus.CANCELED,
+                canceledPost.getPostStatus()
+        );
+    }
+
+    @Test
+    @DisplayName("[ApplicationController] 지원 취소 - 다른 동행인이 취소 시 403 반환")
+    void t25() throws Exception {
+
+        // 기존 동행인(escort1)이 공고에 지원
+        mvc.perform(
+                        post("/api/v1/applications/{postId}", testPostId)
+                                .cookie(escortAccessTokenCookie)
+                )
+                .andExpect(status().isCreated());
+
+        Application application = applicationRepository
+                .findAllByPostIdWithEscort(testPostId)
+                .get(0);
+
+        // 다른 동행인 생성
+        User otherEscort = new User(
+                "escort2",
+                passwordEncoder.encode("testPassword"),
+                "escort2@test.com",
+                "동행인2",
+                Role.ESCORT,
+                Gender.MALE,
+                LocalDate.of(1996, 1, 1),
+                "010-3333-3333",
+                "서울"
+        );
+
+        userRepository.save(otherEscort);
+
+        // 다른 동행인 로그인
+        Cookie otherEscortAccessTokenCookie = mvc.perform(
+                        post("/api/v1/auth/login")
+                                .contentType("application/json")
+                                .content("""
+                                {
+                                  "username": "escort2",
+                                  "password": "testPassword"
+                                }
+                                """)
+                )
+                .andReturn()
+                .getResponse()
+                .getCookie("accessToken");
+
+        // 다른 동행인이 escort1의 지원을 취소 시도
+        ResultActions resultActions = mvc.perform(
+                patch("/api/v1/applications/{applicationId}/cancel",
+                        application.getId())
+                        .cookie(otherEscortAccessTokenCookie)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(ApplicationController.class))
+                .andExpect(handler().methodName("cancel"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.statusCode").value("403"))
+                .andExpect(jsonPath("$.msg")
+                        .value("본인이 지원한 내역만 취소할 수 있습니다."));
+
+        // 취소되지 않고 기존 PENDING 상태 유지
+        Application unchangedApplication = applicationRepository
+                .findById(application.getId())
+                .orElseThrow();
+
+        assertEquals(
+                ApplicationStatus.PENDING,
+                unchangedApplication.getStatus()
+        );
+    }
+
+    @Test
+    @DisplayName("[ApplicationController] 지원 취소 - 이미 취소된 지원 재취소 시 400 반환")
+    void t26() throws Exception {
+
+        // 동행인이 공고에 지원
+        mvc.perform(
+                        post("/api/v1/applications/{postId}", testPostId)
+                                .cookie(escortAccessTokenCookie)
+                )
+                .andExpect(status().isCreated());
+
+        Application application = applicationRepository
+                .findAllByPostIdWithEscort(testPostId)
+                .get(0);
+
+        // 첫 번째 취소
+        mvc.perform(
+                        patch("/api/v1/applications/{applicationId}/cancel",
+                                application.getId())
+                                .cookie(escortAccessTokenCookie)
+                )
+                .andExpect(status().isOk());
+
+        // 같은 지원을 다시 취소
+        ResultActions resultActions = mvc.perform(
+                patch("/api/v1/applications/{applicationId}/cancel",
+                        application.getId())
+                        .cookie(escortAccessTokenCookie)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(ApplicationController.class))
+                .andExpect(handler().methodName("cancel"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.statusCode").value("400"))
+                .andExpect(jsonPath("$.msg")
+                        .value("취소할 수 없는 지원 상태입니다."));
+
+        // 상태는 그대로 CANCELED
+        Application canceledApplication = applicationRepository
+                .findById(application.getId())
+                .orElseThrow();
+
+        assertEquals(
+                ApplicationStatus.CANCELED,
+                canceledApplication.getStatus()
+        );
+    }
+
+    @Test
+    @DisplayName("[ApplicationController] 지원 취소 - 존재하지 않는 지원 취소 시 404 반환")
+    void t27() throws Exception {
+
+        Long notExistingApplicationId = 999L;
+
+        ResultActions resultActions = mvc.perform(
+                patch("/api/v1/applications/{applicationId}/cancel",
+                        notExistingApplicationId)
+                        .cookie(escortAccessTokenCookie)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(ApplicationController.class))
+                .andExpect(handler().methodName("cancel"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.statusCode").value("404"))
+                .andExpect(jsonPath("$.msg")
+                        .value("지원을 찾을 수 없습니다."));
     }
 }

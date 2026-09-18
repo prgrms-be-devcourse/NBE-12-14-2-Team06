@@ -13,16 +13,22 @@ import com.back.nbe12142team06.domain.post.entity.PostStatus;
 import com.back.nbe12142team06.domain.post.repository.PostRepository;
 import com.back.nbe12142team06.domain.settlement.entity.Settlement;
 import com.back.nbe12142team06.domain.settlement.repository.SettlementRepository;
+import com.back.nbe12142team06.domain.user.entity.EscortProfile;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Role;
+import com.back.nbe12142team06.domain.user.repository.EscortRepository;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
-import com.back.nbe12142team06.global.exception.*;
+import com.back.nbe12142team06.global.exception.DuplicatedException;
+import com.back.nbe12142team06.global.exception.ForbiddenException;
+import com.back.nbe12142team06.global.exception.InvalidException;
+import com.back.nbe12142team06.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -33,6 +39,7 @@ public class ApplicationService {
     private final UserRepository userRepository;
     private final SettlementRepository settlementRepository;
     private final PaymentRepository paymentRepository;
+    private final EscortRepository escortRepository;
 
     @Transactional
     public ApplicationApplyResponse apply(Long postId, Long userId) {
@@ -197,12 +204,34 @@ public class ApplicationService {
             throw new ForbiddenException("본인이 지원한 내역만 취소할 수 있습니다.");
         }
 
-        // 대기 중인 지원만 취소 가능
-        if (application.getStatus() != ApplicationStatus.PENDING) {
-            throw new InvalidException("대기 중인 지원만 취소할 수 있습니다.");
+        // 대기 상태에서 지원 취소
+        if (application.getStatus() == ApplicationStatus.PENDING) {
+            application.cancel();
+            return;
         }
 
-        application.cancel();
+        // 승인 후 동행인 취소
+        if (application.getStatus() == ApplicationStatus.ACCEPTED) {
+
+            Post post = application.getPost();
+
+            EscortProfile escortProfile = escortRepository.findById(userId)
+                    .orElseThrow(() -> new NotFoundException("동행인 프로필을 찾을 수 없습니다."));
+
+            application.noShow();
+            escortProfile.increaseNoShowCount();
+
+            // 모집 마감 전이면 다시 동행인을 모집
+            if (LocalDateTime.now().isBefore(post.getRecruitEndAt())) {
+                post.reopen();
+            } else {
+                // 모집 마감 후라면 공고 취소
+                post.matchedCancel();
+            }
+            return;
+        }
+
+        throw new InvalidException("취소할 수 없는 지원 상태입니다.");
     }
 
     // 정산 데이터 생성
