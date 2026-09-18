@@ -162,4 +162,9 @@ public class Post extends BaseSoftDeleteTimeEntity {  // createdAt, updatedAt, d
     public void expire() {
         this.postStatus = PostStatus.EXPIRED;
     }
+
+    // 매칭 후 동행인 취소 시 공고 재오픈
+    public void reopen() {
+        this.postStatus = PostStatus.OPEN;
+    }
 }
