@@ -493,7 +493,7 @@ public class UserControllerTest {
         resultActions
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value("200-1"))
-                .andExpect(jsonPath("$.msg").value("내 정보 조회가 완료되었습니다"))
+                .andExpect(jsonPath("$.msg").value("내 정보 조회가 완료되었습니다."))
                 .andExpect(jsonPath("$.data.username").value("user1"))
                 .andExpect(jsonPath("$.data.email").value("first@test.test"))
                 .andExpect(jsonPath("$.data.name").value("김춘식"))
@@ -1530,7 +1530,7 @@ public class UserControllerTest {
     void t33() throws Exception {
         String adminLoginBody = """
                 {
-                    "username": "adminTest"
+                    "username": "adminTest",
                     "password": "adminTest"
                 }
                 """;
@@ -1558,9 +1558,6 @@ public class UserControllerTest {
                 .andExpect(status().isCreated());
 
 
-        em.flush();
-        em.clear();
-
         Long user1Id = this.userRepository.findByUsername("user1").get().getId();
 
 
@@ -1573,10 +1570,11 @@ public class UserControllerTest {
 
         Cookie accessToken = signUp2Result.getResponse().getCookie("accessToken");
 
+        assertThat(accessToken).isNotNull();
+
         // 회원 단건 조회
         ResultActions resultActions = mvc.perform(
-                get("/api/v1/admin/users/profile/%d".formatted(user1Id))
-                        .contentType(MediaType.APPLICATION_JSON)
+                get("/api/v1/admin/users/{id}", user1Id)
                         .cookie(accessToken)
         ).andDo(print());
 
@@ -1585,7 +1583,7 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.statusCode").value("200-1"))
                 .andExpect(jsonPath("$.msg").value("회원정보 조회가 완료되었습니다."))
                 .andExpect(jsonPath("$.data.username").value("user1"))
-                .andExpect(jsonPath("$.data.email").value("user1.user.user"))
+                .andExpect(jsonPath("$.data.email").value("user1@user.user"))
                 .andExpect(jsonPath("$.data.name").value("김춘식"))
                 .andExpect(jsonPath("$.data.role").value("CLIENT"))
                 .andExpect(jsonPath("$.data.gender").value("MALE"))
