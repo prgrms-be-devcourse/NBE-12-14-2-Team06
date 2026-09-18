@@ -3,6 +3,8 @@ package com.back.nbe12142team06.domain.user.controller;
 import com.back.nbe12142team06.domain.auth.entity.RefreshToken;
 import com.back.nbe12142team06.domain.auth.repository.RefreshTokenRepository;
 import com.back.nbe12142team06.domain.user.entity.User;
+import com.back.nbe12142team06.domain.user.enums.Gender;
+import com.back.nbe12142team06.domain.user.enums.Role;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
 import com.back.nbe12142team06.global.security.JwtProvider;
 import com.back.nbe12142team06.global.security.RefreshTokenGenerator;
@@ -54,6 +56,22 @@ public class UserControllerTest {
 
     @Value("${custom.jwt.secret-key}")
     private String secretKey;
+
+    // 관리자 계정 주입
+    void createTestAdmin(){
+        User user = new User(
+                "adminTest",
+                passwordEncoder.encode("adminTest"),
+                "admin@admin.admin",
+                "관리자",
+                Role.ADMIN,
+                Gender.MALE,
+                LocalDate.of(2001, 1, 1),
+                "010-9898-9898",
+                "서울시"
+        );
+        this.userRepository.save(user);
+    }
 
     @Test
     @DisplayName("[UserController] 회원가입 -  정상 가입")
@@ -1497,5 +1515,75 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.msg").value("로그인 후 이용해주세요."));
     }
 
+    @Test
+    @DisplayName("[UserController] [관리자 전용] 회원 단건 조회 - 관리자가 정상적으로 단건 조회 시 200-1 반환")
+    void t33() throws Exception {
+        String adminLoginBody = """
+                {
+                    "username": "adminTest"
+                    "password": "adminTest"
+                }
+                """;
+
+        createTestAdmin();
+
+        String user1Body = """
+        {
+            "username": "user1",
+            "password": "testPassword",
+            "email": "user1@user.user",
+            "name": "김춘식",
+            "role": "CLIENT",
+            "gender": "MALE",
+            "birthDate": "1990-05-20",
+            "phoneNum": "010-8080-0000",
+            "region": "서울시"
+        }
+        """;
+
+        String user2Body = """
+        {
+            "username": "user2",
+            "password": "testPassword",
+            "email": "user2@user.user",
+            "name": "김춘식",
+            "role": "ESCORT",
+            "gender": "MALE",
+            "birthDate": "1990-05-20",
+            "phoneNum": "010-1111-1111",
+            "region": "서울시"
+        }
+        """;
+
+        // user1 가입
+        mvc.perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(user1Body))
+                .andExpect(status().isCreated());
+
+        // user2 가입
+        mvc.perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(user2Body))
+                .andExpect(status().isCreated());
+
+        // 관리자 로그인
+        MvcResult signUp2Result = mvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(adminLoginBody))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        Cookie accessToken = signUp2Result.getResponse().getCookie("accessToken");
+
+        // 회원 단건 조회
+        ResultActions resultActions = mvc.perform(
+                get("/api/v1/admin/users/profile")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .cookie(accessToken)
+        );
+
+
+    }
 
 }

@@ -98,4 +98,7 @@ public class UserController {
                 "회원탈퇴가 완료되었습니다."
         );
     }
+
+    // [ADMIN] 회원 정보 단건 조회
+
 }
