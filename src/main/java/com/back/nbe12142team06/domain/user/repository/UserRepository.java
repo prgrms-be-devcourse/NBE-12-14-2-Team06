@@ -1,9 +1,13 @@
 package com.back.nbe12142team06.domain.user.repository;
 
 
+import com.back.nbe12142team06.domain.user.dto.db.AccountDto;
 import com.back.nbe12142team06.domain.user.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, Long> {
@@ -24,4 +28,14 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     // 회원정보 수정 시 전화번호 중복 체크용
     boolean existsByPhoneNumAndIdNot(String phoneNum, Long id);
+  
+    @Query("select e.accountNumber, u.name from User u join EscortProfile e on u.id=e.userId where e.userId in :ids")
+    List<AccountDto> findAccountByIds(@Param("ids") List<Long> ids);
+
+    @Query("select e.accountNumber from User u join EscortProfile e on u.id=e.userId where e.userId=:userId")
+    String findAccountById(@Param("userId") Long userId);
+
+//    @Query("select e.account from User u join EscortProfile e on u.id=e.userId where e.userId=:userId")
+//    String findAccountById(Long userId);
 }
+
