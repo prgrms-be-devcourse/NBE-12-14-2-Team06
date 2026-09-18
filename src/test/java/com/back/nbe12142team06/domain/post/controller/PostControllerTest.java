@@ -1,5 +1,11 @@
 package com.back.nbe12142team06.domain.post.controller;
 
+import com.back.nbe12142team06.domain.application.entity.Application;
+import com.back.nbe12142team06.domain.application.entity.EscortProgressLog;
+import com.back.nbe12142team06.domain.application.enums.EscortProgress;
+import com.back.nbe12142team06.domain.application.repository.ApplicationRepository;
+import com.back.nbe12142team06.domain.application.repository.EscortProgressLogRepository;
+import com.back.nbe12142team06.domain.payment.entity.PaymentStatus;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.repository.PostRepository;
 import com.back.nbe12142team06.domain.user.entity.User;
@@ -26,7 +32,6 @@ import java.time.LocalDateTime;
 import com.back.nbe12142team06.domain.post.service.PostService;
 import com.back.nbe12142team06.domain.post.entity.PostStatus;
 import java.math.BigDecimal;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -46,6 +51,10 @@ public class PostControllerTest {
     private PostRepository postRepository;
     @Autowired
     private PaymentRepository paymentRepository;
+    @Autowired
+    private ApplicationRepository applicationRepository;
+    @Autowired
+    private EscortProgressLogRepository escortProgressLogRepository;
     @Autowired
     private PostService postService;
     @Autowired
@@ -110,10 +119,47 @@ public class PostControllerTest {
         com.jayway.jsonpath.DocumentContext ctx = com.jayway.jsonpath.JsonPath.parse(response);
         return ((Number) ctx.read("$.data.id")).longValue();
     }
+    //결제 승인 처리
+    private void approvePayment(Long postId) {
+        Payment payment = paymentRepository.findAll().stream()
+                .filter(p -> p.getPost().getId().equals(postId))
+                .findFirst()
+                .orElseThrow();
+        payment.statusUpdate(PaymentStatus.DONE);
+        paymentRepository.saveAndFlush(payment);
+    }
+    // IN_PROGRESS 상태의 공고 만들기 (escortComplete 테스트용 사전 준비)
+    private Long setUpInProgressPost() throws Exception {
+        Long postId = registerPost();
+        Post post = postRepository.findById(postId).orElseThrow();
+        post.match();
+        post.startProgress(LocalDateTime.now().minusHours(1)); // 임시값, escortComplete가 실제값으로 덮어씀
+        postRepository.saveAndFlush(post);
+        return postId;
+    }
 
+    // 해당 공고에 매칭된(ACCEPTED) 지원 만들기
+    private Long setUpAcceptedApplication(Long postId, String suffix) {
+        User escort = new User(
+                "escortUser" + suffix, passwordEncoder.encode("escortPassword"),
+                "escort" + suffix + "@test.com", "동행인", Role.ESCORT, Gender.MALE,
+                LocalDate.of(1990, 1, 1), "010-5555-" + suffix, "인천"
+        );
+        userRepository.save(escort);
+
+        Application application = Application.builder()
+                .post(postRepository.findById(postId).orElseThrow())
+                .escort(escort)
+                .build();
+        application.accept();
+        return applicationRepository.save(application).getId();
+    }
     @Test
     @DisplayName("[PostController] 공고 목록 조회 - 정상 조회")
     void t1() throws Exception {
+        Long postId = registerPost();
+        approvePayment(postId);   // 결제완료 처리해야 목록에 노출됨
+
         ResultActions resultActions = mvc
                 .perform(get("/api/v1/posts")
                         .cookie(new Cookie("accessToken", "")))
@@ -125,7 +171,8 @@ public class PostControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value("200-1"))
                 .andExpect(jsonPath("$.msg").value("목록 조회 성공"))
-                .andExpect(jsonPath("$.data.content").isArray());
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content.length()").value(1));
 
     }
 
@@ -579,6 +626,9 @@ public class PostControllerTest {
                 .findFirst()
                 .orElseThrow();
         Payment repayment = payment.cancelPayment("테스트 취소"); // 기존 건 취소 + 재결제용 새 객체 반환
+
+        repayment.statusUpdate(PaymentStatus.DONE);   // 재결제 완료 처리 추가
+
         paymentRepository.saveAndFlush(payment);   // 취소 처리 저장
         paymentRepository.save(repayment);         // 재결제 건 저장
 
@@ -660,4 +710,178 @@ public class PostControllerTest {
         Post result = postRepository.findById(matchedPostId).orElseThrow();
         assertThat(result.getPostStatus()).isEqualTo(PostStatus.MATCHED); // 그대로 유지돼야 함
     }
+    @Test
+    @DisplayName("[PostController] 공고 목록 조회 - 결제 완료 전(READY) 공고는 제외")
+    void t20() throws Exception {
+        registerPost(); // 결제 상태 건드리지 않음 -> 기본값 READY
+
+        ResultActions resultActions = mvc
+                .perform(get("/api/v1/posts")
+                        .cookie(new Cookie("accessToken", "")))
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content.length()").value(0));
+    }
+    @Test
+    @DisplayName("[PostController] 검색 - 키워드로 조회")
+    void t21() throws Exception {
+        Long postId = registerPost();
+        approvePayment(postId);
+
+        ResultActions resultActions = mvc
+                .perform(get("/api/v1/posts")
+                        .param("keyword", "정형외과")
+                        .cookie(new Cookie("accessToken", "")))
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content.length()").value(1))
+                .andExpect(jsonPath("$.data.content[0].id").value(postId));
+    }
+    @Test
+    @DisplayName("[PostController] 동행완료 처리 - 정상 처리")
+    void t22() throws Exception {
+        Long postId = setUpInProgressPost();
+        Long applicationId = setUpAcceptedApplication(postId, "25");
+
+        LocalDateTime departedAt = LocalDateTime.now().minusHours(1);
+        LocalDateTime arrivedAt = LocalDateTime.now();
+
+        escortProgressLogRepository.save(EscortProgressLog.builder()
+                .application(applicationRepository.findById(applicationId).orElseThrow())
+                .progress(EscortProgress.DEPARTED)
+                .occurredAt(departedAt)
+                .build());
+        escortProgressLogRepository.save(EscortProgressLog.builder()
+                .application(applicationRepository.findById(applicationId).orElseThrow())
+                .progress(EscortProgress.ARRIVED_HOME)
+                .occurredAt(arrivedAt)
+                .build());
+
+        ResultActions resultActions = mvc
+                .perform(patch("/api/v1/posts/{postId}/escortComplete", postId)
+                        .cookie(accessTokenCookie))
+                .andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(PostController.class))
+                .andExpect(handler().methodName("escortComplete"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-1"));
+
+        Post result = postRepository.findById(postId).orElseThrow();
+        assertThat(result.getPostStatus()).isEqualTo(PostStatus.COMPLETED);
+        assertThat(result.getEscortStartAt().getHour()).isEqualTo(departedAt.getHour());
+        assertThat(result.getEscortStartAt().getMinute()).isEqualTo(departedAt.getMinute());
+        assertThat(result.getEscortEndAt().getHour()).isEqualTo(arrivedAt.getHour());
+        assertThat(result.getEscortEndAt().getMinute()).isEqualTo(arrivedAt.getMinute());
+    }
+    @Test
+    @DisplayName("[PostController] 동행완료 처리 - 출발 기록 없으면 404")
+    void t23() throws Exception {
+        Long postId = setUpInProgressPost();
+        setUpAcceptedApplication(postId, "26");
+        // DEPARTED, ARRIVED_HOME 로그 둘 다 안 만듦
+
+        ResultActions resultActions = mvc
+                .perform(patch("/api/v1/posts/{postId}/escortComplete", postId)
+                        .cookie(accessTokenCookie))
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.statusCode").value("404-18"))
+                .andExpect(jsonPath("$.msg").value("동행 출발 기록이 없습니다."));
+    }
+    @Test
+    @DisplayName("[PostController] 동행완료 처리 - 귀가완료 기록 없으면 404")
+    void t24() throws Exception {
+        Long postId = setUpInProgressPost();
+        Long applicationId = setUpAcceptedApplication(postId, "27");
+
+        escortProgressLogRepository.save(EscortProgressLog.builder()
+                .application(applicationRepository.findById(applicationId).orElseThrow())
+                .progress(EscortProgress.DEPARTED)
+                .occurredAt(LocalDateTime.now().minusHours(1))
+                .build());
+        // ARRIVED_HOME 로그는 안 만듦
+
+        ResultActions resultActions = mvc
+                .perform(patch("/api/v1/posts/{postId}/escortComplete", postId)
+                        .cookie(accessTokenCookie))
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.statusCode").value("404-19"))
+                .andExpect(jsonPath("$.msg").value("귀가완료 기록이 없습니다."));
+    }
+    @Test
+    @DisplayName("[PostController] 동행완료 처리 - IN_PROGRESS 상태 아니면 400")
+    void t25() throws Exception {
+        Long postId = registerPost(); // OPEN 상태 그대로
+
+        ResultActions resultActions = mvc
+                .perform(patch("/api/v1/posts/{postId}/escortComplete", postId)
+                        .cookie(accessTokenCookie))
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.statusCode").value("400-13"))
+                .andExpect(jsonPath("$.msg").value("동행진행중 상태에서만 동행완료 처리할 수 있습니다."));
+    }
+    @Test
+    @DisplayName("[PostController] 동행완료 처리 - 본인이 작성한 공고가 아닌 경우 401")
+    void t26() throws Exception {
+        Long postId = setUpInProgressPost();
+
+        String otherUsername = "otherUser29";
+        String otherPassword = "otherPassword29";
+        User otherUser = new User(
+                otherUsername, passwordEncoder.encode(otherPassword),
+                "other29@test.com", "다른유저", Role.CLIENT, Gender.MALE,
+                LocalDate.of(1990, 1, 1), "010-7777-8888", "부산"
+        );
+        userRepository.save(otherUser);
+        Cookie otherAccessTokenCookie = login(otherUsername, otherPassword);
+
+        ResultActions resultActions = mvc
+                .perform(patch("/api/v1/posts/{postId}/escortComplete", postId)
+                        .cookie(otherAccessTokenCookie))
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.statusCode").value("401-16"));
+    }
+    @Test
+    @DisplayName("[PostController] 동행완료 처리 - 동행인(ESCORT) 역할은 권한 없음 401")
+    void t27() throws Exception {
+        Long postId = setUpInProgressPost();
+
+        String escortUsername = "escortUser30";
+        String escortPassword = "escortPassword30";
+        User escortUser = new User(
+                escortUsername, passwordEncoder.encode(escortPassword),
+                "escort30@test.com", "동행인", Role.ESCORT, Gender.MALE,
+                LocalDate.of(1990, 1, 1), "010-9999-0000", "인천"
+        );
+        userRepository.save(escortUser);
+        Cookie escortAccessTokenCookie = login(escortUsername, escortPassword);
+
+        ResultActions resultActions = mvc
+                .perform(patch("/api/v1/posts/{postId}/escortComplete", postId)
+                        .cookie(escortAccessTokenCookie))
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.statusCode").value("401-15"));
+    }
 }
+
+
