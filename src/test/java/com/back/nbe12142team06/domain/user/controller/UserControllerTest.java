@@ -493,7 +493,17 @@ public class UserControllerTest {
         resultActions
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value("200-1"))
-                .andExpect(jsonPath("$.msg").value("내 정보 조회가 완료되었습니다"));
+                .andExpect(jsonPath("$.msg").value("내 정보 조회가 완료되었습니다"))
+                .andExpect(jsonPath("$.data.username").value("user1"))
+                .andExpect(jsonPath("$.data.email").value("first@test.test"))
+                .andExpect(jsonPath("$.data.name").value("김춘식"))
+                .andExpect(jsonPath("$.data.role").value("CLIENT"))
+                .andExpect(jsonPath("$.data.gender").value("MALE"))
+                .andExpect(jsonPath("$.data.birthDate").value("1990-05-20"))
+                .andExpect(jsonPath("$.data.phoneNum").value("010-1234-5678"))
+                .andExpect(jsonPath("$.data.region").value("서울시"))
+                .andExpect(jsonPath("$.data.createdAt").exists())
+                .andExpect(jsonPath("$.data.password").doesNotExist());
     }
 
     @Test
@@ -1541,31 +1551,18 @@ public class UserControllerTest {
         }
         """;
 
-        String user2Body = """
-        {
-            "username": "user2",
-            "password": "testPassword",
-            "email": "user2@user.user",
-            "name": "김춘식",
-            "role": "ESCORT",
-            "gender": "MALE",
-            "birthDate": "1990-05-20",
-            "phoneNum": "010-1111-1111",
-            "region": "서울시"
-        }
-        """;
-
         // user1 가입
         mvc.perform(post("/api/v1/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(user1Body))
                 .andExpect(status().isCreated());
 
-        // user2 가입
-        mvc.perform(post("/api/v1/users")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(user2Body))
-                .andExpect(status().isCreated());
+
+        em.flush();
+        em.clear();
+
+        Long user1Id = this.userRepository.findByUsername("user1").get().getId();
+
 
         // 관리자 로그인
         MvcResult signUp2Result = mvc.perform(post("/api/v1/auth/login")
@@ -1578,12 +1575,25 @@ public class UserControllerTest {
 
         // 회원 단건 조회
         ResultActions resultActions = mvc.perform(
-                get("/api/v1/admin/users/profile")
+                get("/api/v1/admin/users/profile/%d".formatted(user1Id))
                         .contentType(MediaType.APPLICATION_JSON)
                         .cookie(accessToken)
-        );
+        ).andDo(print());
 
-
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-1"))
+                .andExpect(jsonPath("$.msg").value("회원정보 조회가 완료되었습니다."))
+                .andExpect(jsonPath("$.data.username").value("user1"))
+                .andExpect(jsonPath("$.data.email").value("user1.user.user"))
+                .andExpect(jsonPath("$.data.name").value("김춘식"))
+                .andExpect(jsonPath("$.data.role").value("CLIENT"))
+                .andExpect(jsonPath("$.data.gender").value("MALE"))
+                .andExpect(jsonPath("$.data.birthDate").value("1990-05-20"))
+                .andExpect(jsonPath("$.data.phoneNum").value("010-8080-0000"))
+                .andExpect(jsonPath("$.data.region").value("서울시"))
+                .andExpect(jsonPath("$.data.createdAt").exists())
+                .andExpect(jsonPath("$.data.password").doesNotExist());
     }
 
 }
