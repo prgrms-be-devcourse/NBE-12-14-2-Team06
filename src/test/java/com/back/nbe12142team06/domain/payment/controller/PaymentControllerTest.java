@@ -1,7 +1,9 @@
 package com.back.nbe12142team06.domain.payment.controller;
 
+import com.back.nbe12142team06.domain.payment.client.TossPaymentClient;
 import com.back.nbe12142team06.domain.payment.dto.PaymentCancelRequest;
 import com.back.nbe12142team06.domain.payment.dto.PaymentConfirmRequest;
+import com.back.nbe12142team06.domain.payment.dto.TossConfirmResponse;
 import com.back.nbe12142team06.domain.payment.entity.Payment;
 import com.back.nbe12142team06.domain.payment.entity.PaymentStatus;
 import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
@@ -63,6 +65,8 @@ class PaymentControllerTest {
     private PaymentRepository paymentRepository;
     @Autowired
     private PaymentPersistenceService paymentPersistenceService;
+    @Autowired
+    private TossPaymentClient tossPaymentClient;
     @Autowired
     private UserService userService;
     @Autowired
@@ -176,9 +180,10 @@ class PaymentControllerTest {
         String orderId = "temp";
         String amount = "10000";
 
-        RestClient restClient = mockRestClient(HttpStatus.OK);
+        TossPaymentClient mockTossPaymentClient = mock(TossPaymentClient.class);
+        when(mockTossPaymentClient.callApi(any(), any(), any())).thenReturn(ResponseEntity.ok(new TossConfirmResponse("계좌이체", amount)));
 
-        PaymentService paymentService = new PaymentService(paymentRepository, objectMapper, restClient, paymentPersistenceService);
+        PaymentService paymentService = new PaymentService(paymentRepository, objectMapper, null, paymentPersistenceService, mockTossPaymentClient);
 
         Payment payment = paymentService.confirm(new PaymentConfirmRequest(paymentKey, orderId, amount), savedPayment1Id, savedUser1Id, amount);
 
@@ -222,7 +227,7 @@ class PaymentControllerTest {
         String orderId = "temp";
         String amount = "10000";
 
-        PaymentService paymentService = new PaymentService(paymentRepository, null, null, null);
+        PaymentService paymentService = new PaymentService(paymentRepository, null, null, null, null);
 
         // 예외 발생 400번
         assertThrows(InvalidException.class, () -> {
@@ -239,7 +244,7 @@ class PaymentControllerTest {
         String amount = "10000";
         Long paymentId = 10000L;
 
-        PaymentService paymentService = new PaymentService(paymentRepository, null, null, null);
+        PaymentService paymentService = new PaymentService(paymentRepository, null, null, null, null);
 
         // 예외 발생 404
         assertThrows(NotFoundException.class, () -> {
@@ -255,9 +260,10 @@ class PaymentControllerTest {
         String orderId = "temp";
         String amount = "10000";
 
-        RestClient restClient = mockRestClient(HttpStatus.INTERNAL_SERVER_ERROR);
+        TossPaymentClient mockTossPaymentClient = mock(TossPaymentClient.class);
+        when(mockTossPaymentClient.callApi(any(), any(), any())).thenThrow(new InvalidException(11, "결제 승인에 실패했습니다."));
 
-        PaymentService paymentService = new PaymentService(paymentRepository, objectMapper, restClient, paymentPersistenceService);
+        PaymentService paymentService = new PaymentService(paymentRepository, objectMapper, null, paymentPersistenceService, mockTossPaymentClient);
 
         // 예외 발생 400번
         assertThrows(InvalidException.class, () -> {
@@ -456,7 +462,7 @@ class PaymentControllerTest {
 
         RestClient restClient = mockRestClient(HttpStatus.OK);
 
-        PaymentService paymentService = new PaymentService(paymentRepository, objectMapper, restClient, paymentPersistenceService);
+        PaymentService paymentService = new PaymentService(paymentRepository, objectMapper, restClient, paymentPersistenceService, tossPaymentClient);
 
         Payment canceldPayment = paymentService.cancel(savedUser1Id, savedPayment1Id, new PaymentCancelRequest(cancelReason));
 
@@ -475,7 +481,7 @@ class PaymentControllerTest {
 
         RestClient restClient = mockRestClient(HttpStatus.INTERNAL_SERVER_ERROR);
 
-        PaymentService paymentService = new PaymentService(paymentRepository, objectMapper, restClient, paymentPersistenceService);
+        PaymentService paymentService = new PaymentService(paymentRepository, objectMapper, restClient, paymentPersistenceService, tossPaymentClient);
 
         // 예외 발생 400번
         assertThrows(InvalidException.class, () -> {

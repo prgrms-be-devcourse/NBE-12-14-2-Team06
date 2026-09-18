@@ -1,5 +1,6 @@
 package com.back.nbe12142team06.domain.payment.service;
 
+import com.back.nbe12142team06.domain.payment.client.TossPaymentClient;
 import com.back.nbe12142team06.domain.payment.dto.PaymentCancelRequest;
 import com.back.nbe12142team06.domain.payment.dto.PaymentConfirmRequest;
 import com.back.nbe12142team06.domain.payment.dto.SaveAmountRequest;
@@ -30,6 +31,7 @@ public class PaymentService {
     private final ObjectMapper objectMapper;
     private final RestClient tossRestClient;
     private final PaymentPersistenceService paymentPersistenceService;
+    private final TossPaymentClient tossPaymentClient;
 
     public Payment confirm(PaymentConfirmRequest request, Long paymentId, Long userId, String sessionAmount) {
 
@@ -42,7 +44,7 @@ public class PaymentService {
         payment.statusUpdate(PaymentStatus.IN_PROGRESS);
         // 2. 외부 API 호출
         ResponseEntity<TossConfirmResponse> response =
-                paymentPersistenceService.callApi(tossPaymentKey, tossOrderId, amount);
+                tossPaymentClient.callApi(tossPaymentKey, tossOrderId, amount);
         // 3. DB 반영
         try {
             paymentPersistenceService.paymentSaveDb(response, paymentId, tossPaymentKey, tossOrderId);
