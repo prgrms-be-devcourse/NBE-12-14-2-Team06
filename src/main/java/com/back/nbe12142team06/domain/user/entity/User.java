@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.SQLRestriction;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -81,5 +82,13 @@ public class User extends BaseSoftDeleteTimeEntity {
         this.birthDate = birthDate;
         this.phoneNum = phoneNum;
         this.region = region;
+    }
+
+    // 회원 탈퇴 시
+    public void deleteUser(){
+        this.setDeletedAt(LocalDateTime.now());
+        this.username = "deleted_%d".formatted(this.id);
+        this.email = "deleted_%d".formatted(this.id);
+        this.phoneNum = "deleted_%d".formatted(this.id);
     }
 }
