@@ -3,15 +3,12 @@ package com.back.nbe12142team06.domain.payment.service;
 import com.back.nbe12142team06.domain.payment.dto.TossConfirmResponse;
 import com.back.nbe12142team06.domain.payment.entity.Payment;
 import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
-import com.back.nbe12142team06.global.exception.InvalidException;
 import com.back.nbe12142team06.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestClient;
-import tools.jackson.databind.ObjectMapper;
 
 @Slf4j
 @Service
@@ -31,5 +28,13 @@ public class PaymentPersistenceService {
         } else {
             payment.ApprovePayment(tossOrderId, tossPaymentKey, null);
         }
+    }
+
+    @Transactional
+    public Payment paymentCancelDb(Long paymentId, String cancelReason) {
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new NotFoundException(10, "결제 정보를 찾을 수 없습니다."));
+        Payment newPayment = payment.cancelPayment(cancelReason);
+        return paymentRepository.save(newPayment);
     }
 }

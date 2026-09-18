@@ -181,7 +181,7 @@ class PaymentControllerTest {
         String amount = "10000";
 
         TossPaymentClient mockTossPaymentClient = mock(TossPaymentClient.class);
-        when(mockTossPaymentClient.callApi(any(), any(), any())).thenReturn(ResponseEntity.ok(new TossConfirmResponse("계좌이체", amount)));
+        when(mockTossPaymentClient.callApiConfirm(any(), any(), any())).thenReturn(ResponseEntity.ok(new TossConfirmResponse("계좌이체", amount)));
 
         PaymentService paymentService = new PaymentService(paymentRepository, objectMapper, null, paymentPersistenceService, mockTossPaymentClient);
 
@@ -261,7 +261,7 @@ class PaymentControllerTest {
         String amount = "10000";
 
         TossPaymentClient mockTossPaymentClient = mock(TossPaymentClient.class);
-        when(mockTossPaymentClient.callApi(any(), any(), any())).thenThrow(new InvalidException(11, "결제 승인에 실패했습니다."));
+        when(mockTossPaymentClient.callApiConfirm(any(), any(), any())).thenThrow(new InvalidException(11, "결제 승인에 실패했습니다."));
 
         PaymentService paymentService = new PaymentService(paymentRepository, objectMapper, null, paymentPersistenceService, mockTossPaymentClient);
 
@@ -460,17 +460,18 @@ class PaymentControllerTest {
 
         String cancelReason = "결제 취소 사유";
 
-        RestClient restClient = mockRestClient(HttpStatus.OK);
+        TossPaymentClient mockTossPaymentClient = mock(TossPaymentClient.class);
+        when(mockTossPaymentClient.callApiCancel(any(), any(), any())).thenReturn(ResponseEntity.ok(new TossConfirmResponse("계좌이체", "60000")));
 
-        PaymentService paymentService = new PaymentService(paymentRepository, objectMapper, restClient, paymentPersistenceService, tossPaymentClient);
+        PaymentService paymentService = new PaymentService(paymentRepository, objectMapper, null, paymentPersistenceService, mockTossPaymentClient);
 
-        Payment canceldPayment = paymentService.cancel(savedUser1Id, savedPayment1Id, new PaymentCancelRequest(cancelReason));
+        Payment canceledPayment = paymentService.cancel(savedUser1Id, savedPayment1Id, new PaymentCancelRequest(cancelReason));
 
-        assertEquals(PaymentStatus.CANCELED, canceldPayment.getPaymentStatus());
-        assertEquals("결제 취소 사유", canceldPayment.getCancelReason());
-        assertEquals(LocalDateTime.now().getHour(), canceldPayment.getCanceledAt().getHour());
-        assertEquals(LocalDateTime.now().getMinute(), canceldPayment.getCanceledAt().getMinute());
-        assertEquals(0, canceldPayment.getBalanceAmount());
+        assertEquals(PaymentStatus.CANCELED, canceledPayment.getPaymentStatus());
+        assertEquals("결제 취소 사유", canceledPayment.getCancelReason());
+        assertEquals(LocalDateTime.now().getHour(), canceledPayment.getCanceledAt().getHour());
+        assertEquals(LocalDateTime.now().getMinute(), canceledPayment.getCanceledAt().getMinute());
+        assertEquals(0, canceledPayment.getBalanceAmount());
     }
 
     @Test
@@ -479,9 +480,10 @@ class PaymentControllerTest {
 
         String cancelReason = "결제 취소 사유";
 
-        RestClient restClient = mockRestClient(HttpStatus.INTERNAL_SERVER_ERROR);
+        TossPaymentClient mockTossPaymentClient = mock(TossPaymentClient.class);
+        when(mockTossPaymentClient.callApiCancel(any(), any(), any())).thenThrow(InvalidException.class);
 
-        PaymentService paymentService = new PaymentService(paymentRepository, objectMapper, restClient, paymentPersistenceService, tossPaymentClient);
+        PaymentService paymentService = new PaymentService(paymentRepository, objectMapper, null, paymentPersistenceService, mockTossPaymentClient);
 
         // 예외 발생 400번
         assertThrows(InvalidException.class, () -> {

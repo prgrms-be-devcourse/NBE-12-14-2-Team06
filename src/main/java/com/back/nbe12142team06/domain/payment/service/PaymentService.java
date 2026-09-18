@@ -20,7 +20,6 @@ import org.springframework.web.client.RestClient;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
-import java.util.Optional;
 
 @Slf4j
 @Service
@@ -44,13 +43,16 @@ public class PaymentService {
         payment.statusUpdate(PaymentStatus.IN_PROGRESS);
         // 2. 외부 API 호출
         ResponseEntity<TossConfirmResponse> response =
-                tossPaymentClient.callApi(tossPaymentKey, tossOrderId, amount);
+                tossPaymentClient.callApiConfirm(tossPaymentKey, tossOrderId, amount);
         // 3. DB 반영
         try {
             paymentPersistenceService.paymentSaveDb(response, paymentId, tossPaymentKey, tossOrderId);
-        } catch (RuntimeException e) {
+        } catch (NotFoundException e) {
             cancel(userId, paymentId, new PaymentCancelRequest("서버 에러 발생"));
             log.error("결제 승인 실패", e);
+        } catch (RuntimeException ex) {
+            cancel(userId, paymentId, new PaymentCancelRequest("서버 에러 발생"));
+            log.error("결제 승인 실패", ex);
             throw new InternalServerErrorException(10, "결제 승인 도중 서버 에러가 발생했습니다.");
         }
 
@@ -75,29 +77,29 @@ public class PaymentService {
         return payment;
     }
 
-    @Transactional
     public Payment cancel(Long userId, Long paymentId, PaymentCancelRequest request) {
+
         Payment payment = findById(userId, paymentId);
+        String tossPaymentKey = payment.getPaymentKey();
+        String amount = String.valueOf(payment.getAmount());
+        String cancelReason = request.cancelReason();
 
-        // 요청 DTO를 JSON으로 변환
-        String requestBody = objectMapper.createObjectNode()
-                .put("cancelReason", payment.getPaymentKey())
-                .put("cancelAmount", payment.getAmount())
-                .toPrettyString();
+        // 외부 API 요청
+        ResponseEntity<TossConfirmResponse> response =
+                tossPaymentClient.callApiCancel(cancelReason, tossPaymentKey, amount);
 
-        ResponseEntity<TossConfirmResponse> response = tossRestClient.post()
-                .uri("/v1/payments/%s/cancel".formatted(payment.getPaymentKey()))
-                .body(requestBody)
-                .retrieve()
-                .toEntity(TossConfirmResponse.class);
-
-        if (!response.getStatusCode().is2xxSuccessful()) {
-            throw new InvalidException(12, "결제 취소에 실패했습니다.");
+        // DB 반영
+        try {
+            paymentPersistenceService.paymentCancelDb(paymentId, cancelReason);
+        } catch (NotFoundException e) {
+            log.error("결제 취소 실패", e);
+            throw e;
+        } catch (RuntimeException ex) {
+            log.error("결제 취소 실패", ex);
+            throw new InternalServerErrorException(11, "결제 취소 도중 서버 에러가 발생했습니다.");
         }
 
-        Payment newPayment = payment.cancelPayment(request.cancelReason());
-
-        paymentRepository.save(newPayment);
+        log.info("결제 취소 성공, %s".formatted(response));
 
         return payment;
     }
