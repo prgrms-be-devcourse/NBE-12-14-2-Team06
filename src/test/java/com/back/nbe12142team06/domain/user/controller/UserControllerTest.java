@@ -23,6 +23,7 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -193,7 +194,7 @@ public class UserControllerTest {
                         .content(body.formatted("user1", "first@test.test")))
                 .andExpect(status().isCreated());
 
-        // 같은 username, 다른 email로 가입 시도
+        // 다른 username, 다른 email, 같은 전화번호로 가입 시도
         ResultActions resultActions = mvc
                 .perform(post("/api/v1/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -1070,6 +1071,9 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.data.createdAt").exists())
                 .andExpect(jsonPath("$.data.password").doesNotExist());
 
+        em.flush();
+        em.clear();
+
         User updated = this.userRepository.findByUsername("user1").orElseThrow();
         assertThat(updated.getEmail()).isEqualTo("first@test.test");
         assertThat(updated.getName()).isEqualTo("김춘식");
@@ -1220,4 +1224,278 @@ public class UserControllerTest {
 
 
     }
+
+    @Test
+    @DisplayName("[UserController] 회원 탈퇴 - 자기 자신의 계정을 정상적으로 탈퇴하는 경우 204-1 반환")
+    void t27() throws Exception {
+        String signUpBody = """
+        {
+            "username": "user1",
+            "password": "pwd1",
+            "email": "first@test.test",
+            "name": "김춘식",
+            "role": "CLIENT",
+            "gender": "MALE",
+            "birthDate": "1990-05-20",
+            "phoneNum": "010-1234-5678",
+            "region": "서울시"
+        }
+        """;
+
+        // 회원 가입
+        MvcResult signupResult = mvc.perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(signUpBody))
+                .andReturn();
+
+        Cookie accessToken = signupResult.getResponse().getCookie("accessToken");
+        Long userId = userRepository.findByUsername("user1").orElseThrow().getId();
+
+        // 회원 탈퇴
+        ResultActions resultActions = mvc.perform(
+                delete("/api/v1/users/profile")
+                        .cookie(accessToken)
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isNoContent())
+                .andExpect(jsonPath("$.statusCode").value("204-1"))
+                .andExpect(jsonPath("$.msg").value("회원탈퇴가 완료되었습니다."))
+                .andExpect(result -> {
+
+                    // accessToken 폐기 확인
+                    Cookie newAccessToken = result.getResponse().getCookie("accessToken");
+                    assertThat(newAccessToken.getValue()).isEmpty();
+                    assertThat(newAccessToken.getMaxAge()).isEqualTo(0);
+                    assertThat(newAccessToken.getPath()).isEqualTo("/");
+                    assertThat(newAccessToken.isHttpOnly()).isTrue();
+
+                    // refreshToken 폐기 확인
+                    Cookie newRefreshToken = result.getResponse().getCookie("refreshToken");
+                    assertThat(newRefreshToken.getValue()).isEmpty();
+                    assertThat(newRefreshToken.getMaxAge()).isEqualTo(0);
+                    assertThat(newRefreshToken.getPath()).isEqualTo("/api/v1/auth");
+                });
+
+        em.flush();
+        em.clear();
+
+        User deletedUser = (User) em.createNativeQuery(
+                        "SELECT * FROM users WHERE id = :id", User.class)
+                .setParameter("id", userId)
+                .getSingleResult();
+
+        assertThat(deletedUser.getEmail()).isEqualTo("deleted_%d".formatted(userId));
+        assertThat(deletedUser.getUsername()).isEqualTo("deleted_%d".formatted(userId));
+        assertThat(deletedUser.getPhoneNum()).isEqualTo("deleted_%d".formatted(userId));
+        assertThat(deletedUser.getDeletedAt()).isNotNull();
+
+        List<RefreshToken> refreshTokenList = this.refreshTokenRepository.findAllByUserId(userId);
+
+        assertThat(refreshTokenList).isNotEmpty();
+
+        for  (RefreshToken refreshToken : refreshTokenList) {
+            assertThat(refreshToken.isRevoked()).isTrue();
+        }
+    }
+
+    @Test
+    @DisplayName("[UserController] 회원 탈퇴 - 탈퇴 후 기존 accessToken으로 요청 시 401")
+    void t28() throws Exception {
+        String signUpBody = """
+    {
+        "username": "user1",
+        "password": "pwd1",
+        "email": "first@test.test",
+        "name": "김춘식",
+        "role": "CLIENT",
+        "gender": "MALE",
+        "birthDate": "1990-05-20",
+        "phoneNum": "010-1234-5678",
+        "region": "서울시"
+    }
+    """;
+
+        // 회원 가입
+        MvcResult signUpResult = mvc.perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(signUpBody))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        // 탈취된 토큰이라고 가정하고 미리 보관
+        Cookie accessToken = signUpResult.getResponse().getCookie("accessToken");
+
+        // 회원 탈퇴
+        mvc.perform(delete("/api/v1/users/profile").cookie(accessToken))
+                .andExpect(status().isNoContent());
+
+        // 실제 서버처럼 다음 요청이 새 영속성 컨텍스트에서 시작되도록
+        em.flush();
+        em.clear();
+
+        // 탈퇴 전에 받은 토큰으로 다시 요청
+        ResultActions resultActions = mvc.perform(
+                        get("/api/v1/users/profile")
+                                .cookie(accessToken)
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("[UserController] 회원 탈퇴 - 탈퇴 후 같은 아이디, 이메일, 전화번호로 재가입 가능")
+    void t29() throws Exception {
+        String signUpBody = """
+    {
+        "username": "user1",
+        "password": "pwd1",
+        "email": "first@test.test",
+        "name": "김춘식",
+        "role": "CLIENT",
+        "gender": "MALE",
+        "birthDate": "1990-05-20",
+        "phoneNum": "010-1234-5678",
+        "region": "서울시"
+    }
+    """;
+
+        // 회원 가입
+        MvcResult signUpResult = mvc.perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(signUpBody))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        Cookie accessToken = signUpResult.getResponse().getCookie("accessToken");
+
+        // 회원 탈퇴
+        mvc.perform(delete("/api/v1/users/profile").cookie(accessToken))
+                .andExpect(status().isNoContent());
+
+        em.flush();
+        em.clear();
+
+        // 같은 정보로 재가입
+        ResultActions resultActions = mvc.perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(signUpBody))
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.statusCode").value("201-1"));
+    }
+
+    @Test
+    @DisplayName("[UserController] 회원가입 - 대소문자만 다른 이메일로 가입 시 409-2")
+    void t30() throws Exception {
+        String body = """
+        {
+            "username": "%s",
+            "password": "testPassword",
+            "email": "%s",
+            "name": "김춘식",
+            "role": "CLIENT",
+            "gender": "MALE",
+            "birthDate": "1990-05-20",
+            "phoneNum": "%s",
+            "region": "서울시"
+        }
+        """;
+
+        // 첫 번째 가입
+        mvc.perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body.formatted("user1", "first@test.test", "010-1234-5678")))
+                .andExpect(status().isCreated());
+
+        // 대문자로 바꾼 같은 이메일로 가입 시도
+        ResultActions resultActions = mvc.perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body.formatted("user2", "FIRST@TEST.TEST", "010-9999-5678")))
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.statusCode").value("409-2"))
+                .andExpect(jsonPath("$.msg").value("이미 사용 중인 이메일입니다."));
+    }
+
+    @Test
+    @DisplayName("[UserController] 회원 정보 수정 - 대소문자만 다른 이메일로 수정 시 409-2")
+    void t31() throws Exception {
+        String signUpBody = """
+        {
+            "username": "%s",
+            "password": "pwd1",
+            "email": "%s",
+            "name": "김춘식",
+            "role": "CLIENT",
+            "gender": "MALE",
+            "birthDate": "1990-05-20",
+            "phoneNum": "%s",
+            "region": "서울시"
+        }
+        """;
+
+        String updateBody = """
+        {
+            "password": "pwd1",
+            "email": "FIRST@TEST.TEST",
+            "name": "김춘식",
+            "birthDate": "1990-05-20",
+            "phoneNum": "010-3333-5678",
+            "region": "서울시"
+        }
+        """;
+
+        // user1 가입
+        mvc.perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(signUpBody.formatted("user1", "first@test.test", "010-1234-5678")))
+                .andExpect(status().isCreated());
+
+        // user2 가입
+        MvcResult signUp2Result = mvc.perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(signUpBody.formatted("user2", "second@test.test", "010-3333-5678")))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        Cookie accessToken = signUp2Result.getResponse().getCookie("accessToken");
+
+        // user2가 user1의 이메일을 대문자로 바꿔서 수정 시도
+        ResultActions resultActions = mvc.perform(
+                        patch("/api/v1/users/profile")
+                                .cookie(accessToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(updateBody)
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.statusCode").value("409-2"))
+                .andExpect(jsonPath("$.msg").value("이미 사용 중인 이메일입니다."));
+    }
+
+    @Test
+    @DisplayName("[UserController] 회원 탈퇴 - 로그인 없이 탈퇴 요청 시 401-1")
+    void t32() throws Exception {
+        ResultActions resultActions = mvc.perform(
+                        delete("/api/v1/users/profile")
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.statusCode").value("401-1"))
+                .andExpect(jsonPath("$.msg").value("로그인 후 이용해주세요."));
+    }
+
+
 }
