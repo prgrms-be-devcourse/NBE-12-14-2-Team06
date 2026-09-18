@@ -1,5 +1,7 @@
 package com.back.nbe12142team06.domain.user.service;
 
+import com.back.nbe12142team06.domain.auth.entity.RefreshToken;
+import com.back.nbe12142team06.domain.auth.repository.RefreshTokenRepository;
 import com.back.nbe12142team06.domain.user.dto.login.common.UserLoginRequest;
 import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpRequest;
 import com.back.nbe12142team06.domain.user.dto.user.UserProfileUpdateRequest;
@@ -15,6 +17,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -28,6 +31,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final AuthTokenService authTokenService;
     private final PasswordEncoder passwordEncoder;
+    private final RefreshTokenRepository refreshTokenRepository;
 
     // 회원가입
     @Transactional
@@ -133,5 +137,22 @@ public class UserService {
         );
 
         return this.userRepository.save(user);
+    }
+
+    @Transactional
+    public void deleteMyProfile(Long id) {
+        User user = this.userRepository.findById(id)
+                .orElseThrow(() -> new UnauthorizedException("회원 정보를 찾을 수 없습니다. 다시 로그인해주세요."));
+
+        // 해당 유저의 모든 리프레시 토큰 폐기
+        List<RefreshToken> refreshTokens = this.refreshTokenRepository.findAllByUserIdAndRevokedAtIsNull(id);
+
+        for (RefreshToken refreshToken : refreshTokens) {
+            refreshToken.revoke();
+        }
+
+        user.deleteUser();
+
+        this.userRepository.save(user);
     }
 }

@@ -1261,7 +1261,7 @@ public class UserControllerTest {
         resultActions
                 .andExpect(status().isNoContent())
                 .andExpect(jsonPath("$.statusCode").value("204-1"))
-                .andExpect(jsonPath("$.msg").value("회원 탈퇴가 완료되었습니다."))
+                .andExpect(jsonPath("$.msg").value("회원탈퇴가 완료되었습니다."))
                 .andExpect(result -> {
 
                     // accessToken 폐기 확인
@@ -1299,6 +1299,7 @@ public class UserControllerTest {
             assertThat(refreshToken.isRevoked()).isTrue();
         }
     }
+
 
 
 }
