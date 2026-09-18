@@ -1,9 +1,12 @@
 package com.back.nbe12142team06.domain.settlement.repository;
 
+import com.back.nbe12142team06.domain.settlement.dto.AccountDto;
 import com.back.nbe12142team06.domain.settlement.entity.Settlement;
+import com.back.nbe12142team06.domain.settlement.entity.SettlementStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -32,10 +35,15 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long> {
                                             Pageable pageable);
 
 
-    @Query("select s from Settlement s " +
+    @Query("select s.id, ep.accountNumber, e.name, s.payoutAmount " +
+            "from Settlement s " +
+            "join s.escort e " +
+            "join EscortProfile ep on ep.userId=e.id " +
             "where (s.settlementStatus='PENDING' or s.settlementStatus='FAILED') and s.settledDate <= current_date")
-    List<Settlement> findAllByStatusAndDate();
+    List<AccountDto> findAllByStatusAndDate();
 
-    @Query("select s from Settlement s join Application a on s.application.id=a.id where a.id=:applicationId")
-    Optional<Settlement> findByApplicationId(@Param("applicationId") Long applicationId);
+    // clearAutomatically는 1차 캐시를 비워줌 -> 테스트에서 검증할 때 status 반영이 안되서 추가
+    @Modifying(clearAutomatically = true)
+    @Query("update Settlement s set s.settlementStatus=:status where s.id=:id")
+    int updateStatus(@Param("id") Long id, @Param("status") SettlementStatus status);
 }

@@ -57,8 +57,16 @@ public class Settlement extends BaseSoftDeleteTimeEntity {
     @JoinColumn(name = "escort_id")
     private User escort;
 
+    private void updateStatus(SettlementStatus status) {
+        this.settlementStatus = status;
+    }
+
     public void settlementDone() {
-        this.settlementStatus = SettlementStatus.COMPLETED;
+        updateStatus(SettlementStatus.COMPLETED);
+    }
+
+    public void settlementFailed() {
+        updateStatus(SettlementStatus.FAILED);
     }
 
     public void settlementDateUpdate(LocalDate updateDate) {

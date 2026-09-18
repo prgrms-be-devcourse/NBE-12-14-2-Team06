@@ -6,13 +6,9 @@ import com.back.nbe12142team06.domain.application.entity.Application;
 import com.back.nbe12142team06.domain.application.repository.ApplicationRepository;
 import com.back.nbe12142team06.domain.application.service.ApplicationService;
 import com.back.nbe12142team06.domain.payment.client.TossPaymentClient;
-import com.back.nbe12142team06.domain.payment.entity.Payment;
-import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
 import com.back.nbe12142team06.domain.post.dto.PostWriteRequest;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.service.PostService;
-import com.back.nbe12142team06.domain.settlement.client.SettlementClient;
-import com.back.nbe12142team06.domain.settlement.client.SettlementClientResponse;
 import com.back.nbe12142team06.domain.settlement.entity.Settlement;
 import com.back.nbe12142team06.domain.settlement.entity.SettlementStatus;
 import com.back.nbe12142team06.domain.settlement.repository.SettlementRepository;
@@ -24,13 +20,11 @@ import com.back.nbe12142team06.domain.user.enums.Gender;
 import com.back.nbe12142team06.domain.user.enums.Role;
 import com.back.nbe12142team06.domain.user.repository.EscortRepository;
 import com.back.nbe12142team06.domain.user.service.UserService;
-import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -39,9 +33,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -49,12 +40,12 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.handler;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 @SpringBootTest
 @Transactional
@@ -339,7 +330,9 @@ class SettlementControllerTest {
 
         int[] counts = settlementService.settlementProcess();
 
-        assertEquals(SettlementStatus.COMPLETED, save.getSettlementStatus());
+        Settlement savedSettlement = settlementRepository.findById(save.getId()).orElse(null);
+
+        assertEquals(SettlementStatus.COMPLETED, savedSettlement.getSettlementStatus());
         assertEquals(1, counts[0]);
         assertEquals(1, counts[1]);
         assertEquals(0, counts[2]);
