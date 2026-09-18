@@ -27,8 +27,5 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     // 회원정보 수정 시 전화번호 중복 체크용
     boolean existsByPhoneNumAndIdNot(String phoneNum, Long id);
-
-    @Query("select e.accountNumber from User u join EscortProfile e on u.id=e.userId where e.userId=:userId")
-    String findAccountById(@Param("userId") Long userId);
 }
 

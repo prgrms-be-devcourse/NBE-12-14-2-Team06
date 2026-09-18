@@ -19,7 +19,7 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long> {
 
     @Query("select s " +
             "from Settlement s " +
-            "join User u on s.escort=u " +
+            "join fetch User u on s.escort=u " +
             "where s.id=:settlementId and (s.settlementStatus='PENDING' or s.settlementStatus='FAILED')")
     Optional<Settlement> findByIdAndState(@Param("settlementId") Long settlementId);
 
@@ -46,4 +46,7 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long> {
     @Modifying(clearAutomatically = true)
     @Query("update Settlement s set s.settlementStatus=:status where s.id=:id")
     int updateStatus(@Param("id") Long id, @Param("status") SettlementStatus status);
+
+    @Query("select ep.accountNumber from Settlement s join s.escort e join EscortProfile ep on ep.userId=e.id where e.id=:userId")
+    String findAccountByUserId(@Param("userId") Long userId);
 }
