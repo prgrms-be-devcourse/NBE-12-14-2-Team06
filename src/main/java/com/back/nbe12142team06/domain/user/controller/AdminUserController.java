@@ -1,6 +1,6 @@
 package com.back.nbe12142team06.domain.user.controller;
 
-import com.back.nbe12142team06.domain.user.dto.user.UserResponse;
+import com.back.nbe12142team06.domain.user.dto.user.AdminUserResponse;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.service.UserService;
 import com.back.nbe12142team06.global.response.RsData;
@@ -19,7 +19,7 @@ public class AdminUserController {
 
     // [ADMIN] 회원 정보 단건 조회
     @GetMapping("/users/{userId}")
-    public RsData<UserResponse> getUser(@PathVariable Long userId) {
+    public RsData<AdminUserResponse> getUser(@PathVariable Long userId) {
 
         User user = this.userService.findById(userId);
 
@@ -27,7 +27,8 @@ public class AdminUserController {
         return new RsData<>(
                 "200-1",
                 "회원 정보 조회가 완료되었습니다.",
-                new UserResponse(user)
+                new AdminUserResponse(user)
         );
     }
+
 }

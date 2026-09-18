@@ -157,10 +157,10 @@ public class UserService {
         this.userRepository.save(user);
     }
 
-    // [관리자] 회원 정보 조회
+    // [관리자] 회원 정보 조회 (탈퇴한 회원 정보도 가능)
     @Transactional(readOnly = true)
     public User findById(Long userId) {
-        return userRepository.findById(userId)
+        return userRepository.findByIdIncludingDeleted(userId)
                 .orElseThrow(() -> new NotFoundException("회원 정보를 찾을 수 없습니다."));
     }
 }
