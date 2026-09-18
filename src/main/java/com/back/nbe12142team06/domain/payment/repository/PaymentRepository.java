@@ -24,4 +24,10 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
             "join User u on post.client=u " +
             "where u.id=:userId")
     List<Payment> findAllByUserId(@Param("userId") Long userId);
+
+    @Query("select pay " +
+            "from Payment pay " +
+            "join Post post on pay.post=post " +
+            "where post.id=:postId and pay.paymentStatus=PaymentStatus.READY")
+    Optional<Payment> findByPostId(@Param("postId") Long postId);
 }
