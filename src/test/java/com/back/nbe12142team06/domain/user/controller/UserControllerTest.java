@@ -704,4 +704,520 @@ public class UserControllerTest {
         assertThat(updated.getRegion()).isEqualTo("경기도");
         assertThat(passwordEncoder.matches("pwd123", updated.getPassword())).isTrue();  // 비밀번호를 수정 대상에 둔다면
     }
+
+    @Test
+    @DisplayName("[UserController] 회원 정보 수정 - 정상 수정은 200-3 반환 - 지역만 수정")
+    void t19() throws Exception {
+        String signUpBody = """
+        {
+            "username": "user1",
+            "password": "pwd1",
+            "email": "first@test.test",
+            "name": "김춘식",
+            "role": "CLIENT",
+            "gender": "MALE",
+            "birthDate": "1990-05-20",
+            "phoneNum": "010-1234-5678",
+            "region": "서울시"
+        }
+        """;
+
+        String updateBody = """
+        {
+            "password": "pwd1",
+            "email": "first@test.test",
+            "name": "김춘식",
+            "birthDate": "1990-05-20",
+            "phoneNum": "010-1234-5678",
+            "region": "서울시이이이"
+        }
+        """;
+
+        // 회원 가입
+        MvcResult signUpResult = mvc.perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(signUpBody))
+                .andReturn();
+
+        Cookie accessToken = signUpResult.getResponse().getCookie("accessToken");
+
+        // 회원 정보 수정
+        ResultActions resultActions = mvc.perform(
+                        patch("/api/v1/users/profile")
+                                .cookie(accessToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(updateBody)
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-3"))
+                .andExpect(jsonPath("$.msg").value("회원 정보가 수정되었습니다."))
+                .andExpect(jsonPath("$.data.username").value("user1"))
+                .andExpect(jsonPath("$.data.email").value("first@test.test"))
+                .andExpect(jsonPath("$.data.name").value("김춘식"))
+                .andExpect(jsonPath("$.data.role").value("CLIENT"))
+                .andExpect(jsonPath("$.data.gender").value("MALE"))
+                .andExpect(jsonPath("$.data.birthDate").value("1990-05-20"))
+                .andExpect(jsonPath("$.data.phoneNum").value("010-1234-5678"))
+                .andExpect(jsonPath("$.data.region").value("서울시이이이"))
+                .andExpect(jsonPath("$.data.createdAt").exists())
+                .andExpect(jsonPath("$.data.password").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("[UserController] 회원 정보 수정 - 정상 수정은 200-3 반환 - 전화번호만 수정")
+    void t20() throws Exception {
+        String signUpBody = """
+        {
+            "username": "user1",
+            "password": "pwd1",
+            "email": "first@test.test",
+            "name": "김춘식",
+            "role": "CLIENT",
+            "gender": "MALE",
+            "birthDate": "1990-05-20",
+            "phoneNum": "010-1234-5678",
+            "region": "서울시"
+        }
+        """;
+
+        String updateBody = """
+        {
+            "password": "pwd1",
+            "email": "first@test.test",
+            "name": "김춘식",
+            "birthDate": "1990-05-20",
+            "phoneNum": "010-3333-5678",
+            "region": "서울시"
+        }
+        """;
+
+        // 회원 가입
+        MvcResult signUpResult = mvc.perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(signUpBody))
+                .andReturn();
+
+        Cookie accessToken = signUpResult.getResponse().getCookie("accessToken");
+
+        // 회원 정보 수정
+        ResultActions resultActions = mvc.perform(
+                        patch("/api/v1/users/profile")
+                                .cookie(accessToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(updateBody)
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-3"))
+                .andExpect(jsonPath("$.msg").value("회원 정보가 수정되었습니다."))
+                .andExpect(jsonPath("$.data.username").value("user1"))
+                .andExpect(jsonPath("$.data.email").value("first@test.test"))
+                .andExpect(jsonPath("$.data.name").value("김춘식"))
+                .andExpect(jsonPath("$.data.role").value("CLIENT"))
+                .andExpect(jsonPath("$.data.gender").value("MALE"))
+                .andExpect(jsonPath("$.data.birthDate").value("1990-05-20"))
+                .andExpect(jsonPath("$.data.phoneNum").value("010-3333-5678"))
+                .andExpect(jsonPath("$.data.region").value("서울시"))
+                .andExpect(jsonPath("$.data.createdAt").exists())
+                .andExpect(jsonPath("$.data.password").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("[UserController] 회원 정보 수정 - 정상 수정은 200-3 반환 - 생일만 수정")
+    void t21() throws Exception {
+        String signUpBody = """
+        {
+            "username": "user1",
+            "password": "pwd1",
+            "email": "first@test.test",
+            "name": "김춘식",
+            "role": "CLIENT",
+            "gender": "MALE",
+            "birthDate": "1990-05-20",
+            "phoneNum": "010-1234-5678",
+            "region": "서울시"
+        }
+        """;
+
+        String updateBody = """
+        {
+            "password": "pwd1",
+            "email": "first@test.test",
+            "name": "김춘식",
+            "birthDate": "1990-05-29",
+            "phoneNum": "010-1234-5678",
+            "region": "서울시"
+        }
+        """;
+
+        // 회원 가입
+        MvcResult signUpResult = mvc.perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(signUpBody))
+                .andReturn();
+
+        Cookie accessToken = signUpResult.getResponse().getCookie("accessToken");
+
+        // 회원 정보 수정
+        ResultActions resultActions = mvc.perform(
+                        patch("/api/v1/users/profile")
+                                .cookie(accessToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(updateBody)
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-3"))
+                .andExpect(jsonPath("$.msg").value("회원 정보가 수정되었습니다."))
+                .andExpect(jsonPath("$.data.username").value("user1"))
+                .andExpect(jsonPath("$.data.email").value("first@test.test"))
+                .andExpect(jsonPath("$.data.name").value("김춘식"))
+                .andExpect(jsonPath("$.data.role").value("CLIENT"))
+                .andExpect(jsonPath("$.data.gender").value("MALE"))
+                .andExpect(jsonPath("$.data.birthDate").value("1990-05-29"))
+                .andExpect(jsonPath("$.data.phoneNum").value("010-1234-5678"))
+                .andExpect(jsonPath("$.data.region").value("서울시"))
+                .andExpect(jsonPath("$.data.createdAt").exists())
+                .andExpect(jsonPath("$.data.password").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("[UserController] 회원 정보 수정 - 정상 수정은 200-3 반환 - 이름만 수정")
+    void t22() throws Exception {
+        String signUpBody = """
+        {
+            "username": "user1",
+            "password": "pwd1",
+            "email": "first@test.test",
+            "name": "김춘식",
+            "role": "CLIENT",
+            "gender": "MALE",
+            "birthDate": "1990-05-20",
+            "phoneNum": "010-1234-5678",
+            "region": "서울시"
+        }
+        """;
+
+        String updateBody = """
+        {
+            "password": "pwd1",
+            "email": "first@test.test",
+            "name": "김춘자",
+            "birthDate": "1990-05-20",
+            "phoneNum": "010-1234-5678",
+            "region": "서울시"
+        }
+        """;
+
+        // 회원 가입
+        MvcResult signUpResult = mvc.perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(signUpBody))
+                .andReturn();
+
+        Cookie accessToken = signUpResult.getResponse().getCookie("accessToken");
+
+        // 회원 정보 수정
+        ResultActions resultActions = mvc.perform(
+                        patch("/api/v1/users/profile")
+                                .cookie(accessToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(updateBody)
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-3"))
+                .andExpect(jsonPath("$.msg").value("회원 정보가 수정되었습니다."))
+                .andExpect(jsonPath("$.data.username").value("user1"))
+                .andExpect(jsonPath("$.data.email").value("first@test.test"))
+                .andExpect(jsonPath("$.data.name").value("김춘자"))
+                .andExpect(jsonPath("$.data.role").value("CLIENT"))
+                .andExpect(jsonPath("$.data.gender").value("MALE"))
+                .andExpect(jsonPath("$.data.birthDate").value("1990-05-20"))
+                .andExpect(jsonPath("$.data.phoneNum").value("010-1234-5678"))
+                .andExpect(jsonPath("$.data.region").value("서울시"))
+                .andExpect(jsonPath("$.data.createdAt").exists())
+                .andExpect(jsonPath("$.data.password").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("[UserController] 회원 정보 수정 - 정상 수정은 200-3 반환 - 이메일만 수정")
+    void t23() throws Exception {
+        String signUpBody = """
+        {
+            "username": "user1",
+            "password": "pwd1",
+            "email": "first@test.test",
+            "name": "김춘식",
+            "role": "CLIENT",
+            "gender": "MALE",
+            "birthDate": "1990-05-20",
+            "phoneNum": "010-1234-5678",
+            "region": "서울시"
+        }
+        """;
+
+        String updateBody = """
+        {
+            "password": "pwd1",
+            "email": "huhuhuhuh@test.test",
+            "name": "김춘식",
+            "birthDate": "1990-05-20",
+            "phoneNum": "010-1234-5678",
+            "region": "서울시"
+        }
+        """;
+
+        // 회원 가입
+        MvcResult signUpResult = mvc.perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(signUpBody))
+                .andReturn();
+
+        Cookie accessToken = signUpResult.getResponse().getCookie("accessToken");
+
+        // 회원 정보 수정
+        ResultActions resultActions = mvc.perform(
+                        patch("/api/v1/users/profile")
+                                .cookie(accessToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(updateBody)
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-3"))
+                .andExpect(jsonPath("$.msg").value("회원 정보가 수정되었습니다."))
+                .andExpect(jsonPath("$.data.username").value("user1"))
+                .andExpect(jsonPath("$.data.email").value("huhuhuhuh@test.test"))
+                .andExpect(jsonPath("$.data.name").value("김춘식"))
+                .andExpect(jsonPath("$.data.role").value("CLIENT"))
+                .andExpect(jsonPath("$.data.gender").value("MALE"))
+                .andExpect(jsonPath("$.data.birthDate").value("1990-05-20"))
+                .andExpect(jsonPath("$.data.phoneNum").value("010-1234-5678"))
+                .andExpect(jsonPath("$.data.region").value("서울시"))
+                .andExpect(jsonPath("$.data.createdAt").exists())
+                .andExpect(jsonPath("$.data.password").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("[UserController] 회원 정보 수정 - 정상 수정은 200-3 반환 - 비밀번호만 수정")
+    void t24() throws Exception {
+        String signUpBody = """
+        {
+            "username": "user1",
+            "password": "pwd1",
+            "email": "first@test.test",
+            "name": "김춘식",
+            "role": "CLIENT",
+            "gender": "MALE",
+            "birthDate": "1990-05-20",
+            "phoneNum": "010-1234-5678",
+            "region": "서울시"
+        }
+        """;
+
+        String updateBody = """
+        {
+            "password": "pwd12222222222222222222",
+            "email": "first@test.test",
+            "name": "김춘식",
+            "birthDate": "1990-05-20",
+            "phoneNum": "010-1234-5678",
+            "region": "서울시"
+        }
+        """;
+
+        // 회원 가입
+        MvcResult signUpResult = mvc.perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(signUpBody))
+                .andReturn();
+
+        Cookie accessToken = signUpResult.getResponse().getCookie("accessToken");
+
+        // 회원 정보 수정
+        ResultActions resultActions = mvc.perform(
+                        patch("/api/v1/users/profile")
+                                .cookie(accessToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(updateBody)
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-3"))
+                .andExpect(jsonPath("$.msg").value("회원 정보가 수정되었습니다."))
+                .andExpect(jsonPath("$.data.username").value("user1"))
+                .andExpect(jsonPath("$.data.email").value("first@test.test"))
+                .andExpect(jsonPath("$.data.name").value("김춘식"))
+                .andExpect(jsonPath("$.data.role").value("CLIENT"))
+                .andExpect(jsonPath("$.data.gender").value("MALE"))
+                .andExpect(jsonPath("$.data.birthDate").value("1990-05-20"))
+                .andExpect(jsonPath("$.data.phoneNum").value("010-1234-5678"))
+                .andExpect(jsonPath("$.data.region").value("서울시"))
+                .andExpect(jsonPath("$.data.createdAt").exists())
+                .andExpect(jsonPath("$.data.password").doesNotExist());
+
+        User updated = this.userRepository.findByUsername("user1").orElseThrow();
+        assertThat(updated.getEmail()).isEqualTo("first@test.test");
+        assertThat(updated.getName()).isEqualTo("김춘식");
+        assertThat(updated.getBirthDate()).isEqualTo(LocalDate.of(1990, 5, 20));
+        assertThat(passwordEncoder.matches("pwd12222222222222222222", updated.getPassword())).isTrue();
+    }
+
+    @Test
+    @DisplayName("[UserController] 회원 정보 수정 - 존재하는 email로 수정 시도 시 409-2")
+    void t25() throws Exception {
+        String signUp1Body = """
+        {
+            "username": "user1",
+            "password": "pwd1",
+            "email": "first@test.test",
+            "name": "김춘식",
+            "role": "CLIENT",
+            "gender": "MALE",
+            "birthDate": "1990-05-20",
+            "phoneNum": "010-1234-5678",
+            "region": "서울시"
+        }
+        """;
+
+        String signUp2Body = """
+        {
+            "username": "user13",
+            "password": "pwd1",
+            "email": "first1@test.test",
+            "name": "김춘식",
+            "role": "CLIENT",
+            "gender": "MALE",
+            "birthDate": "1990-05-20",
+            "phoneNum": "010-3333-5678",
+            "region": "서울시"
+        }
+        """;
+
+        String updateBody = """
+        {
+            "password": "pwd1222",
+            "email": "first@test.test",
+            "name": "김춘식22",
+            "birthDate": "1990-05-25",
+            "phoneNum": "010-3333-5678",
+            "region": "서울시"
+        }
+        """;
+
+        // 회원 가입
+        mvc.perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(signUp1Body))
+                .andReturn();
+
+        MvcResult signUp2Result = mvc.perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(signUp2Body))
+                .andReturn();
+
+        Cookie accessToken = signUp2Result.getResponse().getCookie("accessToken");
+
+        // 회원 정보 수정
+        ResultActions resultActions = mvc.perform(
+                        patch("/api/v1/users/profile")
+                                .cookie(accessToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(updateBody)
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.statusCode").value("409-2"))
+                .andExpect(jsonPath("$.msg").value("이미 사용 중인 이메일입니다."));
+
+
+    }
+
+    @Test
+    @DisplayName("[UserController] 회원 정보 수정 - 존재하는 전화번호로 수정 시도 시 409-3")
+    void t26() throws Exception {
+        String signUp1Body = """
+        {
+            "username": "user1",
+            "password": "pwd1",
+            "email": "first@test.test",
+            "name": "김춘식",
+            "role": "CLIENT",
+            "gender": "MALE",
+            "birthDate": "1990-05-20",
+            "phoneNum": "010-1234-5678",
+            "region": "서울시"
+        }
+        """;
+
+        String signUp2Body = """
+        {
+            "username": "user13",
+            "password": "pwd1",
+            "email": "first1@test.test",
+            "name": "김춘식",
+            "role": "CLIENT",
+            "gender": "MALE",
+            "birthDate": "1990-05-20",
+            "phoneNum": "010-3333-5678",
+            "region": "서울시"
+        }
+        """;
+
+        String updateBody = """
+        {
+            "password": "pwd1222",
+            "email": "first3@test.test",
+            "name": "김춘식22",
+            "birthDate": "1990-05-25",
+            "phoneNum": "010-1234-5678",
+            "region": "서울시"
+        }
+        """;
+
+        // 회원 가입
+        mvc.perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(signUp1Body))
+                .andReturn();
+
+        MvcResult signUp2Result = mvc.perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(signUp2Body))
+                .andReturn();
+
+        Cookie accessToken = signUp2Result.getResponse().getCookie("accessToken");
+
+        // 회원 정보 수정
+        ResultActions resultActions = mvc.perform(
+                        patch("/api/v1/users/profile")
+                                .cookie(accessToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(updateBody)
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.statusCode").value("409-3"))
+                .andExpect(jsonPath("$.msg").value("이미 사용 중인 전화번호입니다."));
+
+
+    }
 }
