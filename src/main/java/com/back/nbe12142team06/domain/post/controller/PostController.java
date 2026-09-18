@@ -1,19 +1,26 @@
 package com.back.nbe12142team06.domain.post.controller;
 
 import com.back.nbe12142team06.domain.post.dto.PostDto;
+import com.back.nbe12142team06.domain.post.dto.PostSearchConditionDto;
 import com.back.nbe12142team06.domain.post.dto.PostWriteRequest;
 import com.back.nbe12142team06.domain.post.dto.PostWriteResponse;
 import com.back.nbe12142team06.domain.post.entity.Post;
+import com.back.nbe12142team06.domain.post.entity.PostStatus;
 import com.back.nbe12142team06.domain.post.service.PostService;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
+import com.back.nbe12142team06.global.exception.NotFoundException;
 import com.back.nbe12142team06.global.response.RsData;
 import com.back.nbe12142team06.global.security.SecurityUser;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
 
 @RestController
 @RequiredArgsConstructor
@@ -27,10 +34,30 @@ public class PostController {
     @GetMapping
     public RsData<Page<PostDto>> list(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
-        Page<PostDto> postDtoPage = postService.findAll(PageRequest.of(page, size))
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String region,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dateFrom,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dateTo,
+            @RequestParam(required = false) Integer minPay,
+            @RequestParam(required = false) Integer maxPay,
+            @RequestParam(defaultValue = "latest") String sort) {
+
+        Sort sortOption = switch (sort) {
+            case "payHigh" -> Sort.by(Sort.Direction.DESC, "hourlyPay");
+            case "payLow" -> Sort.by(Sort.Direction.ASC, "hourlyPay");
+            default -> Sort.by(Sort.Direction.DESC, "id"); // 최신순 (기본값)
+        };
+
+        PostSearchConditionDto condition = new PostSearchConditionDto(
+                keyword, region, dateFrom, dateTo, minPay, maxPay);
+
+        Page<PostDto> postDtoPage = postService.search(condition, PageRequest.of(page, size, sortOption))
                 .map(PostDto::new);
 
+        if (postDtoPage.isEmpty()) {
+            return new RsData<>("200-2", "조회 내역이 없습니다.", postDtoPage);
+        }
         return new RsData<>("200-1", "목록 조회 성공", postDtoPage);
     }
 
@@ -94,6 +121,19 @@ public class PostController {
         return new RsData<>(
                 "200-1",
                 "%d번 게시물의 매칭이 취소되었습니다.".formatted(postId)
+        );
+    }
+    //매칭된 공고 동행완료 처리
+    @PatchMapping("/{postId}/escortComplete")
+    public RsData<PostDto> escortComplete(
+            @AuthenticationPrincipal SecurityUser actor,
+            @PathVariable Long postId) {
+
+        postService.escortComplete(postId,actor.getId());
+
+        return new RsData<>(
+                "200-1",
+                "%d번 공고가 완료되었습니다. 실제 동행시간 및 지급액을 확인해주세요.".formatted(postId)
         );
     }
 }
