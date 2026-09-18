@@ -5,6 +5,8 @@ import com.back.nbe12142team06.domain.application.entity.EscortProgressLog;
 import com.back.nbe12142team06.domain.application.enums.EscortProgress;
 import com.back.nbe12142team06.domain.application.repository.ApplicationRepository;
 import com.back.nbe12142team06.domain.application.repository.EscortProgressLogRepository;
+import com.back.nbe12142team06.domain.payment.client.TossPaymentClient;
+import com.back.nbe12142team06.domain.payment.dto.TossConfirmResponse;
 import com.back.nbe12142team06.domain.payment.entity.PaymentStatus;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.repository.PostRepository;
@@ -16,12 +18,16 @@ import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.BDDMockito;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +39,7 @@ import com.back.nbe12142team06.domain.post.service.PostService;
 import com.back.nbe12142team06.domain.post.entity.PostStatus;
 import java.math.BigDecimal;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.BDDMockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -741,6 +748,11 @@ public class PostControllerTest {
                 .andExpect(jsonPath("$.data.content.length()").value(1))
                 .andExpect(jsonPath("$.data.content[0].id").value(postId));
     }
+
+    // t22() 테스트에서 토스 API를 목으로 교체하기 위해 추가했습니다.
+    @MockitoBean
+    TossPaymentClient tossPaymentClient;
+
     @Test
     @DisplayName("[PostController] 동행완료 처리 - 정상 처리")
     void t22() throws Exception {
@@ -760,6 +772,10 @@ public class PostControllerTest {
                 .progress(EscortProgress.ARRIVED_HOME)
                 .occurredAt(arrivedAt)
                 .build());
+
+        // 실제 토스 API 이용하지 않도록 아래를 추가했습니다.
+        given(tossPaymentClient.callApiCancel(any(), any(), any()))
+                .willReturn(ResponseEntity.ok(new TossConfirmResponse("계좌이체", "30000")));
 
         ResultActions resultActions = mvc
                 .perform(patch("/api/v1/posts/{postId}/escortComplete", postId)
