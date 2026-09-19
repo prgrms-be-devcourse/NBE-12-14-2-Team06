@@ -6,9 +6,9 @@ import com.back.nbe12142team06.domain.application.enums.ApplicationStatus;
 import com.back.nbe12142team06.domain.application.enums.EscortProgress;
 import com.back.nbe12142team06.domain.application.repository.ApplicationRepository;
 import com.back.nbe12142team06.domain.application.repository.EscortProgressLogRepository;
-import com.back.nbe12142team06.domain.payment.entity.Payment;
-import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
+import com.back.nbe12142team06.domain.payment.service.PaymentService;
 import com.back.nbe12142team06.domain.post.dto.PostSearchConditionDto;
+import com.back.nbe12142team06.domain.post.dto.PostWriteRequest;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.entity.PostStatus;
 import com.back.nbe12142team06.domain.post.repository.PostRepository;
@@ -24,14 +24,11 @@ import com.back.nbe12142team06.global.exception.UnauthorizedException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-import com.back.nbe12142team06.domain.post.dto.PostWriteRequest;
 
-import java.math.BigDecimal;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
-import org.springframework.data.domain.Pageable;
 
 @Service
 @RequiredArgsConstructor
@@ -40,10 +37,10 @@ public class PostService {
 
     private final PostRepository postRepository;
     private final UserRepository userRepository;
-    private final PaymentRepository paymentRepository;
     private final RideRepository rideRepository;
     private final EscortProgressLogRepository escortProgressLogRepository;
     private final ApplicationRepository applicationRepository;
+    private final PaymentService paymentService;
 
     public Page<Post> findAll(Pageable pageable) {
         return postRepository.findAllWithClient(pageable);
@@ -105,23 +102,11 @@ public class PostService {
                 .build();
 
         // 결제 데이터 생성
-        createPayment(post);
+        paymentService.createPayment(post);
         // 이동수단 데이터 생성
         createRide(post);
 
         return postRepository.save(post);
-    }
-
-    private void createPayment(Post post) {
-        BigDecimal hours = BigDecimal.valueOf(
-                Duration.between(post.getEscortStartAt(), post.getEscortEndAt()).toMinutes() / 60);
-        Payment payment = Payment.builder()
-                .post(post)
-                .hourlyPaySnapshot(post.getHourlyPay())
-                .hours(hours)
-                .amount(hours.multiply(BigDecimal.valueOf(post.getHourlyPay())).intValue())
-                .build();
-        paymentRepository.save(payment);
     }
 
     private void createRide(Post post) {
@@ -266,5 +251,8 @@ public class PostService {
 
         post.startProgress(departedAt);   // escortStartAt 실제값 반영
         post.complete(arrivedAt);       // escortEndAt 실제값 반영 + 상태 COMPLETED
+
+        // 재결제 로직
+        paymentService.validPayment(userId, post, application, post.getEscortEndAt().plusDays(1).toLocalDate());
     }
 }
