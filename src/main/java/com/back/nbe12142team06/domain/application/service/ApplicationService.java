@@ -4,8 +4,11 @@ import com.back.nbe12142team06.domain.application.dto.ApplicationAcceptResponse;
 import com.back.nbe12142team06.domain.application.dto.ApplicationApplyResponse;
 import com.back.nbe12142team06.domain.application.dto.ApplicationListResponse;
 import com.back.nbe12142team06.domain.application.entity.Application;
+import com.back.nbe12142team06.domain.application.entity.EscortProgressLog;
 import com.back.nbe12142team06.domain.application.enums.ApplicationStatus;
+import com.back.nbe12142team06.domain.application.enums.EscortProgress;
 import com.back.nbe12142team06.domain.application.repository.ApplicationRepository;
+import com.back.nbe12142team06.domain.application.repository.EscortProgressLogRepository;
 import com.back.nbe12142team06.domain.payment.entity.Payment;
 import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
 import com.back.nbe12142team06.domain.post.entity.Post;
@@ -40,6 +43,7 @@ public class ApplicationService {
     private final SettlementRepository settlementRepository;
     private final PaymentRepository paymentRepository;
     private final EscortRepository escortRepository;
+    private final EscortProgressLogRepository escortProgressLogRepository;
 
     @Transactional
     public ApplicationApplyResponse apply(Long postId, Long userId) {
@@ -253,5 +257,58 @@ public class ApplicationService {
                 .build();
 
         settlementRepository.save(settlement);
+    }
+
+    @Transactional
+    public void updateProgress(Long applicationId, Long userId, EscortProgress progress) {
+
+        Application application = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new NotFoundException("지원을 찾을 수 없습니다."));
+
+        // 본인의 동행 진행 상태만 변경 가능
+        if (!application.getEscort().getId().equals(userId)) {
+            throw new ForbiddenException("본인의 동행 진행 상태만 변경할 수 있습니다.");
+        }
+
+        // 승인된 지원만 동행 진행 상태 변경 가능
+        if (application.getStatus() != ApplicationStatus.ACCEPTED) {
+            throw new InvalidException("승인된 지원만 동행 진행 상태를 변경할 수 있습니다.");
+        }
+
+        EscortProgress currentProgress = escortProgressLogRepository
+                .findTopByApplicationOrderByOccurredAtDescIdDesc(application)
+                .map(log -> log.getProgress())
+                .orElse(EscortProgress.NOT_STARTED);
+
+        EscortProgress nextProgress = switch (currentProgress) {
+            case NOT_STARTED -> EscortProgress.DEPARTED;
+            case DEPARTED -> EscortProgress.TO_HOSPITAL;
+            case TO_HOSPITAL -> EscortProgress.AT_HOSPITAL;
+            case AT_HOSPITAL -> EscortProgress.TO_HOME;
+            case TO_HOME -> EscortProgress.ARRIVED_HOME;
+            case ARRIVED_HOME -> null;
+        };
+
+        if (nextProgress == null) {
+            throw new InvalidException("이미 동행이 완료되었습니다.");
+        }
+
+        if (progress != nextProgress) {
+            throw new InvalidException("동행 진행 상태를 순서대로 변경해야 합니다.");
+        }
+
+        LocalDateTime occurredAt = LocalDateTime.now();
+
+        EscortProgressLog progressLog = EscortProgressLog.builder()
+                .application(application)
+                .progress(progress)
+                .occurredAt(occurredAt)
+                .build();
+
+        escortProgressLogRepository.save(progressLog);
+
+        if (progress == EscortProgress.DEPARTED) {
+            application.getPost().startProgress(occurredAt);
+        }
     }
 }

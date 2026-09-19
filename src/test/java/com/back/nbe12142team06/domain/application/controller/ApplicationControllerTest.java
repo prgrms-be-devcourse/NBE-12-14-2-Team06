@@ -2,7 +2,9 @@ package com.back.nbe12142team06.domain.application.controller;
 
 import com.back.nbe12142team06.domain.application.entity.Application;
 import com.back.nbe12142team06.domain.application.enums.ApplicationStatus;
+import com.back.nbe12142team06.domain.application.enums.EscortProgress;
 import com.back.nbe12142team06.domain.application.repository.ApplicationRepository;
+import com.back.nbe12142team06.domain.application.repository.EscortProgressLogRepository;
 import com.back.nbe12142team06.domain.payment.entity.Payment;
 import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
 import com.back.nbe12142team06.domain.post.entity.Post;
@@ -32,7 +34,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -63,6 +66,9 @@ public class ApplicationControllerTest {
 
     @Autowired
     private EscortRepository escortRepository;
+
+    @Autowired
+    private EscortProgressLogRepository escortProgressLogRepository;
 
     private Long testPostId;
     private Cookie clientAccessTokenCookie;
@@ -1685,5 +1691,302 @@ public class ApplicationControllerTest {
                 .andExpect(jsonPath("$.statusCode").value("404"))
                 .andExpect(jsonPath("$.msg")
                         .value("지원을 찾을 수 없습니다."));
+    }
+
+    @Test
+    @DisplayName("[ApplicationController] 동행 진행 상태 변경 - 전체 진행 순서 정상 기록")
+    void t28() throws Exception {
+
+        Post post = postRepository.findById(testPostId)
+                .orElseThrow();
+
+        User escort = userRepository.findByUsername("escort1")
+                .orElseThrow();
+
+        Application application = Application.builder()
+                .post(post)
+                .escort(escort)
+                .build();
+
+        application.accept();
+        post.match();
+
+        applicationRepository.save(application);
+
+        List<EscortProgress> progressList = List.of(
+                EscortProgress.DEPARTED,
+                EscortProgress.TO_HOSPITAL,
+                EscortProgress.AT_HOSPITAL,
+                EscortProgress.TO_HOME,
+                EscortProgress.ARRIVED_HOME
+        );
+
+        for (EscortProgress progress : progressList) {
+
+            mvc.perform(
+                            patch("/api/v1/applications/{applicationId}/progress",
+                                    application.getId())
+                                    .cookie(escortAccessTokenCookie)
+                                    .contentType("application/json")
+                                    .content("""
+                                        {
+                                          "progress": "%s"
+                                        }
+                                        """.formatted(progress.name()))
+                    )
+                    .andDo(print())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.statusCode").value("200-1"));
+        }
+
+        // 모든 진행 단계가 실제로 저장됐는지 확인
+        for (EscortProgress progress : progressList) {
+            EscortProgress savedProgress = escortProgressLogRepository
+                    .findByApplicationAndProgress(application, progress)
+                    .orElseThrow()
+                    .getProgress();
+
+            assertEquals(progress, savedProgress);
+        }
+
+        // 마지막 진행 상태가 ARRIVED_HOME인지 확인
+        EscortProgress latestProgress = escortProgressLogRepository
+                .findTopByApplicationOrderByOccurredAtDescIdDesc(application)
+                .orElseThrow()
+                .getProgress();
+
+        assertEquals(
+                EscortProgress.ARRIVED_HOME,
+                latestProgress
+        );
+
+        Post progressedPost = postRepository
+                .findById(testPostId)
+                .orElseThrow();
+
+        assertEquals(
+                PostStatus.IN_PROGRESS,
+                progressedPost.getPostStatus()
+        );
+
+        LocalDateTime departedAt = escortProgressLogRepository
+                .findByApplicationAndProgress(
+                        application,
+                        EscortProgress.DEPARTED
+                )
+                .orElseThrow()
+                .getOccurredAt();
+
+        assertEquals(
+                departedAt,
+                progressedPost.getEscortStartAt()
+        );
+    }
+
+    @Test
+    @DisplayName("[ApplicationController] 동행 진행 상태 변경 - 순서 건너뛰기 시 400 반환")
+    void t29() throws Exception {
+
+        Post post = postRepository.findById(testPostId)
+                .orElseThrow();
+
+        User escort = userRepository.findByUsername("escort1")
+                .orElseThrow();
+
+        Application application = Application.builder()
+                .post(post)
+                .escort(escort)
+                .build();
+
+        application.accept();
+        post.match();
+
+        applicationRepository.save(application);
+
+        ResultActions resultActions = mvc.perform(
+                patch("/api/v1/applications/{applicationId}/progress",
+                        application.getId())
+                        .cookie(escortAccessTokenCookie)
+                        .contentType("application/json")
+                        .content("""
+                            {
+                              "progress": "AT_HOSPITAL"
+                            }
+                            """)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.statusCode").value("400"))
+                .andExpect(jsonPath("$.msg")
+                        .value("동행 진행 상태를 순서대로 변경해야 합니다."));
+    }
+
+    @Test
+    @DisplayName("[ApplicationController] 동행 진행 상태 변경 - 다른 동행인이 변경 시 403 반환")
+    void t30() throws Exception {
+
+        Post post = postRepository.findById(testPostId)
+                .orElseThrow();
+
+        User escort1 = userRepository.findByUsername("escort1")
+                .orElseThrow();
+
+        Application application = Application.builder()
+                .post(post)
+                .escort(escort1)
+                .build();
+
+        application.accept();
+        post.match();
+
+        applicationRepository.save(application);
+
+        // 다른 동행인 생성
+        User escort2 = new User(
+                "escort2",
+                passwordEncoder.encode("testPassword"),
+                "escort2@test.com",
+                "동행인2",
+                Role.ESCORT,
+                Gender.MALE,
+                LocalDate.of(1996, 1, 1),
+                "010-3333-3333",
+                "서울"
+        );
+
+        userRepository.save(escort2);
+
+        Cookie escort2AccessTokenCookie = mvc.perform(
+                        post("/api/v1/auth/login")
+                                .contentType("application/json")
+                                .content("""
+                                {
+                                  "username": "escort2",
+                                  "password": "testPassword"
+                                }
+                                """)
+                )
+                .andReturn()
+                .getResponse()
+                .getCookie("accessToken");
+
+        ResultActions resultActions = mvc.perform(
+                patch("/api/v1/applications/{applicationId}/progress",
+                        application.getId())
+                        .cookie(escort2AccessTokenCookie)
+                        .contentType("application/json")
+                        .content("""
+                        {
+                          "progress": "DEPARTED"
+                        }
+                        """)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.statusCode").value("403"))
+                .andExpect(jsonPath("$.msg")
+                        .value("본인의 동행 진행 상태만 변경할 수 있습니다."));
+    }
+
+    @Test
+    @DisplayName("[ApplicationController] 동행 진행 상태 변경 - PENDING 상태에서 변경 시 400 반환")
+    void t31() throws Exception {
+
+        Post post = postRepository.findById(testPostId)
+                .orElseThrow();
+
+        User escort = userRepository.findByUsername("escort1")
+                .orElseThrow();
+
+        Application application = Application.builder()
+                .post(post)
+                .escort(escort)
+                .build();
+
+        applicationRepository.save(application);
+
+        ResultActions resultActions = mvc.perform(
+                patch("/api/v1/applications/{applicationId}/progress",
+                        application.getId())
+                        .cookie(escortAccessTokenCookie)
+                        .contentType("application/json")
+                        .content("""
+                            {
+                              "progress": "DEPARTED"
+                            }
+                            """)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.statusCode").value("400"))
+                .andExpect(jsonPath("$.msg")
+                        .value("승인된 지원만 동행 진행 상태를 변경할 수 있습니다."));
+    }
+
+    @Test
+    @DisplayName("[ApplicationController] 동행 진행 상태 변경 - 동행 완료 후 변경 시 400 반환")
+    void t32() throws Exception {
+
+        Post post = postRepository.findById(testPostId)
+                .orElseThrow();
+
+        User escort = userRepository.findByUsername("escort1")
+                .orElseThrow();
+
+        Application application = Application.builder()
+                .post(post)
+                .escort(escort)
+                .build();
+
+        application.accept();
+        post.match();
+
+        applicationRepository.save(application);
+
+        List<EscortProgress> progressList = List.of(
+                EscortProgress.DEPARTED,
+                EscortProgress.TO_HOSPITAL,
+                EscortProgress.AT_HOSPITAL,
+                EscortProgress.TO_HOME,
+                EscortProgress.ARRIVED_HOME
+        );
+
+        // ARRIVED_HOME까지 정상 진행
+        for (EscortProgress progress : progressList) {
+            mvc.perform(
+                            patch("/api/v1/applications/{applicationId}/progress",
+                                    application.getId())
+                                    .cookie(escortAccessTokenCookie)
+                                    .contentType("application/json")
+                                    .content("""
+                                        {
+                                          "progress": "%s"
+                                        }
+                                        """.formatted(progress.name()))
+                    )
+                    .andExpect(status().isOk());
+        }
+
+        // 이미 귀가 완료된 뒤 다시 상태 변경 시도
+        ResultActions resultActions = mvc.perform(
+                patch("/api/v1/applications/{applicationId}/progress",
+                        application.getId())
+                        .cookie(escortAccessTokenCookie)
+                        .contentType("application/json")
+                        .content("""
+                            {
+                              "progress": "DEPARTED"
+                            }
+                            """)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.statusCode").value("400"))
+                .andExpect(jsonPath("$.msg")
+                        .value("이미 동행이 완료되었습니다."));
     }
 }
