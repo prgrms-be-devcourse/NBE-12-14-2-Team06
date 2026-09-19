@@ -9,4 +9,5 @@ import java.util.Optional;
 
 public interface EscortProgressLogRepository extends JpaRepository<EscortProgressLog, Long> {
     Optional<EscortProgressLog> findByApplicationAndProgress(Application application, EscortProgress progress);
+    Optional<EscortProgressLog> findTopByApplicationOrderByOccurredAtDescIdDesc(Application application);
 }
