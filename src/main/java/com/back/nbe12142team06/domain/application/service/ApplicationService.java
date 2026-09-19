@@ -6,13 +6,9 @@ import com.back.nbe12142team06.domain.application.dto.ApplicationListResponse;
 import com.back.nbe12142team06.domain.application.entity.Application;
 import com.back.nbe12142team06.domain.application.enums.ApplicationStatus;
 import com.back.nbe12142team06.domain.application.repository.ApplicationRepository;
-import com.back.nbe12142team06.domain.payment.entity.Payment;
-import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.entity.PostStatus;
 import com.back.nbe12142team06.domain.post.repository.PostRepository;
-import com.back.nbe12142team06.domain.settlement.entity.Settlement;
-import com.back.nbe12142team06.domain.settlement.repository.SettlementRepository;
 import com.back.nbe12142team06.domain.user.entity.EscortProfile;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Role;
@@ -37,8 +33,6 @@ public class ApplicationService {
     private final ApplicationRepository applicationRepository;
     private final PostRepository postRepository;
     private final UserRepository userRepository;
-    private final SettlementRepository settlementRepository;
-    private final PaymentRepository paymentRepository;
     private final EscortRepository escortRepository;
 
     @Transactional
@@ -90,7 +84,7 @@ public class ApplicationService {
     }
 
     @Transactional
-    public ApplicationAcceptResponse accept(Long applicationId, Long userId){
+    public ApplicationAcceptResponse accept(Long applicationId, Long userId) {
 
         Application application = applicationRepository.findById(applicationId).orElseThrow(
                 () -> new NotFoundException("지원을 찾을 수 없습니다."));
@@ -161,9 +155,6 @@ public class ApplicationService {
                         isTimeOverlapping(post, otherApplication.getPost()))
                 .forEach(Application::reject);
 
-        // 정산 데이터 생성
-        createSettlement(post, application, escort);
-
         return new ApplicationAcceptResponse(application);
     }
 
@@ -232,26 +223,5 @@ public class ApplicationService {
         }
 
         throw new InvalidException("취소할 수 없는 지원 상태입니다.");
-    }
-
-    // 정산 데이터 생성
-    private void createSettlement(Post post, Application application, User escort) {
-        Payment payment = paymentRepository.findByPostId(post.getId())
-                .orElseThrow(() -> new NotFoundException(20, "결제 정보를 찾을 수 없습니다."));
-
-        // 수수료는 10% 나중에 대중교통 또는 걷기 이용자에게 혜택 생각
-        int payoutAmount = (int) (payment.getAmount() * 0.9);
-        int platformFee = payment.getAmount() - payoutAmount;
-
-        Settlement settlement = Settlement.builder()
-                .payoutAmount(payoutAmount)
-                .platformFee(platformFee)
-                .settledDate(post.getEscortEndAt().plusDays(1).toLocalDate())
-                .payment(payment)
-                .application(application)
-                .escort(escort)
-                .build();
-
-        settlementRepository.save(settlement);
     }
 }

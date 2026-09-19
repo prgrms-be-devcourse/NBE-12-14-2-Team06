@@ -37,4 +37,22 @@ public class PaymentPersistenceService {
         Payment newPayment = payment.cancelPayment(cancelReason);
         return paymentRepository.save(newPayment);
     }
+
+    @Transactional
+    public Payment paymentPartialCancelDb(Long paymentId, String cancelReason, int amount) {
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new NotFoundException(10, "결제 정보를 찾을 수 없습니다."));
+        return payment.cancelPartialPayment(cancelReason, amount);
+    }
+
+    @Transactional
+    public void createPayment(Payment payment) {
+        paymentRepository.save(payment);
+    }
+
+    @Transactional(readOnly = true)
+    public Payment findByPostId(Long postId) {
+        return paymentRepository.findByPostId(postId)
+                .orElseThrow(() -> new NotFoundException(20, "존재하지 않는 결제 내역입니다."));
+    }
 }

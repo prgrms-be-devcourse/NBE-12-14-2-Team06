@@ -12,6 +12,7 @@ import com.back.nbe12142team06.domain.payment.service.PaymentService;
 import com.back.nbe12142team06.domain.post.dto.PostWriteRequest;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.service.PostService;
+import com.back.nbe12142team06.domain.settlement.service.SettlementService;
 import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpRequest;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Gender;
@@ -68,6 +69,8 @@ class PaymentControllerTest {
     private UserService userService;
     @Autowired
     private PostService postService;
+    @Autowired
+    private SettlementService settlementService;
 
     private Long savedUser1Id;
     private Long savedUser2Id;
@@ -178,7 +181,7 @@ class PaymentControllerTest {
         TossPaymentClient mockTossPaymentClient = mock(TossPaymentClient.class);
         when(mockTossPaymentClient.callApiConfirm(any(), any(), any())).thenReturn(ResponseEntity.ok(new TossConfirmResponse("계좌이체", amount)));
 
-        PaymentService paymentService = new PaymentService(paymentRepository, paymentPersistenceService, mockTossPaymentClient);
+        PaymentService paymentService = new PaymentService(paymentRepository, paymentPersistenceService, mockTossPaymentClient, null);
 
         Payment payment = paymentService.confirm(new PaymentConfirmRequest(paymentKey, orderId, amount), savedPayment1Id, savedUser1Id, amount);
 
@@ -222,7 +225,7 @@ class PaymentControllerTest {
         String orderId = "temp";
         String amount = "10000";
 
-        PaymentService paymentService = new PaymentService(paymentRepository, null, null);
+        PaymentService paymentService = new PaymentService(paymentRepository, null, null, null);
 
         // 예외 발생 400번
         assertThrows(InvalidException.class, () -> {
@@ -239,7 +242,7 @@ class PaymentControllerTest {
         String amount = "10000";
         Long paymentId = 10000L;
 
-        PaymentService paymentService = new PaymentService(paymentRepository, null, null);
+        PaymentService paymentService = new PaymentService(paymentRepository, null, null, null);
 
         // 예외 발생 404
         assertThrows(NotFoundException.class, () -> {
@@ -258,7 +261,7 @@ class PaymentControllerTest {
         TossPaymentClient mockTossPaymentClient = mock(TossPaymentClient.class);
         when(mockTossPaymentClient.callApiConfirm(any(), any(), any())).thenThrow(new InvalidException(11, "결제 승인에 실패했습니다."));
 
-        PaymentService paymentService = new PaymentService(paymentRepository, paymentPersistenceService, mockTossPaymentClient);
+        PaymentService paymentService = new PaymentService(paymentRepository, paymentPersistenceService, mockTossPaymentClient, null);
 
         // 예외 발생 400번
         assertThrows(InvalidException.class, () -> {
@@ -458,7 +461,7 @@ class PaymentControllerTest {
         TossPaymentClient mockTossPaymentClient = mock(TossPaymentClient.class);
         when(mockTossPaymentClient.callApiCancel(any(), any(), any())).thenReturn(ResponseEntity.ok(new TossConfirmResponse("계좌이체", "60000")));
 
-        PaymentService paymentService = new PaymentService(paymentRepository, paymentPersistenceService, mockTossPaymentClient);
+        PaymentService paymentService = new PaymentService(paymentRepository, paymentPersistenceService, mockTossPaymentClient, null);
 
         Payment canceledPayment = paymentService.cancel(savedUser1Id, savedPayment1Id, new PaymentCancelRequest(cancelReason));
 
@@ -478,7 +481,7 @@ class PaymentControllerTest {
         TossPaymentClient mockTossPaymentClient = mock(TossPaymentClient.class);
         when(mockTossPaymentClient.callApiCancel(any(), any(), any())).thenThrow(InvalidException.class);
 
-        PaymentService paymentService = new PaymentService(paymentRepository, paymentPersistenceService, mockTossPaymentClient);
+        PaymentService paymentService = new PaymentService(paymentRepository, paymentPersistenceService, mockTossPaymentClient, null);
 
         // 예외 발생 400번
         assertThrows(InvalidException.class, () -> {

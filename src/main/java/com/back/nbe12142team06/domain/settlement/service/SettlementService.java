@@ -1,5 +1,7 @@
 package com.back.nbe12142team06.domain.settlement.service;
 
+import com.back.nbe12142team06.domain.application.entity.Application;
+import com.back.nbe12142team06.domain.payment.entity.Payment;
 import com.back.nbe12142team06.domain.post.entity.PostStatus;
 import com.back.nbe12142team06.domain.settlement.client.SettlementClient;
 import com.back.nbe12142team06.domain.settlement.client.SettlementClientRequest;
@@ -7,6 +9,7 @@ import com.back.nbe12142team06.domain.settlement.client.SettlementClientResponse
 import com.back.nbe12142team06.domain.settlement.entity.Settlement;
 import com.back.nbe12142team06.domain.settlement.repository.SettlementRepository;
 import com.back.nbe12142team06.domain.user.dto.db.AccountDto;
+import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
 import com.back.nbe12142team06.global.exception.ForbiddenException;
 import com.back.nbe12142team06.global.exception.InternalServerErrorException;
@@ -117,5 +120,21 @@ public class SettlementService {
         SettlementClientResponse response =
                 (SettlementClientResponse) settlementClient.settlementRequest(new SettlementClientRequest(account, name, amount));
         return response;
+    }
+
+    @Transactional
+    public Settlement createSettlement(int amount, Application application, User escort, LocalDate settledDate) {
+        int payoutAmount = (int) (amount * 0.9);
+        int platformFee = amount - payoutAmount;
+
+        Settlement settlement = Settlement.builder()
+                .payoutAmount(payoutAmount)
+                .platformFee(platformFee)
+                .settledDate(settledDate)
+                .application(application)
+                .escort(escort)
+                .build();
+
+        return settlementRepository.save(settlement);
     }
 }
