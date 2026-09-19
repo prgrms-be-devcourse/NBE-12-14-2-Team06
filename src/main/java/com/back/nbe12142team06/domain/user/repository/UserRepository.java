@@ -1,7 +1,6 @@
 package com.back.nbe12142team06.domain.user.repository;
 
 
-import com.back.nbe12142team06.domain.user.dto.db.AccountDto;
 import com.back.nbe12142team06.domain.user.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -42,14 +41,4 @@ public interface UserRepository extends JpaRepository<User, Long> {
             nativeQuery = true
     )
     Page<User> findAllIncludingDeleted(Pageable pageable);
-
-    @Query("select e.accountNumber, u.name from User u join EscortProfile e on u.id=e.userId where e.userId in :ids")
-    List<AccountDto> findAccountByIds(@Param("ids") List<Long> ids);
-
-    @Query("select e.accountNumber from User u join EscortProfile e on u.id=e.userId where e.userId=:userId")
-    String findAccountById(@Param("userId") Long userId);
-
-//    @Query("select e.account from User u join EscortProfile e on u.id=e.userId where e.userId=:userId")
-//    String findAccountById(Long userId);
 }
-
