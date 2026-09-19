@@ -1,6 +1,7 @@
 package com.back.nbe12142team06.domain.payment.entity;
 
 import com.back.nbe12142team06.domain.post.entity.Post;
+import com.back.nbe12142team06.domain.settlement.entity.Settlement;
 import com.back.nbe12142team06.global.entity.BaseSoftDeleteTimeEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMax;
@@ -81,6 +82,11 @@ public class Payment extends BaseSoftDeleteTimeEntity {
     @JoinColumn(name = "post_id")
     private Post post;
 
+    // 정산은 결제, 추가 결제 등 여러 개 생길 수 있음
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "settlement_id")
+    private Settlement settlement;
+
     public void statusUpdate(PaymentStatus status) {
         this.paymentStatus = status;
     }
@@ -107,5 +113,17 @@ public class Payment extends BaseSoftDeleteTimeEntity {
                 .hours(this.hours)
                 .post(this.post)
                 .build();
+    }
+
+    // 결제 부분 취소
+    public Payment cancelPartialPayment(String cancelReason, int cancelAmount) {
+        this.cancelReason = cancelReason;
+        this.amount -= cancelAmount;
+        this.statusUpdate(PaymentStatus.PARTIAL_CANCELED);
+        return this;
+    }
+
+    public void updateSettlement(Settlement settlement) {
+        this.settlement = settlement;
     }
 }

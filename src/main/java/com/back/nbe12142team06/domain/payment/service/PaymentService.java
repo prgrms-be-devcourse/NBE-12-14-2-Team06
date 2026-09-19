@@ -1,5 +1,6 @@
 package com.back.nbe12142team06.domain.payment.service;
 
+import com.back.nbe12142team06.domain.application.entity.Application;
 import com.back.nbe12142team06.domain.payment.client.TossPaymentClient;
 import com.back.nbe12142team06.domain.payment.dto.PaymentCancelRequest;
 import com.back.nbe12142team06.domain.payment.dto.PaymentConfirmRequest;
@@ -8,6 +9,9 @@ import com.back.nbe12142team06.domain.payment.dto.TossConfirmResponse;
 import com.back.nbe12142team06.domain.payment.entity.Payment;
 import com.back.nbe12142team06.domain.payment.entity.PaymentStatus;
 import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
+import com.back.nbe12142team06.domain.post.entity.Post;
+import com.back.nbe12142team06.domain.settlement.service.SettlementService;
+import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.global.exception.InternalServerErrorException;
 import com.back.nbe12142team06.global.exception.InvalidException;
 import com.back.nbe12142team06.global.exception.NotFoundException;
@@ -16,9 +20,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestClient;
-import tools.jackson.databind.ObjectMapper;
 
+import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.LocalDate;
 import java.util.List;
 
 @Slf4j
@@ -29,6 +34,7 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final PaymentPersistenceService paymentPersistenceService;
     private final TossPaymentClient tossPaymentClient;
+    private final SettlementService settlementService;
 
     public Payment confirm(PaymentConfirmRequest request, Long paymentId, Long userId, String sessionAmount) {
 
@@ -75,20 +81,21 @@ public class PaymentService {
         return payment;
     }
 
-    public Payment cancel(Long userId, Long paymentId, PaymentCancelRequest request) {
-
-        Payment payment = findById(userId, paymentId);
+    public Payment cancel(Payment payment, PaymentCancelRequest request, int cancelAmount) {
         String tossPaymentKey = payment.getPaymentKey();
-        String amount = String.valueOf(payment.getAmount());
         String cancelReason = request.cancelReason();
 
         // 외부 API 요청
         ResponseEntity<TossConfirmResponse> response =
-                tossPaymentClient.callApiCancel(cancelReason, tossPaymentKey, amount);
+                tossPaymentClient.callApiCancel(cancelReason, tossPaymentKey, String.valueOf(cancelAmount));
 
         // DB 반영
         try {
-            paymentPersistenceService.paymentCancelDb(paymentId, cancelReason);
+            if (payment.getBalanceAmount() > cancelAmount) {
+                paymentPersistenceService.paymentPartialCancelDb(payment.getId(), cancelReason, cancelAmount);
+            } else {
+                paymentPersistenceService.paymentCancelDb(payment.getId(), cancelReason);
+            }
         } catch (NotFoundException e) {
             log.error("결제 취소 실패", e);
             throw e;
@@ -102,9 +109,59 @@ public class PaymentService {
         return payment;
     }
 
+    public Payment cancel(Long userId, Long paymentId, PaymentCancelRequest request) {
+        Payment payment = findById(userId, paymentId);
+        int amount = payment.getAmount();
+        return this.cancel(payment, request, amount);
+    }
+
     public void verifyAmount(String amount, SaveAmountRequest request) {
         if (amount == null || !amount.equals(request.amount())) {
             throw new InvalidException(10, "결제 금액 정보가 유효하지 않습니다.");
         }
+    }
+
+    // userId 삭제 예정
+    public void validPayment(Long userId, Post post, Application application, LocalDate settledDate) {
+        Payment payment = paymentPersistenceService.findByPostId(post.getId());
+        int balanceAmount = payment.getAmount() - post.getTotalPay().intValue();
+        int payoutAmount = post.getTotalPay().intValue();
+
+        // 추가 결제 플로우
+        if (balanceAmount < 0) {
+            // 결제 데이터 생성
+            Payment newPayment = Payment.builder()
+                    .post(post)
+                    .hourlyPaySnapshot(post.getHourlyPay())
+                    .hours(post.getEscortHours())
+                    .amount(Math.abs(balanceAmount))
+                    .build();
+            paymentPersistenceService.createPayment(newPayment);
+        }
+
+        // 부분 취소 플로우
+        else if (balanceAmount > 0) {
+            // 취소 로직 결제 데이터 생성 없애기
+            cancel(
+                    payment,
+                    new PaymentCancelRequest("결제 금액: %s, 이용 금액: %s".formatted(payment.getAmount(), post.getTotalPay().intValue())),
+                    balanceAmount
+            );
+        }
+
+        // 정산 데이터 생성
+        settlementService.createSettlement(payoutAmount, application, application.getEscort(), settledDate);
+
+        // 사용자에게 결제 요청
+    }
+
+    public void createPayment(Post post) {
+        Payment payment = Payment.builder()
+                .post(post)
+                .hourlyPaySnapshot(post.getHourlyPay())
+                .hours(post.getEscortHours())
+                .amount(post.getTotalPay().intValue())
+                .build();
+        paymentPersistenceService.createPayment(payment);
     }
 }

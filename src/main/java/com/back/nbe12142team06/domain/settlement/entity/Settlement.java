@@ -17,15 +17,6 @@ import java.time.LocalDateTime;
 @Entity
 @Builder
 @Getter
-@Table(
-        uniqueConstraints = {@UniqueConstraint(
-                name = "UK_payment_application",
-                columnNames = {
-                        "payment_id",
-                        "application_id"
-                }
-        )}
-)
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Settlement extends BaseSoftDeleteTimeEntity {
@@ -56,14 +47,9 @@ public class Settlement extends BaseSoftDeleteTimeEntity {
     // 정산 일자
     private LocalDate settledDate;
 
-    // 결제, Settlement 생성은 지원 승인이 되면 생성 -> 지원이 취소되면 정산도 삭제
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "payment_id")
-    private Payment payment;
-
     // 의뢰 지원
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "application_id")
+    @JoinColumn(name = "application_id", unique = true)
     private Application application;
 
     // 동행 매니저
