@@ -39,9 +39,15 @@ public class PaymentService {
     public Payment confirm(PaymentConfirmRequest request, Long paymentId, Long userId, String sessionAmount) {
 
         Payment payment = this.findById(userId, paymentId);
+
+        if (payment.getPaymentStatus().equals(PaymentStatus.DONE)) {
+            throw new InvalidException(10, "이미 결제를 완료하셨습니다.");
+        }
+
         String tossPaymentKey = request.paymentKey();
         String tossOrderId = request.orderId();
         String amount = request.amount();
+
         // 1. 검증 로직
         verifyAmount(sessionAmount, new SaveAmountRequest(null, amount));
         payment.statusUpdate(PaymentStatus.IN_PROGRESS);

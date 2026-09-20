@@ -1,9 +1,9 @@
 package com.back.nbe12142team06.domain.ride.service;
 
+import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.ride.dto.RideUpdateRequest;
 import com.back.nbe12142team06.domain.ride.entity.Ride;
 import com.back.nbe12142team06.domain.ride.entity.RideDirection;
-import com.back.nbe12142team06.domain.ride.entity.RideSelect;
 import com.back.nbe12142team06.domain.ride.entity.RideStatus;
 import com.back.nbe12142team06.domain.ride.repository.RideRepository;
 import com.back.nbe12142team06.global.exception.ForbiddenException;
@@ -101,5 +101,18 @@ public class RideService {
                 .build();
 
         return toHomeRide;
+    }
+
+    @Transactional
+    public void createRide(Post post) {
+        Ride rideToHos = Ride.builder()
+                .post(post)
+                .build();
+        Ride rideToHome = Ride.builder()
+                .post(post)
+                .direction(RideDirection.TO_HOME)
+                .build();
+        rideRepository.save(rideToHos);
+        rideRepository.save(rideToHome);
     }
 }

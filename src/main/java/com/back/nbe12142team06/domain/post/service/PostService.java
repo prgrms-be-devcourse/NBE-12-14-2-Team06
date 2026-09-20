@@ -12,9 +12,7 @@ import com.back.nbe12142team06.domain.post.dto.PostWriteRequest;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.entity.PostStatus;
 import com.back.nbe12142team06.domain.post.repository.PostRepository;
-import com.back.nbe12142team06.domain.ride.entity.Ride;
-import com.back.nbe12142team06.domain.ride.entity.RideDirection;
-import com.back.nbe12142team06.domain.ride.repository.RideRepository;
+import com.back.nbe12142team06.domain.ride.service.RideService;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Role;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
@@ -37,10 +35,10 @@ public class PostService {
 
     private final PostRepository postRepository;
     private final UserRepository userRepository;
-    private final RideRepository rideRepository;
     private final EscortProgressLogRepository escortProgressLogRepository;
     private final ApplicationRepository applicationRepository;
     private final PaymentService paymentService;
+    private final RideService rideService;
 
     public Page<Post> findAll(Pageable pageable) {
         return postRepository.findAllWithClient(pageable);
@@ -104,21 +102,9 @@ public class PostService {
         // 결제 데이터 생성
         paymentService.createPayment(post);
         // 이동수단 데이터 생성
-        createRide(post);
+        rideService.createRide(post);
 
         return postRepository.save(post);
-    }
-
-    private void createRide(Post post) {
-        Ride rideToHos = Ride.builder()
-                .post(post)
-                .build();
-        Ride rideToHome = Ride.builder()
-                .post(post)
-                .direction(RideDirection.TO_HOME)
-                .build();
-        rideRepository.save(rideToHos);
-        rideRepository.save(rideToHome);
     }
 
     @Transactional
