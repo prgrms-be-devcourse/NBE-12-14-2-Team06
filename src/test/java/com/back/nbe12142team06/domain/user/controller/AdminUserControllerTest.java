@@ -281,4 +281,29 @@ public class AdminUserControllerTest {
         assertThat(createdAts).isSortedAccordingTo(Comparator.reverseOrder());
 
     }
+
+
+    @Test
+    @DisplayName("[AdminController] 회원 다건 조회 - 음수 페이지 요청 시 400-1 반환")
+    void t7() throws Exception {
+        // 관리자 로그인
+        createTestAdmin();
+        Cookie adminToken = loginAsAdmin();
+
+        // 다수의 회원 생성
+        for (int i = 1; i < 4; i++){
+            signUp("user%d".formatted(i));
+        }
+
+        ResultActions resultActions = mvc.perform(
+                get("/api/v1/admin/users")
+                        .param("page", "-1")
+                        .cookie(adminToken)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.statusCode").value("400-1"))
+                .andExpect(jsonPath("$.msg").value("페이지 번호는 음수일 수 없습니다."));
+    }
 }
