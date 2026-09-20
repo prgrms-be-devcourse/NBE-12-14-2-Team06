@@ -306,4 +306,24 @@ public class AdminUserControllerTest {
                 .andExpect(jsonPath("$.statusCode").value("400-1"))
                 .andExpect(jsonPath("$.msg").value("페이지 번호는 음수일 수 없습니다."));
     }
+
+    @Test
+    @DisplayName("[AdminController] 회원 다건 조회 - 비로그인의 회원 목록 조회 요청 시 401-1 반환")
+    void t8() throws Exception {
+
+        // 다수의 회원 생성
+        for (int i = 1; i < 4; i++){
+            signUp("user%d".formatted(i));
+        }
+
+        ResultActions resultActions = mvc.perform(
+                get("/api/v1/admin/users")
+                        .param("page", "-1")
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.statusCode").value("401-1"))
+                .andExpect(jsonPath("$.msg").value("로그인 후 이용해주세요."));
+    }
 }
