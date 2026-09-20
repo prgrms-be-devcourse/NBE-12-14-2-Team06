@@ -461,4 +461,36 @@ public class AdminUserControllerTest {
                 .andExpect(jsonPath("$.statusCode").value("401-1"))
                 .andExpect(jsonPath("$.msg").value("로그인 후 이용해주세요."));
     }
+
+    @Test
+    @DisplayName("[AdminUserController] 회원 정보 수정 - 일반 회원이 수정 시 403-1 반환")
+    void t13() throws Exception {
+        signUp("user1");
+        Long user1Id = findUserId("user1");
+        Cookie user2Token = signUp("user2");
+
+        String updateBody = """
+    {
+        "email": "updated@user.user",
+        "name": "김춘자",
+        "birthDate": "1995-03-15",
+        "phoneNum": "010-1111-2222",
+        "region": "경기도"
+    }
+    """;
+
+        // 일반 회원 토큰으로 다른 회원 수정
+        ResultActions resultActions = mvc.perform(
+                patch("/api/v1/admin/users/{id}", user1Id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(updateBody)
+                        .cookie(user2Token)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.statusCode").value("403-1"))
+                .andExpect(jsonPath("$.msg").value("권한이 없습니다."));
+    }
+
 }
