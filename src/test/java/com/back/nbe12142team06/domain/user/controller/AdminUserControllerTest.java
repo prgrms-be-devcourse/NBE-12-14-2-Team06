@@ -432,4 +432,33 @@ public class AdminUserControllerTest {
                 .andExpect(jsonPath("$.statusCode").value("400-2"))
                 .andExpect(jsonPath("$.msg").value("탈퇴한 회원의 정보는 수정할 수 없습니다."));
     }
+
+    @Test
+    @DisplayName("[AdminUserController] 회원 정보 수정 - 로그인 없이 수정 시 401-1 반환")
+    void t12() throws Exception {
+        signUp("user1");
+        Long user1Id = findUserId("user1");
+
+        String updateBody = """
+        {
+            "email": "updated@user.user",
+            "name": "김춘자",
+            "birthDate": "1995-03-15",
+            "phoneNum": "010-1111-2222",
+            "region": "경기도"
+        }
+        """;
+
+        // 쿠키 없이 수정
+        ResultActions resultActions = mvc.perform(
+                patch("/api/v1/admin/users/{id}", user1Id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(updateBody)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.statusCode").value("401-1"))
+                .andExpect(jsonPath("$.msg").value("로그인 후 이용해주세요."));
+    }
 }
