@@ -4,7 +4,7 @@ import com.back.nbe12142team06.domain.auth.entity.RefreshToken;
 import com.back.nbe12142team06.domain.auth.repository.RefreshTokenRepository;
 import com.back.nbe12142team06.domain.user.dto.login.common.UserLoginRequest;
 import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpRequest;
-import com.back.nbe12142team06.domain.user.dto.user.AdminUserProfileUpdateRequest;
+import com.back.nbe12142team06.domain.user.dto.admin.AdminUserProfileUpdateRequest;
 import com.back.nbe12142team06.domain.user.dto.user.UserProfileUpdateRequest;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Role;
@@ -133,7 +133,7 @@ public class UserService {
         return this.userRepository.save(user);
     }
 
-    // [관리자] 회원 정보 수정 (비밀번호 제외)
+    // [관리자] 회원 정보 수정
     @Transactional
     public User updateUserByAdmin(Long userId, AdminUserProfileUpdateRequest request) {
 

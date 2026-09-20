@@ -1,7 +1,7 @@
 package com.back.nbe12142team06.domain.user.controller;
 
-import com.back.nbe12142team06.domain.user.dto.user.AdminUserProfileUpdateRequest;
-import com.back.nbe12142team06.domain.user.dto.user.AdminUserResponse;
+import com.back.nbe12142team06.domain.user.dto.admin.AdminUserProfileUpdateRequest;
+import com.back.nbe12142team06.domain.user.dto.admin.AdminUserResponse;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.service.UserService;
 import com.back.nbe12142team06.global.response.RsData;
@@ -42,14 +42,14 @@ public class AdminUserController {
         Page<AdminUserResponse> userPage = userEntityPage.map(AdminUserResponse::new);
 
         return new RsData<>(
-                "200",
+                "200-2",
                 "회원 목록 조회가 완료되었습니다.",
                 userPage
         );
     }
 
 
-    // [관리자] 회원 정보 수정
+    // [관리자] 회원 정보 수정 username, password는 변경 불가
     @PatchMapping("/users/{userId}")
     public RsData<AdminUserResponse> updateProfile(
             @PathVariable Long userId,

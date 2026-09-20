@@ -257,7 +257,7 @@ public class AdminUserControllerTest {
 
         resultActions
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value("200"))
+                .andExpect(jsonPath("$.statusCode").value("200-2"))
                 .andExpect(jsonPath("$.msg").value("회원 목록 조회가 완료되었습니다."))
                 .andExpect(jsonPath("$.data.content.length()").value(10))
                 .andExpect(jsonPath("$.data.number").value(0))
@@ -349,4 +349,49 @@ public class AdminUserControllerTest {
                 .andExpect(jsonPath("$.statusCode").value("403-1"))
                 .andExpect(jsonPath("$.msg").value("권한이 없습니다."));
     }
+
+    @Test
+    @DisplayName("[AdminUserController] 회원 정보 수정 - 관리자가 정상 수정 시 200-3 반환")
+    void t10() throws Exception {
+        createTestAdmin();
+        signUp("user1");
+        Long user1Id = findUserId("user1");
+        Cookie adminToken = loginAsAdmin();
+
+        String updateBody = """
+            {
+                "email": "updated@user.user",
+                "name": "김춘자",
+                "birthDate": "1995-03-15",
+                "phoneNum": "010-1111-2222",
+                "region": "경기도"
+            }
+            """;
+
+        // 회원 정보 수정
+        ResultActions resultActions = mvc.perform(
+                patch("/api/v1/admin/users/{id}", user1Id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(updateBody)
+                        .cookie(adminToken)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-3"))
+                .andExpect(jsonPath("$.msg").value("회원 정보가 수정되었습니다."))
+                .andExpect(jsonPath("$.data.id").value(user1Id))
+                .andExpect(jsonPath("$.data.username").value("user1"))
+                .andExpect(jsonPath("$.data.email").value("updated@user.user"))
+                .andExpect(jsonPath("$.data.name").value("김춘자"))
+                .andExpect(jsonPath("$.data.birthDate").value("1995-03-15"))
+                .andExpect(jsonPath("$.data.phoneNum").value("010-1111-2222"))
+                .andExpect(jsonPath("$.data.region").value("경기도"))
+                .andExpect(jsonPath("$.data.deleted").value(false))
+                .andExpect(jsonPath("$.data.password").doesNotExist());
+
+        // 비밀번호 유지 확인 (기존 비밀번호로 로그인 성공)
+        login("user1", "testPassword");
+    }
+
 }
