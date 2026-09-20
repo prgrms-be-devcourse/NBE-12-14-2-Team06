@@ -394,4 +394,42 @@ public class AdminUserControllerTest {
         login("user1", "testPassword");
     }
 
+    @Test
+    @DisplayName("[AdminUserController] 회원 정보 수정 - 탈퇴한 회원 수정 시 400-2 반환")
+    void t11() throws Exception {
+        createTestAdmin();
+        Cookie userToken = signUp("user1");
+        Long user1Id = findUserId("user1");
+        Cookie adminToken = loginAsAdmin();
+
+        String updateBody = """
+            {
+                "email": "updated@user.user",
+                "name": "김춘자",
+                "birthDate": "1995-03-15",
+                "phoneNum": "010-1111-2222",
+                "region": "경기도"
+            }
+            """;
+
+        // 회원 탈퇴
+        mvc.perform(
+                delete("/api/v1/users/profile")
+                        .cookie(userToken)
+                )
+                .andExpect(status().isNoContent());
+
+        // 회원 정보 수정
+        ResultActions resultActions = mvc.perform(
+                patch("/api/v1/admin/users/{id}", user1Id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(updateBody)
+                        .cookie(adminToken)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.statusCode").value("400-2"))
+                .andExpect(jsonPath("$.msg").value("탈퇴한 회원의 정보는 수정할 수 없습니다."));
+    }
 }
