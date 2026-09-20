@@ -10,6 +10,7 @@ import com.back.nbe12142team06.domain.user.enums.Role;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
 import com.back.nbe12142team06.global.exception.BusinessException;
 import com.back.nbe12142team06.global.exception.DuplicatedException;
+import com.back.nbe12142team06.global.exception.NotFoundException;
 import com.back.nbe12142team06.global.exception.UnauthorizedException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -154,5 +155,12 @@ public class UserService {
         user.deleteUser();
 
         this.userRepository.save(user);
+    }
+
+    // [관리자] 회원 정보 조회 (탈퇴한 회원 정보도 가능)
+    @Transactional(readOnly = true)
+    public User findById(Long userId) {
+        return userRepository.findByIdIncludingDeleted(userId)
+                .orElseThrow(() -> new NotFoundException("회원 정보를 찾을 수 없습니다."));
     }
 }

@@ -3,9 +3,11 @@ package com.back.nbe12142team06.domain.application.controller;
 import com.back.nbe12142team06.domain.application.dto.ApplicationAcceptResponse;
 import com.back.nbe12142team06.domain.application.dto.ApplicationApplyResponse;
 import com.back.nbe12142team06.domain.application.dto.ApplicationListResponse;
+import com.back.nbe12142team06.domain.application.dto.EscortProgressRequest;
 import com.back.nbe12142team06.domain.application.service.ApplicationService;
 import com.back.nbe12142team06.global.response.RsData;
 import com.back.nbe12142team06.global.security.SecurityUser;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -90,6 +92,22 @@ public class ApplicationController {
                 "지원 취소가 완료되었습니다.",
                 null
         );
+    }
+
+    @PatchMapping("/{applicationId}/progress")
+    public RsData<Void> updateProgress(
+            @PathVariable Long applicationId,
+            @AuthenticationPrincipal SecurityUser actor,
+            @Valid @RequestBody EscortProgressRequest request) {
+
+        applicationService.updateProgress(applicationId, actor.getId(), request.progress());
+
+        return new RsData<>(
+                "200-1",
+                "동행 진행 상태가 변경되었습니다.",
+                null
+        );
+
     }
 
 }
