@@ -8,12 +8,12 @@ import com.back.nbe12142team06.domain.user.dto.user.UserProfileUpdateRequest;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Role;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
-import com.back.nbe12142team06.global.exception.BusinessException;
-import com.back.nbe12142team06.global.exception.DuplicatedException;
-import com.back.nbe12142team06.global.exception.NotFoundException;
-import com.back.nbe12142team06.global.exception.UnauthorizedException;
+import com.back.nbe12142team06.global.exception.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -157,10 +157,22 @@ public class UserService {
         this.userRepository.save(user);
     }
 
-    // [관리자] 회원 정보 조회 (탈퇴한 회원 정보도 가능)
+    // [ADMIN] 회원 정보 조회 (탈퇴한 회원 정보도 가능)
     @Transactional(readOnly = true)
     public User findById(Long userId) {
         return userRepository.findByIdIncludingDeleted(userId)
                 .orElseThrow(() -> new NotFoundException("회원 정보를 찾을 수 없습니다."));
+    }
+
+    // [ADMIN] 회원 목록 조회 (탈퇴한 회원 정보도 가능)
+    @Transactional(readOnly = true)
+    public Page<User> findAllUsersIncludingDeleted(int page, int size) {
+        if (page < 0){
+            throw new InvalidException(1, "페이지 번호는 음수일 수 없습니다.");
+        }
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        return this.userRepository.findAllIncludingDeleted(pageable);
     }
 }

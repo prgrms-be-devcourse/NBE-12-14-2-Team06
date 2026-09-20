@@ -5,10 +5,8 @@ import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.service.UserService;
 import com.back.nbe12142team06.global.response.RsData;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.data.domain.Page;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -32,5 +30,19 @@ public class AdminUserController {
     }
 
 
-    // TODO: [ADMIN] 회원 정보 다건 조회 (페이징처리까지)
+    // [ADMIN] 회원 정보 다건 조회 (페이징처리까지)
+    @GetMapping("/users")
+    public RsData<Page<AdminUserResponse>> getUsers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        Page<User> userEntityPage = this.userService.findAllUsersIncludingDeleted(page, size);
+        Page<AdminUserResponse> userPage = userEntityPage.map(AdminUserResponse::new);
+
+        return new RsData<>(
+                "200",
+                "회원 목록 조회가 완료되었습니다.",
+                userPage
+        );
+    }
 }
