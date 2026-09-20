@@ -308,7 +308,7 @@ public class AdminUserControllerTest {
     }
 
     @Test
-    @DisplayName("[AdminController] 회원 다건 조회 - 비로그인의 회원 목록 조회 요청 시 401-1 반환")
+    @DisplayName("[AdminController] 회원 다건 조회 - 로그인 없이 요청 시 401-1 반환")
     void t8() throws Exception {
 
         // 다수의 회원 생성
@@ -325,5 +325,28 @@ public class AdminUserControllerTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.statusCode").value("401-1"))
                 .andExpect(jsonPath("$.msg").value("로그인 후 이용해주세요."));
+    }
+
+    @Test
+    @DisplayName("[AdminController] 회원 다건 조회 - 일반 회원이 조회 시 403-1 반환")
+    void t9() throws Exception {
+
+        Cookie user1Token = signUp("user1");
+
+        // 다수의 회원 생성
+        for (int i = 2; i < 4; i++){
+            signUp("user%d".formatted(i));
+        }
+
+        ResultActions resultActions = mvc.perform(
+                get("/api/v1/admin/users")
+                        .param("page", "1")
+                        .cookie(user1Token)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.statusCode").value("403-1"))
+                .andExpect(jsonPath("$.msg").value("권한이 없습니다."));
     }
 }
