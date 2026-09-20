@@ -18,7 +18,8 @@ public record AdminUserResponse(
         String phoneNum,
         String region,
         LocalDateTime createdAt,
-        LocalDateTime deletedAt
+        LocalDateTime deletedAt,
+        boolean isDeleted
 ) {
     public AdminUserResponse(User user) {
         this(
@@ -32,6 +33,8 @@ public record AdminUserResponse(
                 user.getPhoneNum(),
                 user.getRegion(),
                 user.getCreatedAt(),
-                user.getDeletedAt());
+                user.getDeletedAt(),
+                user.isDeleted()
+        );
     }
 }
