@@ -4,6 +4,7 @@ import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Gender;
 import com.back.nbe12142team06.domain.user.enums.Role;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
+import com.jayway.jsonpath.JsonPath;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,13 +18,15 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.nullValue;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -232,5 +235,50 @@ public class AdminUserControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.statusCode").value("404"))
                 .andExpect(jsonPath("$.msg").value("회원 정보를 찾을 수 없습니다."));
+    }
+
+
+    @Test
+    @DisplayName("[AdminController] 회원 다건 조회 - 관리자가 정상 조회 시 200 반환")
+    void t6() throws Exception {
+        // 관리자 로그인
+        createTestAdmin();
+        Cookie adminToken = loginAsAdmin();
+
+        // 다수의 회원 생성
+        for (int i = 1; i < 20; i++){
+            signUp("user%d".formatted(i));
+        }
+
+        ResultActions resultActions = mvc.perform(
+                get("/api/v1/admin/users")
+                        .cookie(adminToken)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200"))
+                .andExpect(jsonPath("$.msg").value("회원 목록 조회가 완료되었습니다."))
+                .andExpect(jsonPath("$.data.content.length()").value(10))
+                .andExpect(jsonPath("$.data.number").value(0))
+                .andExpect(jsonPath("$.data.size").value(10))
+                .andExpect(jsonPath("$.data.totalElements").value(20))   // 관리자 1 + 회원 19
+                .andExpect(jsonPath("$.data.totalPages").value(2))
+                // 최신 가입자가 맨 앞
+                .andExpect(jsonPath("$.data.content[0].username").value("user19"))
+                .andExpect(jsonPath("$.data.content[9].username").value("user10"));
+
+        // 생성일 내림차순 검증
+        String responseBody = resultActions.andReturn()
+                .getResponse()
+                .getContentAsString(StandardCharsets.UTF_8);
+
+        List<LocalDateTime> createdAts = JsonPath.<List<String>>read(responseBody, "$.data.content[*].createdAt")
+                .stream()
+                .map(LocalDateTime::parse)
+                .toList();
+
+        assertThat(createdAts).isSortedAccordingTo(Comparator.reverseOrder());
+
     }
 }
