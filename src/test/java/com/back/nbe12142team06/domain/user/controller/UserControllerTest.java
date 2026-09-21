@@ -1046,7 +1046,7 @@ public class UserControllerTest {
     }
 
     @Test
-    @DisplayName("[UserController] 회원 탈퇴 - 자기 자신의 계정을 정상적으로 탈퇴하는 경우 204-1 반환")
+    @DisplayName("[UserController] 회원 탈퇴 - 자기 자신의 계정을 정상적으로 탈퇴하는 경우 200-4 반환")
     void t27() throws Exception {
         String signUpBody = """
         {
@@ -1079,8 +1079,8 @@ public class UserControllerTest {
                 .andDo(print());
 
         resultActions
-                .andExpect(status().isNoContent())
-                .andExpect(jsonPath("$.statusCode").value("204-1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-4"))
                 .andExpect(jsonPath("$.msg").value("회원 탈퇴가 완료되었습니다."))
                 .andExpect(result -> {
 
@@ -1149,7 +1149,7 @@ public class UserControllerTest {
 
         // 회원 탈퇴
         mvc.perform(delete("/api/v1/users/profile").cookie(accessToken))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk());
 
         // 실제 서버처럼 다음 요청이 새 영속성 컨텍스트에서 시작되도록
         em.flush();
@@ -1194,7 +1194,7 @@ public class UserControllerTest {
 
         // 회원 탈퇴
         mvc.perform(delete("/api/v1/users/profile").cookie(accessToken))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk());
 
         em.flush();
         em.clear();
