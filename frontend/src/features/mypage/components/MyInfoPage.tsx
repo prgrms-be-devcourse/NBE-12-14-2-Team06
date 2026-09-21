@@ -3,22 +3,25 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { InfoRow } from '@/components/ui';
-import { ACTIVITY_STATS, MY_PROFILE } from '../model';
+import { ACTIVITY_STATS, CLIENT_ACTIVITY_STATS, CLIENT_PROFILE, MY_PROFILE } from '../model';
+import type { MyPageRole } from '../types';
 import InfoCard from './InfoCard';
 import MyPageShell from './MyPageShell';
 
 const ACCOUNT_ACTIONS = ['비밀번호 변경', '이메일 변경', '회원 탈퇴'];
 
 /**
- * 마이페이지 — 내 정보 (Figma 동행매니저_마이페이지 210:1079)
+ * 마이페이지 — 내 정보 (Figma 동행매니저_마이페이지 210:1079 · 의뢰인_마이페이지 210:746)
  *
  * ⚠️ 모의 데이터(model/profile.ts)를 보여줍니다. 내 정보 API(GET /api/v1/users/profile) 연결 전입니다.
  */
-export default function MyInfoPage() {
-  const profile = MY_PROFILE;
+export default function MyInfoPage({ role = 'escort' }: { role?: MyPageRole }) {
+  const isClient = role === 'client';
+  const profile = isClient ? CLIENT_PROFILE : MY_PROFILE;
+  const stats = isClient ? CLIENT_ACTIVITY_STATS : ACTIVITY_STATS;
 
   return (
-    <MyPageShell>
+    <MyPageShell role={role}>
       <div className="flex max-w-[858px] flex-col gap-[22px] pt-8 lg:pt-[41px]">
         {/* 프로필 요약 */}
         <section className="flex flex-col gap-8 rounded-[30px] border border-line-soft bg-white p-8 shadow-card sm:flex-row lg:min-h-[210px]">
@@ -65,16 +68,24 @@ export default function MyInfoPage() {
           <div className="flex flex-col gap-[22px]">
             {/* 추가 정보 */}
             <InfoCard title="추가 정보" action="수정하기" paddingBottom="pb-6" className="lg:min-h-[256px]">
-              <div className="px-4 pt-[26px]">
-                <p className="text-base leading-5 font-semibold text-brand">자기소개</p>
-                <p className="mt-[21px] text-xs leading-[15px] font-semibold text-brand">
-                  {profile.intro.map((line) => (
-                    <span key={line} className="block">
-                      {line}
-                    </span>
-                  ))}
-                </p>
-              </div>
+              {profile.guardian ? (
+                <dl className="mt-[9px] flex flex-col gap-[3px]">
+                  <InfoRow label="보호자 실명" labelWidth={138}>{profile.guardian.name}</InfoRow>
+                  <InfoRow label="보호자 전화번호" labelWidth={138}>{profile.guardian.phone}</InfoRow>
+                  <InfoRow label="특이사항" labelWidth={138}>{profile.guardian.careNote}</InfoRow>
+                </dl>
+              ) : (
+                <div className="px-4 pt-[26px]">
+                  <p className="text-base leading-5 font-semibold text-brand">자기소개</p>
+                  <p className="mt-[21px] text-xs leading-[15px] font-semibold text-brand">
+                    {profile.intro?.map((line) => (
+                      <span key={line} className="block">
+                        {line}
+                      </span>
+                    ))}
+                  </p>
+                </div>
+              )}
             </InfoCard>
 
             {/* 계정 관리 */}
@@ -102,7 +113,7 @@ export default function MyInfoPage() {
           <div className="flex h-[47px] items-center justify-between">
             <h2 className="text-2xl leading-6 font-semibold text-brand">최근 활동 요약</h2>
             <Link
-              href="/mypage/applications"
+              href={isClient ? '/client/posts' : '/mypage/applications'}
               className="flex items-center gap-4 text-base leading-5 font-semibold text-brand transition-colors hover:text-brand-hover"
             >
               전체 보기
@@ -110,7 +121,7 @@ export default function MyInfoPage() {
             </Link>
           </div>
           <ul className="mt-2 grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-[22px]">
-            {ACTIVITY_STATS.map((stat) => (
+            {stats.map((stat) => (
               <li
                 key={stat.label}
                 className="flex h-[83px] items-center gap-3 rounded-[20px] border border-line-soft bg-white px-4 shadow-card"

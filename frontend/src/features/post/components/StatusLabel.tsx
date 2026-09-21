@@ -6,6 +6,7 @@ const TONE: Record<LabelTone, string> = {
   green: 'border-[#e6ffe5] bg-[#e6ffe5] text-[#209d37]',
   red: 'border-[#ffe3e3] bg-[#ffe3e3] text-[#b91d1d]',
   blue: 'border-[#e8eefa] bg-[#e8eefa] text-[#203b9d]',
+  purple: 'border-[#ede8fa] bg-[#ede8fa] text-[#43209d]',
   gray: 'border-[#e6e8ec] bg-[#e6e8ec] text-footer',
   strong: 'border-[#6796db] bg-[#6796db] text-white',
 };

@@ -71,5 +71,11 @@ export type MyProfile = {
   address: string;
   birthDate: string;
   gender: string;
-  intro: string[];
+  /** 동행 매니저 자기소개 */
+  intro?: string[];
+  /** 의뢰인 추가 정보 (백엔드 ClientProfile: emergencyContactName / emergencyContactPhone / careNote) */
+  guardian?: { name: string; phone: string; careNote: string };
 };
+
+/** 마이페이지를 보는 사람. 왼쪽 메뉴와 내용이 달라집니다. */
+export type MyPageRole = 'escort' | 'client';
