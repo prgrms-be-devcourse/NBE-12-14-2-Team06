@@ -5,5 +5,8 @@
  */
 export const MOCK_USER = { name: '나알바' };
 
+/** 관리자 페이지 확인용 가짜 관리자입니다. */
+export const MOCK_ADMIN = { name: '관리자' };
+
 /** 의뢰인 화면(/client/**)에서 쓰는 가짜 로그인 사용자. 이름을 누르면 의뢰인 마이페이지로 이동합니다. */
 export const MOCK_CLIENT = { name: '김가지', href: '/client' };
