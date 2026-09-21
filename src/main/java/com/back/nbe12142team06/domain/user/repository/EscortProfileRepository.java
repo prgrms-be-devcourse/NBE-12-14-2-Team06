@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
+import java.util.Optional;
+
 public interface EscortProfileRepository extends JpaRepository<EscortProfile, Long> {
 
     @Modifying
@@ -14,5 +16,5 @@ public interface EscortProfileRepository extends JpaRepository<EscortProfile, Lo
 
     boolean existsEscortProfileByUser(User user);
 
-    EscortProfile findByUserId(Long userId);
+    Optional<EscortProfile> findByUserId(Long userId);
 }

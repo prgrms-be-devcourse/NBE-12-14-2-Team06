@@ -7,7 +7,7 @@ import com.back.nbe12142team06.domain.user.dto.admin.AdminUserProfileUpdateReque
 import com.back.nbe12142team06.domain.user.dto.login.UserLoginRequest;
 import com.back.nbe12142team06.domain.user.dto.profile.ClientProfileRequest;
 import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpRequest;
-import com.back.nbe12142team06.domain.user.dto.profile.EscortSignupRequest;
+import com.back.nbe12142team06.domain.user.dto.profile.EscortProfileRequest;
 import com.back.nbe12142team06.domain.user.dto.user.UserProfileUpdateRequest;
 import com.back.nbe12142team06.domain.user.entity.ClientProfile;
 import com.back.nbe12142team06.domain.user.entity.EscortProfile;
@@ -298,7 +298,7 @@ public class UserService {
     }
 
     @Transactional
-    public EscortProfile createClientProfile(Long userId, EscortSignupRequest request) {
+    public EscortProfile createEscortProfile(Long userId, EscortProfileRequest request) {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("회원 정보를 찾을 수 없습니다."));
@@ -314,5 +314,11 @@ public class UserService {
         escortProfile.updateAccount(request.bankName(), request.accountHolder(), request.accountNumber());
 
         return this.escortProfileRepository.save(escortProfile);
+    }
+
+    @Transactional(readOnly = true)
+    public EscortProfile getEscortProfile(Long escortId) {
+        return this.escortProfileRepository.findByUserId(escortId)
+                .orElseThrow(() -> new NotFoundException("동행 매니저 프로필이 존재하지 않습니다."));
     }
 }

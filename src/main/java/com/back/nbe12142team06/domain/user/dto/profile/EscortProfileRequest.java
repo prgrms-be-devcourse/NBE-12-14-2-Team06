@@ -2,7 +2,7 @@ package com.back.nbe12142team06.domain.user.dto.profile;
 
 import jakarta.validation.constraints.NotBlank;
 
-public record EscortSignupRequest(
+public record EscortProfileRequest(
         String intro,
         @NotBlank(message = "은행 이름을 입력해주세요.")
         String bankName,

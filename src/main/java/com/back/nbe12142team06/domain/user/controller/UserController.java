@@ -1,10 +1,7 @@
 package com.back.nbe12142team06.domain.user.controller;
 
 import com.back.nbe12142team06.domain.auth.service.RefreshTokenService;
-import com.back.nbe12142team06.domain.user.dto.profile.ClientProfileRequest;
-import com.back.nbe12142team06.domain.user.dto.profile.ClientProfileResponse;
-import com.back.nbe12142team06.domain.user.dto.profile.EscortSignUpResponse;
-import com.back.nbe12142team06.domain.user.dto.profile.EscortSignupRequest;
+import com.back.nbe12142team06.domain.user.dto.profile.*;
 import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpRequest;
 import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpResponse;
 import com.back.nbe12142team06.domain.user.dto.user.UserProfileUpdateRequest;
@@ -20,6 +17,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.security.Security;
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -151,16 +151,29 @@ public class UserController {
 
     // 동행 매니저 프로필 생성
     @PostMapping("/profile/escort")
-    public RsData<EscortSignUpResponse> updateProfileEscort(@AuthenticationPrincipal SecurityUser me,
-                                                            @RequestBody @Valid EscortSignupRequest request) {
+    public RsData<EscortProfileResponse> createProfileEscort(@AuthenticationPrincipal SecurityUser me,
+                                                             @RequestBody @Valid EscortProfileRequest request) {
 
-        EscortProfile escort = this.userService.createClientProfile(me.getId(), request);
+        EscortProfile escort = this.userService.createEscortProfile(me.getId(), request);
 
         return new RsData<>(
-                "200-2",
+                "200-8",
                 "동행 매니저 프로필이 생성되었습니다.",
-                new EscortSignUpResponse(escort)
+                new EscortProfileResponse(escort)
         );
+    }
 
+    // 동행 매니저 프로필 조회
+    @GetMapping("/profile/escort")
+    public RsData<EscortProfileResponse> getProfileEscort(
+            @AuthenticationPrincipal SecurityUser me
+    ){
+        EscortProfile escortProfile = this.userService.getEscortProfile(me.getId());
+
+        return new RsData<>(
+                "200-9",
+                "동행 매니저 프로필 조회를 완료했습니다.",
+                new EscortProfileResponse(escortProfile)
+        );
     }
 }

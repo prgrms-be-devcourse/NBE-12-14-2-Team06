@@ -1,7 +1,7 @@
 package com.back.nbe12142team06.domain.user.service;
 
 import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpRequest;
-import com.back.nbe12142team06.domain.user.dto.profile.EscortSignupRequest;
+import com.back.nbe12142team06.domain.user.dto.profile.EscortProfileRequest;
 import com.back.nbe12142team06.domain.user.entity.EscortProfile;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Gender;
@@ -228,14 +228,14 @@ public class UserServiceTest {
 
     @Test
     @DisplayName("[UserService] 동행 매니저 프로필 생성")
-    void t100(){
+    void t6(){
 
         // 회원 생성
         t1();
 
-        EscortProfile saved = this.userService.createClientProfile(
+        EscortProfile saved = this.userService.createEscortProfile(
                 1L,
-                new EscortSignupRequest(
+                new EscortProfileRequest(
                         "동행 매니저 입니다.",
                         "오픈은행",
                         "유저1",
@@ -245,7 +245,7 @@ public class UserServiceTest {
         em.flush();
         em.clear();
 
-        EscortProfile profileCheck = this.escortProfileRepository.findByUserId(1L);
+        EscortProfile profileCheck = this.escortProfileRepository.findByUserId(1L).get();
 
         assertThat(profileCheck.getBankName()).isEqualTo("오픈은행");
         assertThat(profileCheck.getAccountNumber()).isEqualTo("123-000000-123");

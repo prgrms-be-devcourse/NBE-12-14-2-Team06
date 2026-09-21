@@ -166,6 +166,22 @@ public class UserControllerTest {
                 .andExpect(status().isOk());
     }
 
+    // 동행 매니저 프로필 생성
+    private void createEscortProfile(Cookie escortToken) throws Exception {
+        mvc.perform(post("/api/v1/users/profile/escort")
+                        .cookie(escortToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "intro": "동행 매니저입니다.",
+                                    "bankName": "오픈은행",
+                                    "accountHolder": "김춘식",
+                                    "accountNumber": "123-0000000-123"
+                                }
+                                """))
+                .andExpect(status().isOk());
+    }
+
     // 의뢰인의 공고 생성 (조회 권한 테스트용, 결제·이동수단 없이 공고만 저장)
     private Post createPost(String clientUsername) {
         User client = userRepository.findByUsername(clientUsername).orElseThrow();
@@ -1873,16 +1889,57 @@ public class UserControllerTest {
         ResultActions resultActions = mvc.perform(
                         post("/api/v1/users/profile/escort")
                                 .cookie(accessToken)
-                                .contentType("application/json")
+                                .contentType(MediaType.APPLICATION_JSON)
                                 .content(requestBody))
                 .andDo(print());
 
         resultActions.andExpect(handler().handlerType(UserController.class));
-        resultActions.andExpect(handler().methodName("updateProfileEscort"));
+        resultActions.andExpect(handler().methodName("createProfileEscort"));
         resultActions.andExpect(status().isOk());
-        resultActions.andExpect(jsonPath("$.statusCode").value("200-2"));
+        resultActions.andExpect(jsonPath("$.statusCode").value("200-8"));
         resultActions.andExpect(jsonPath("$.msg").value("동행 매니저 프로필이 생성되었습니다."));
         resultActions.andExpect(jsonPath("$.data.accountHolder").value("김춘식"));
         resultActions.andExpect(jsonPath("$.data.accountNumber").value("123-0000000-123"));
+    }
+
+    @Test
+    @DisplayName("[UserController] 동행 매니저 프로필 조회 - 정상 생성")
+    void t101() throws Exception {
+        String username = "t1";
+
+        Cookie accessToken = signUp(username, "ESCORT");
+        createEscortProfile(accessToken);
+
+        ResultActions resultActions = mvc.perform(
+                        get("/api/v1/users/profile/escort")
+                                .cookie(accessToken))
+                .andDo(print());
+
+        resultActions.andExpect(handler().handlerType(UserController.class));
+        resultActions.andExpect(handler().methodName("getProfileEscort"));
+        resultActions.andExpect(status().isOk());
+        resultActions.andExpect(jsonPath("$.statusCode").value("200-9"));
+        resultActions.andExpect(jsonPath("$.msg").value("동행 매니저 프로필 조회를 완료했습니다."));
+        resultActions.andExpect(jsonPath("$.data.accountHolder").value("김춘식"));
+        resultActions.andExpect(jsonPath("$.data.accountNumber").value("123-0000000-123"));
+    }
+
+    @Test
+    @DisplayName("[UserController] 동행 매니저 프로필 조회 - 찾을 수 없음")
+    void t102() throws Exception {
+        String username = "t1";
+
+        Cookie accessToken = signUp(username, "ESCORT");
+
+        ResultActions resultActions = mvc.perform(
+                        get("/api/v1/users/profile/escort")
+                                .cookie(accessToken))
+                .andDo(print());
+
+        resultActions.andExpect(handler().handlerType(UserController.class));
+        resultActions.andExpect(handler().methodName("getProfileEscort"));
+        resultActions.andExpect(status().isNotFound());
+        resultActions.andExpect(jsonPath("$.statusCode").value("404"));
+        resultActions.andExpect(jsonPath("$.msg").value("동행 매니저 프로필이 존재하지 않습니다."));
     }
 }
