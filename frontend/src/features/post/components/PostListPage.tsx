@@ -2,10 +2,15 @@
 
 import Image from 'next/image';
 import { useState } from 'react';
-import { AppShell } from '@/components/layout';
 import { Container, SectionHeading } from '@/components/ui';
-import { MOCK_USER } from '@/lib/mockSession';
-import { DEFAULT_FILTERS, PAY_OPTIONS, PERIOD_OPTIONS, POSTS, filterPosts, optionLabel } from '../model';
+import {
+  DEFAULT_FILTERS,
+  PAY_OPTIONS,
+  PERIOD_OPTIONS,
+  POSTS,
+  filterPosts,
+  optionLabel,
+} from '../model';
 import { daysFromNow, formatMonthDay } from '../lib/date';
 import type { LabelTone, PostBadge, PostFilters } from '../types';
 import CardButton from './CardButton';
@@ -21,12 +26,19 @@ const BADGE: Record<PostBadge, { text: string; tone: LabelTone }> = {
   open: { text: '모집 중', tone: 'blue' },
 };
 
+type PostListPageProps = {
+  detailBasePath?: string;
+};
+
 /**
  * 공고 목록 겸 메인 — Figma 동행 매니저_공고 목록 겸 메인페이지 188:1289
  *
- * ⚠️ 모의 데이터(model/posts.ts)를 화면에서 걸러 보여줍니다. API 연결은 아직 하지 않았습니다.
+ * ⚠️ 모의 데이터(model/posts.ts)를 화면에서 걸러 보여줍니다.
+ * API 연결은 아직 하지 않았습니다.
  */
-export default function PostListPage() {
+export default function PostListPage({
+                                       detailBasePath = '/posts',
+                                     }: PostListPageProps) {
   const [filters, setFilters] = useState<PostFilters>(DEFAULT_FILTERS);
   const [keywordInput, setKeywordInput] = useState('');
   const [page, setPage] = useState(0);
@@ -62,7 +74,6 @@ export default function PostListPage() {
   }
 
   return (
-    <AppShell user={MOCK_USER}>
       <section className="bg-white py-[50px]">
         <Container className="flex flex-col items-center">
           <SectionHeading
@@ -120,7 +131,9 @@ export default function PostListPage() {
                       payLabel={`시급 ${post.hourlyPay.toLocaleString()}원`}
                       description={post.description}
                     >
-                      <CardButton href={`/posts/${post.id}`}>상세보기</CardButton>
+                      <CardButton href={`${detailBasePath}/${post.id}`}>
+                        상세보기
+                      </CardButton>
                       {/* TODO: 지원 API(POST /api/v1/applications/{postId}) 연결 */}
                       <CardButton variant="solid">지원하기</CardButton>
                     </PostCard>
@@ -139,6 +152,5 @@ export default function PostListPage() {
           </div>
         </Container>
       </section>
-    </AppShell>
   );
 }
