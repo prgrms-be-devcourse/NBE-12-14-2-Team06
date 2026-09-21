@@ -21,7 +21,14 @@ export default function Pagination({ page, pageCount, onPageChange }: Props) {
         onClick={() => onPageChange(page - 1)}
         className={cn(BUTTON, 'border border-line bg-white hover:bg-line-soft')}
       >
-        <Image src="/icons/page-arrow-left.svg" alt="" width={14.85} height={13.7077} />
+        {/* 에셋은 이름과 달리 오른쪽을 가리켜서, Figma(571:20441)처럼 180도 돌려 씁니다. */}
+        <Image
+          src="/icons/page-arrow-left.svg"
+          alt=""
+          width={14.85}
+          height={13.7077}
+          className="rotate-180"
+        />
       </button>
       <button
         type="button"
