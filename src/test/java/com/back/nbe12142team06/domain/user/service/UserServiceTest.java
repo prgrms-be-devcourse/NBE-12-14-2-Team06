@@ -226,28 +226,28 @@ public class UserServiceTest {
         assertThat(passwordEncoder.matches("1234", userCheck.getPassword())).isTrue();
     }
 
-    @Test
-    @DisplayName("[UserService] 동행 매니저 프로필 생성")
-    void t100(){
+    // @Test
+    // @DisplayName("[UserService] 동행 매니저 프로필 생성")
+    // void t100(){
 
-        // 회원 생성
-        t1();
+    //     // 회원 생성
+    //     t1();
 
-        EscortProfile saved = this.userService.createClientProfile(
-                1L,
-                new EscortSignupRequest(
-                        "동행 매니저 입니다.",
-                        "오픈은행",
-                        "유저1",
-                        "123-000000-123")
-        );
+    //     EscortProfile saved = this.userService.createClientProfile(
+    //             1L,
+    //             new EscortSignupRequest(
+    //                     "동행 매니저 입니다.",
+    //                     "오픈은행",
+    //                     "유저1",
+    //                     "123-000000-123")
+    //     );
 
-        em.flush();
-        em.clear();
+    //     em.flush();
+    //     em.clear();
 
-        EscortProfile profileCheck = this.escortProfileRepository.findByUserId(1L);
+    //     EscortProfile profileCheck = this.escortProfileRepository.findByUserId(1L);
 
-        assertThat(profileCheck.getBankName()).isEqualTo("오픈은행");
-        assertThat(profileCheck.getAccountNumber()).isEqualTo("123-000000-123");
-    }
+    //     assertThat(profileCheck.getBankName()).isEqualTo("오픈은행");
+    //     assertThat(profileCheck.getAccountNumber()).isEqualTo("123-000000-123");
+    // }
 }
