@@ -4,4 +4,15 @@
  */
 export { default as SignupSelectPage } from './components/SignupSelectPage';
 export { default as SignupInfoPage } from './components/SignupInfoPage';
-export type { RoleOption, SignupFormValues, SignupGender, SignupRole, SignupStep } from './types';
+export { default as SignupTermsPage } from './components/SignupTermsPage';
+export { default as SignupCompletePage } from './components/SignupCompletePage';
+export { SignupProvider } from './state/SignupContext';
+export type {
+  Agreement,
+  AgreementGroup,
+  RoleOption,
+  SignupFormValues,
+  SignupGender,
+  SignupRole,
+  SignupStep,
+} from './types';

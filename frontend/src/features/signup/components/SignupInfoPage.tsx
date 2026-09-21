@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react';
-import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useRef, type ChangeEvent, type FormEvent } from 'react';
+import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/layout';
 import { Container, SectionHeading } from '@/components/ui';
+import { useSignupRole } from '../hooks/useSignupRole';
 import { REGIONS } from '../model';
-import type { SignupFormValues, SignupRole } from '../types';
+import { useSignup } from '../state/SignupContext';
+import type { SignupFormValues } from '../types';
 import SignupStepper from './SignupStepper';
 import CheckButton from './form/CheckButton';
 import FormCard from './form/FormCard';
@@ -14,23 +15,9 @@ import FormField from './form/FormField';
 import GenderRadioGroup from './form/GenderRadioGroup';
 import RoleStatus from './form/RoleStatus';
 import SelectInput from './form/SelectInput';
+import StepNavButton from './form/StepNavButton';
 import TextArea from './form/TextArea';
 import TextInput from './form/TextInput';
-
-const INITIAL_VALUES: SignupFormValues = {
-  name: '',
-  phoneNum: '',
-  username: '',
-  password: '',
-  passwordConfirm: '',
-  email: '',
-  gender: '',
-  birthDate: '',
-  region: '',
-  guardianName: '',
-  guardianPhone: '',
-  careNote: '',
-};
 
 const PHONE_HINT = '‘-’ 없이 숫자만 입력해주세요.';
 const GRID = 'mx-auto grid w-full max-w-[998px] gap-x-8 gap-y-[21px] lg:grid-cols-2';
@@ -42,9 +29,9 @@ const GRID = 'mx-auto grid w-full max-w-[998px] gap-x-8 gap-y-[21px] lg:grid-col
  */
 export default function SignupInfoPage() {
   const router = useRouter();
-  const role: SignupRole = useSearchParams().get('role') === 'ESCORT' ? 'ESCORT' : 'CLIENT';
-
-  const [values, setValues] = useState<SignupFormValues>(INITIAL_VALUES);
+  const role = useSignupRole();
+  // 입력값은 3·4단계와 공유하고, 이전 단계로 돌아와도 유지됩니다.
+  const { values, setValues } = useSignup();
   const confirmRef = useRef<HTMLInputElement>(null);
 
   const handleChange =
@@ -61,7 +48,6 @@ export default function SignupInfoPage() {
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    // TODO: 3단계(약관 동의) 화면이 생기면 입력값을 넘기고, 가입 API(POST /api/v1/users)를 호출하세요.
     router.push(`/signup/terms?role=${role}`);
   };
 
@@ -269,18 +255,8 @@ export default function SignupInfoPage() {
             )}
 
             <div className="flex w-full gap-2.5">
-              <Link
-                href="/signup"
-                className="flex h-14 flex-1 items-center justify-center rounded-[30px] border border-line bg-white px-6 text-xl leading-[18px] font-semibold text-brand transition-colors hover:bg-line-soft"
-              >
-                이전
-              </Link>
-              <button
-                type="submit"
-                className="flex h-14 flex-1 items-center justify-center rounded-[30px] bg-brand px-6 text-xl leading-[18px] font-semibold text-white transition-colors hover:bg-brand-hover"
-              >
-                다음
-              </button>
+              <StepNavButton href="/signup">이전</StepNavButton>
+              <StepNavButton variant="solid">다음</StepNavButton>
             </div>
           </form>
         </Container>

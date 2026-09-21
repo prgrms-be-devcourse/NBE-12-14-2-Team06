@@ -46,3 +46,19 @@ export type SignupFormValues = {
   guardianPhone: string;
   careNote: string;
 };
+
+/** 3단계 — 약관 동의 항목 */
+export type Agreement = {
+  id: string;
+  title: string;
+  description: string;
+  required: boolean;
+};
+
+/** 역할별 약관 목록 */
+export type AgreementGroup = {
+  /** "필수 동의 항목(…)" 소제목 */
+  requiredTitle: string;
+  required: Agreement[];
+  optional: Agreement[];
+};
