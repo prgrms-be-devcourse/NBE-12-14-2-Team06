@@ -3,10 +3,13 @@ package com.back.nbe12142team06.domain.user.controller;
 import com.back.nbe12142team06.domain.auth.service.RefreshTokenService;
 import com.back.nbe12142team06.domain.user.dto.profile.ClientProfileRequest;
 import com.back.nbe12142team06.domain.user.dto.profile.ClientProfileResponse;
+import com.back.nbe12142team06.domain.user.dto.profile.EscortSignUpResponse;
+import com.back.nbe12142team06.domain.user.dto.profile.EscortSignupRequest;
 import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpRequest;
 import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpResponse;
 import com.back.nbe12142team06.domain.user.dto.user.UserProfileUpdateRequest;
 import com.back.nbe12142team06.domain.user.dto.user.UserResponse;
+import com.back.nbe12142team06.domain.user.entity.EscortProfile;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.service.UserService;
 import com.back.nbe12142team06.global.response.RsData;
@@ -106,7 +109,7 @@ public class UserController {
     public RsData<ClientProfileResponse> updateProfileClient(
             @AuthenticationPrincipal SecurityUser me,
             @RequestBody @Valid ClientProfileRequest request
-    ){
+    ) {
 
         User user = this.userService.createClientProfile(me.getId(), request);
 
@@ -114,6 +117,21 @@ public class UserController {
                 "200-5",
                 "의뢰인 프로필이 생성되었습니다.",
                 new ClientProfileResponse(user)
-                );
+        );
+    }
+
+    // 동행 매니저 프로필 생성
+    @PostMapping("/profile/escort")
+    public RsData<EscortSignUpResponse> updateProfileEscort(@AuthenticationPrincipal SecurityUser me,
+                                                     @RequestBody @Valid EscortSignupRequest request) {
+
+        EscortProfile escort = this.userService.createClientProfile(me.getId(), request);
+
+        return new RsData<>(
+                "200-2",
+                "동행 매니저 프로필이 생성되었습니다.",
+                new EscortSignUpResponse(escort)
+        );
+
     }
 }
