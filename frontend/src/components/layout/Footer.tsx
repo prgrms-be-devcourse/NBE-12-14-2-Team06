@@ -1,7 +1,7 @@
 'use client';
 
+import Image from 'next/image';
 import Container from '@/components/ui/Container';
-import { FacebookIcon, InstagramIcon, YoutubeIcon } from '@/components/ui/icons';
 
 const LINKS = [
   { label: '서비스 소개', href: '#about' },
@@ -11,9 +11,9 @@ const LINKS = [
 ];
 
 const SOCIAL = [
-  { label: 'Facebook', Icon: FacebookIcon },
-  { label: 'Instagram', Icon: InstagramIcon },
-  { label: 'YouTube', Icon: YoutubeIcon },
+  { label: 'Facebook', src: '/icons/social-facebook.svg' },
+  { label: 'Instagram', src: '/icons/social-instagram.svg' },
+  { label: 'YouTube', src: '/icons/social-youtube.svg' },
 ];
 
 export default function Footer() {
@@ -37,14 +37,9 @@ export default function Footer() {
         </nav>
 
         <div className="flex gap-4">
-          {SOCIAL.map(({ label, Icon }) => (
-            <a
-              key={label}
-              href="#"
-              aria-label={label}
-              className="grid size-9 place-items-center rounded-lg bg-line-soft text-brand transition-colors hover:bg-line"
-            >
-              <Icon className="size-5" />
+          {SOCIAL.map(({ label, src }) => (
+            <a key={label} href="#" aria-label={label} className="shrink-0 transition-opacity hover:opacity-80">
+              <Image src={src} alt="" width={36} height={36} />
             </a>
           ))}
         </div>

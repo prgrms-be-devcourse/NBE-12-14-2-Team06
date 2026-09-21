@@ -65,30 +65,3 @@ export function ImageGlyphIcon(props: SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
-
-export function FacebookIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
-      <path d="M13.5 21v-8h2.7l.4-3.1h-3.1V7.9c0-.9.25-1.5 1.55-1.5h1.65V3.6c-.29-.04-1.27-.12-2.41-.12-2.38 0-4.02 1.46-4.02 4.13V9.9H7.5V13h2.77v8h3.23Z" />
-    </svg>
-  );
-}
-
-export function InstagramIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
-      <rect x="3.5" y="3.5" width="17" height="17" rx="5" stroke="currentColor" strokeWidth={1.6} />
-      <circle cx="12" cy="12" r="3.8" stroke="currentColor" strokeWidth={1.6} />
-      <circle cx="16.8" cy="7.2" r="1.1" fill="currentColor" />
-    </svg>
-  );
-}
-
-export function YoutubeIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
-      <rect x="2.8" y="5.5" width="18.4" height="13" rx="4" stroke="currentColor" strokeWidth={1.6} />
-      <path d="M10.4 9.6v4.8L14.6 12l-4.2-2.4Z" fill="currentColor" />
-    </svg>
-  );
-}
