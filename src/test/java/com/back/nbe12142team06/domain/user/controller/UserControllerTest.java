@@ -1316,4 +1316,6 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.statusCode").value("401-1"))
                 .andExpect(jsonPath("$.msg").value("로그인 후 이용해주세요."));
     }
+
+
 }

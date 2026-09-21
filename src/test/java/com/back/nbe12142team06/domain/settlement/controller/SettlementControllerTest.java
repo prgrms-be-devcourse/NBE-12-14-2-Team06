@@ -18,7 +18,7 @@ import com.back.nbe12142team06.domain.user.entity.EscortProfile;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Gender;
 import com.back.nbe12142team06.domain.user.enums.Role;
-import com.back.nbe12142team06.domain.user.repository.EscortRepository;
+import com.back.nbe12142team06.domain.user.repository.EscortProfileRepository;
 import com.back.nbe12142team06.domain.user.service.UserService;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Assertions;
@@ -67,7 +67,7 @@ class SettlementControllerTest {
     @Autowired
     private SettlementService settlementService;
     @Autowired
-    private EscortRepository escortRepository;
+    private EscortProfileRepository escortProfileRepository;
 
     @MockitoBean
     private TossPaymentClient tossPaymentClient;
@@ -154,9 +154,9 @@ class SettlementControllerTest {
         savedSettlement1Id = savedSettlement1.getId();
 
         EscortProfile escortProfile1 = new EscortProfile(savedUser2).updateAccount("오픈은행", savedUser2.getName(), "000-1234567-000");
-        escortRepository.save(escortProfile1);
+        escortProfileRepository.save(escortProfile1);
         EscortProfile escortProfile2 = new EscortProfile(savedUser3).updateAccount("오픈은행", savedUser3.getName(), "111-7654321-111");
-        escortRepository.save(escortProfile2);
+        escortProfileRepository.save(escortProfile2);
 
         // user로 로그인해 인증 쿠키 확보
         accessTokenCookie2 = mvc.perform(

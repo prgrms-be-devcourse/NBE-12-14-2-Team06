@@ -2,12 +2,14 @@ package com.back.nbe12142team06.domain.user.service;
 
 import com.back.nbe12142team06.domain.auth.entity.RefreshToken;
 import com.back.nbe12142team06.domain.auth.repository.RefreshTokenRepository;
-import com.back.nbe12142team06.domain.user.dto.login.common.UserLoginRequest;
+import com.back.nbe12142team06.domain.user.dto.login.UserLoginRequest;
 import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpRequest;
 import com.back.nbe12142team06.domain.user.dto.admin.AdminUserProfileUpdateRequest;
 import com.back.nbe12142team06.domain.user.dto.user.UserProfileUpdateRequest;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Role;
+import com.back.nbe12142team06.domain.user.repository.ClientProfileRepository;
+import com.back.nbe12142team06.domain.user.repository.EscortProfileRepository;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
 import com.back.nbe12142team06.global.exception.*;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +35,8 @@ public class UserService {
     private final AuthTokenService authTokenService;
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final EscortProfileRepository escortProfileRepository;
+    private final ClientProfileRepository clientProfileRepository;
 
     // 회원가입
     @Transactional
@@ -172,16 +176,12 @@ public class UserService {
         User user = this.userRepository.findById(id)
                 .orElseThrow(() -> new UnauthorizedException("회원 정보를 찾을 수 없습니다. 다시 로그인해주세요."));
 
-        // 해당 유저의 모든 리프레시 토큰 폐기
-        List<RefreshToken> refreshTokens = this.refreshTokenRepository.findAllByUserIdAndRevokedAtIsNull(id);
-
-        for (RefreshToken refreshToken : refreshTokens) {
-            refreshToken.revoke();
+        if (user.getRole() == Role.ADMIN) {
+            throw new InvalidException(3, "관리자는 자신의 계정을 탈퇴시킬 수 없습니다.");
         }
 
-        user.deleteUser();
-
-        this.userRepository.save(user);
+        // 회원 정보, 프로필, 토큰 전부 삭제
+        withdraw(user);
     }
 
     // [ADMIN] 회원 정보 조회 (탈퇴한 회원 정보도 가능)
@@ -219,18 +219,27 @@ public class UserService {
             throw new InvalidException(4, "이미 탈퇴한 회원입니다.");
         }
 
-        // 해당 유저의 모든 리프레시 토큰 폐기
-        List<RefreshToken> refreshTokens = this.refreshTokenRepository.findAllByUserIdAndRevokedAtIsNull(userId);
+        // 회원 정보, 프로필, 토큰 전부 삭제
+        withdraw(user);
+    }
 
+    // 프로필 삭제, 리프레시 토큰 폐기, 회원 정보 삭제
+    private void withdraw(User user) {
+        Long userId = user.getId();
+
+        switch (user.getRole()) {
+            case CLIENT -> this.clientProfileRepository.deleteByUserId(userId);
+            case ESCORT -> this.escortProfileRepository.deleteByUserId(userId);
+        }
+
+        List<RefreshToken> refreshTokens = this.refreshTokenRepository.findAllByUserIdAndRevokedAtIsNull(userId);
         for (RefreshToken refreshToken : refreshTokens) {
             refreshToken.revoke();
         }
 
         user.deleteUser();
-
         this.userRepository.save(user);
     }
-
 
 
 

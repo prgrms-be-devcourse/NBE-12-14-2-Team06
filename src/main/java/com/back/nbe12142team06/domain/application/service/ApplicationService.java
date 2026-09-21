@@ -15,7 +15,7 @@ import com.back.nbe12142team06.domain.post.repository.PostRepository;
 import com.back.nbe12142team06.domain.user.entity.EscortProfile;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Role;
-import com.back.nbe12142team06.domain.user.repository.EscortRepository;
+import com.back.nbe12142team06.domain.user.repository.EscortProfileRepository;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
 import com.back.nbe12142team06.global.exception.DuplicatedException;
 import com.back.nbe12142team06.global.exception.ForbiddenException;
@@ -36,7 +36,7 @@ public class ApplicationService {
     private final ApplicationRepository applicationRepository;
     private final PostRepository postRepository;
     private final UserRepository userRepository;
-    private final EscortRepository escortRepository;
+    private final EscortProfileRepository escortProfileRepository;
     private final EscortProgressLogRepository escortProgressLogRepository;
 
     @Transactional
@@ -210,7 +210,7 @@ public class ApplicationService {
 
             Post post = application.getPost();
 
-            EscortProfile escortProfile = escortRepository.findById(userId)
+            EscortProfile escortProfile = escortProfileRepository.findById(userId)
                     .orElseThrow(() -> new NotFoundException("동행인 프로필을 찾을 수 없습니다."));
 
             application.noShow();
