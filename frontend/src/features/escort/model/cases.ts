@@ -33,6 +33,8 @@ const COMMON = {
   workTime: '9:00 ~ 12:10',
   clientName: '김가지',
   clientPhone: '010-0000-0000',
+  guardianName: '김오이',
+  guardianPhone: '010-1111-1111',
   hospitalAddress: '서울특별시 강남구',
   note: '보호자 동행X',
   transport: '택시(우버)',

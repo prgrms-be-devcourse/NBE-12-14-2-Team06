@@ -60,15 +60,17 @@ export default function TrackingPage() {
                   <div className="flex flex-col gap-[3px]">
                     <InfoRow label="공고 제목" labelWidth={92}>{escort.title}</InfoRow>
                     <InfoRow label="병원명" labelWidth={92}>{escort.hospitalName}</InfoRow>
+                    <InfoRow label="병원 주소" labelWidth={92}>{escort.hospitalAddress}</InfoRow>
                     <InfoRow label="날짜" labelWidth={92}>{escort.dateLabel}</InfoRow>
                     <InfoRow label="시간" labelWidth={92}>{escort.timeLabel}</InfoRow>
                   </div>
-                  <div aria-hidden="true" className="hidden self-center bg-[#e6e8ec] opacity-50 lg:block lg:h-40" />
+                  <div aria-hidden="true" className="hidden self-center bg-[#e6e8ec] opacity-50 lg:block lg:h-[221px]" />
                   <div className="flex flex-col gap-[3px]">
-                    <InfoRow label="의뢰인명" labelWidth={92}>{escort.clientName}</InfoRow>
-                    <InfoRow label="연락처" labelWidth={92}>{escort.clientPhone}</InfoRow>
-                    <InfoRow label="병원 주소" labelWidth={92}>{escort.hospitalAddress}</InfoRow>
-                    <InfoRow label="특이사항" labelWidth={92}>{escort.note}</InfoRow>
+                    <InfoRow label="의뢰인명" labelWidth={120}>{escort.clientName}</InfoRow>
+                    <InfoRow label="연락처" labelWidth={120}>{escort.clientPhone}</InfoRow>
+                    <InfoRow label="특이사항" labelWidth={120}>{escort.note}</InfoRow>
+                    <InfoRow label="보호자명" labelWidth={120}>{escort.guardianName}</InfoRow>
+                    <InfoRow label="보호자 연락처" labelWidth={120}>{escort.guardianPhone}</InfoRow>
                   </div>
                 </dl>
               </section>

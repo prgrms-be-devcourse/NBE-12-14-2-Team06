@@ -36,6 +36,8 @@ export type EscortCase = {
   workTime: string;
   clientName: string;
   clientPhone: string;
+  guardianName: string;
+  guardianPhone: string;
   hospitalAddress: string;
   note: string;
   startAt: string;
