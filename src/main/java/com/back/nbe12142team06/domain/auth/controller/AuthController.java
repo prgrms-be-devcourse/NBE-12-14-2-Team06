@@ -1,8 +1,8 @@
 package com.back.nbe12142team06.domain.auth.controller;
 
 import com.back.nbe12142team06.domain.auth.service.RefreshTokenService;
-import com.back.nbe12142team06.domain.user.dto.login.common.UserLoginRequest;
-import com.back.nbe12142team06.domain.user.dto.login.common.UserLoginResponse;
+import com.back.nbe12142team06.domain.user.dto.login.UserLoginRequest;
+import com.back.nbe12142team06.domain.user.dto.login.UserLoginResponse;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.service.UserService;
 import com.back.nbe12142team06.global.response.RsData;
