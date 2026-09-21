@@ -205,6 +205,13 @@ public class UserService {
         return this.clientProfileRepository.save(profile);
     }
 
+    // 의뢰인 프로필 조회
+    @Transactional(readOnly = true)
+    public ClientProfile getClientProfile(Long id) {
+        return this.clientProfileRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("의뢰인 프로필이 존재하지 않습니다."));
+    }
+
     // [ADMIN] 회원 정보 조회 (탈퇴한 회원 정보도 가능)
     @Transactional(readOnly = true)
     public User findByIdIncludingDeleted(Long userId) {
