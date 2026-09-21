@@ -26,12 +26,14 @@ public class Report extends BaseTimeEntity {  // createdAt, updatedAt 상속
     @Column(nullable = false, length = 100)
     private String title;  // 보고서 제목
 
+    // length 를 명시하지 않으면 기본값 255 가 적용되어 MySQL 에서 tinytext(255바이트)로 생성된다.
+    // 한글은 글자당 3바이트라 85자면 꽉 차므로, 65535 를 지정해 text 로 생성되게 한다.
     @Lob
-    @Column(name = "origin_content", nullable = false)
+    @Column(name = "origin_content", nullable = false, length = 65535)
     private String originContent;  // 동행인 작성 원문 (TEXT)
 
     @Lob
-    @Column(name = "ai_summary")
+    @Column(name = "ai_summary", length = 65535)
     private String aiSummary;  // LLM 요약본 (TEXT, nullable / 요약 완료 후 채워짐)
 
     @Column(name = "summarized_at")
