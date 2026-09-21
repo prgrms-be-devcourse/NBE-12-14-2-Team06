@@ -3,6 +3,8 @@ package com.back.nbe12142team06.domain.user.controller;
 import com.back.nbe12142team06.domain.auth.entity.RefreshToken;
 import com.back.nbe12142team06.domain.auth.repository.RefreshTokenRepository;
 import com.back.nbe12142team06.domain.user.entity.User;
+import com.back.nbe12142team06.domain.user.enums.Gender;
+import com.back.nbe12142team06.domain.user.enums.Role;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
 import com.back.nbe12142team06.global.security.JwtProvider;
 import jakarta.persistence.EntityManager;
@@ -36,6 +38,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 public class UserControllerTest {
 
+    private static final String ADMIN_USERNAME = "adminTest";
+    private static final String ADMIN_PASSWORD = "adminTest";
+
     @Autowired
     private MockMvc mvc;
 
@@ -53,6 +58,80 @@ public class UserControllerTest {
 
     @Value("${custom.jwt.secret-key}")
     private String secretKey;
+
+    // 관리자 계정 주입
+    private void createTestAdmin() {
+        User admin = new User(
+                ADMIN_USERNAME,
+                passwordEncoder.encode(ADMIN_PASSWORD),
+                "admin@admin.admin",
+                "관리자",
+                Role.ADMIN,
+                Gender.MALE,
+                LocalDate.of(2001, 1, 1),
+                "010-9898-9898",
+                "서울시"
+        );
+        userRepository.save(admin);
+    }
+
+    // 로그인 후 accessToken 쿠키 반환
+    private Cookie login(String username, String password) throws Exception {
+        String loginBody = """
+                {
+                    "username": "%s",
+                    "password": "%s"
+                }
+                """.formatted(username, password);
+
+        Cookie accessToken = mvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(loginBody))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getCookie("accessToken");
+
+        assertThat(accessToken).isNotNull();
+        return accessToken;
+    }
+
+    // 관리자 로그인 (createTestAdmin() 호출 후 사용)
+    private Cookie loginAsAdmin() throws Exception {
+        return login(ADMIN_USERNAME, ADMIN_PASSWORD);
+    }
+
+    // 일반 회원 가입 후 accessToken 쿠키 반환 (가입 시 토큰이 발급됨)
+    private Cookie signUp(String username) throws Exception {
+        String signUpBody = """
+                {
+                    "username": "%s",
+                    "password": "testPassword",
+                    "email": "%s@user.user",
+                    "name": "김춘식",
+                    "role": "CLIENT",
+                    "gender": "MALE",
+                    "birthDate": "1990-05-20",
+                    "phoneNum": "%s010-8080-0000",
+                    "region": "서울시"
+                }
+                """.formatted(username, username, username);
+
+        Cookie accessToken = mvc.perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(signUpBody))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getCookie("accessToken");
+
+        assertThat(accessToken).isNotNull();
+        return accessToken;
+    }
+
+    private Long findUserId(String username) {
+        return userRepository.findByUsername(username).orElseThrow().getId();
+    }
 
 
     @Test
@@ -1317,5 +1396,21 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.msg").value("로그인 후 이용해주세요."));
     }
 
+//    @Test
+//    @DisplayName("[UserController] 프로필 생성 - 의뢰인의 정상 프로필 생성 시 200-5 반환")
+//    void t33() throws Exception {
+//        Cookie userToken = signUp("user1");
+//
+//        ResultActions resultActions = mvc.perform(
+//                        delete("/api/v1/users/profile")
+//                )
+//                .andDo(print());
+//
+//        resultActions
+//                .andExpect(status().isUnauthorized())
+//                .andExpect(jsonPath("$.statusCode").value("401-1"))
+//                .andExpect(jsonPath("$.msg").value("로그인 후 이용해주세요."));
+//
+//    }
 
 }
