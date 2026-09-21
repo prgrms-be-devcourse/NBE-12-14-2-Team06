@@ -59,12 +59,12 @@ export default function Header({ user }: Props) {
           </div>
         ) : (
           <div className="flex items-center gap-2.5">
-            <a
-              href="#"
+            <Link
+              href="/login"
               className={`${BUTTON_BASE} min-w-[104px] border border-line bg-white text-brand hover:bg-line-soft`}
             >
               로그인
-            </a>
+            </Link>
             <Link href="/signup" className={`${BUTTON_BASE} bg-brand text-white hover:bg-brand-hover`}>
               회원가입
             </Link>
