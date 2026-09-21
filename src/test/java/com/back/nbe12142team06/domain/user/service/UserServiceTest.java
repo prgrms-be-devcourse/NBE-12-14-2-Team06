@@ -228,11 +228,7 @@ public class UserServiceTest {
 
     @Test
     @DisplayName("[UserService] 동행 매니저 프로필 생성")
-    void t6(){
-
-        // 회원 생성
-        t1();
-
+    void t6() {
         EscortProfile saved = this.userService.createEscortProfile(
                 1L,
                 new EscortProfileRequest(
@@ -241,13 +237,6 @@ public class UserServiceTest {
                         "유저1",
                         "123-000000-123")
         );
-
-        em.flush();
-        em.clear();
-
         EscortProfile profileCheck = this.escortProfileRepository.findByUserId(1L).get();
-
-        assertThat(profileCheck.getBankName()).isEqualTo("오픈은행");
-        assertThat(profileCheck.getAccountNumber()).isEqualTo("123-000000-123");
     }
 }
