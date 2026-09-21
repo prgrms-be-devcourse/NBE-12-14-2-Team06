@@ -229,14 +229,37 @@ public class UserServiceTest {
     @Test
     @DisplayName("[UserService] 동행 매니저 프로필 생성")
     void t6() {
-        EscortProfile saved = this.userService.createEscortProfile(
-                1L,
+
+        // 회원 생성
+        User saved = this.userService.signUp(
+                new UserSignUpRequest(
+                        "user1",
+                        "1234",
+                        "user@test.test",
+                        "유저1",
+                        Role.CLIENT,
+                        Gender.MALE,
+                        LocalDate.of(1990, 5, 6),
+                        "010-1234-5678",
+                        "서울"
+                )
+        );
+
+        this.userService.createEscortProfile(
+                saved.getId(),
                 new EscortProfileRequest(
                         "동행 매니저 입니다.",
                         "오픈은행",
                         "유저1",
                         "123-000000-123")
         );
-        EscortProfile profileCheck = this.escortProfileRepository.findByUserId(1L).get();
+
+        em.flush();
+        em.clear();
+
+        EscortProfile profileCheck = this.escortProfileRepository.findByUserId(saved.getId()).get();
+
+        assertThat(profileCheck.getBankName()).isEqualTo("오픈은행");
+        assertThat(profileCheck.getAccountNumber()).isEqualTo("123-000000-123");
     }
 }
