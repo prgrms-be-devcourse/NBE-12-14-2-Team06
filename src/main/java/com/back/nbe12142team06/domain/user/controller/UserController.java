@@ -7,6 +7,7 @@ import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpRequest;
 import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpResponse;
 import com.back.nbe12142team06.domain.user.dto.user.UserProfileUpdateRequest;
 import com.back.nbe12142team06.domain.user.dto.user.UserResponse;
+import com.back.nbe12142team06.domain.user.entity.ClientProfile;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.service.UserService;
 import com.back.nbe12142team06.global.response.RsData;
@@ -103,17 +104,45 @@ public class UserController {
 
     // 의뢰인 프로필 생성
     @PostMapping("/profile/client")
-    public RsData<ClientProfileResponse> updateProfileClient(
+    public RsData<ClientProfileResponse> createProfileClient(
             @AuthenticationPrincipal SecurityUser me,
             @RequestBody @Valid ClientProfileRequest request
     ){
 
-        User user = this.userService.createClientProfile(me.getId(), request);
+        ClientProfile clientProfile = this.userService.createClientProfile(me.getId(), request);
 
         return new RsData<>(
                 "200-5",
                 "의뢰인 프로필이 생성되었습니다.",
-                new ClientProfileResponse(user)
+                new ClientProfileResponse(clientProfile)
                 );
+    }
+
+    @GetMapping("/profile/client")
+    public RsData<ClientProfileResponse> getProfileClient(
+            @AuthenticationPrincipal SecurityUser me
+    ){
+        ClientProfile clientProfile = this.userService.getClientProfile(me.getId());
+
+        return new RsData<>(
+                "200-6",
+                "의뢰인 프로필 조회를 완료했습니다.",
+                new ClientProfileResponse(clientProfile)
+        );
+    }
+
+    // 관리자, 동행인이 프로필 조회 시
+    @GetMapping("/{userId}/profile/client")
+    public RsData<ClientProfileResponse> getClientProfile(
+            @AuthenticationPrincipal SecurityUser me,
+            @PathVariable Long userId
+    ) {
+        ClientProfile clientProfile = this.userService.getClientProfile(me.getId(), userId);
+
+        return new RsData<>(
+                "200-6",
+                "의뢰인 프로필 조회가 완료되었습니다.",
+                new ClientProfileResponse(clientProfile)
+        );
     }
 }
