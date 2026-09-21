@@ -7,7 +7,7 @@ import type { ReactNode } from 'react';
 import { AppShell } from '@/components/layout';
 import { Container, InfoRow } from '@/components/ui';
 import { cn } from '@/lib/cn';
-import { MOCK_USER } from '@/lib/mockSession';
+import { MOCK_CLIENT, MOCK_USER } from '@/lib/mockSession';
 import { daysFromNow, formatFullDate } from '../lib/date';
 import { getPostDetail } from '../model';
 import type { LabelTone, PostBadge } from '../types';
@@ -43,21 +43,29 @@ function Section({ title, children, className, titleGap = 'mb-5' }: SectionProps
   );
 }
 
+type Props = {
+  /** 누가 보는지. 동행 매니저는 "지원하기", 의뢰인(작성자)은 "수정하기" 버튼이 나옵니다. */
+  viewer?: 'escort' | 'client';
+};
+
 /**
- * 공고 상세 — Figma 동행 매니저_공고 상세 225:1146
+ * 공고 상세 — Figma 동행 매니저_공고 상세 225:1146 · 의뢰인_공고 상세 521:2254
  *
  * ⚠️ 모의 데이터(model/posts.ts)를 보여줍니다. 상세 API(GET /api/v1/posts/{postId}) 연결 전입니다.
  */
-export default function PostDetailPage() {
+export default function PostDetailPage({ viewer = 'escort' }: Props) {
   const params = useParams<{ postId: string }>();
   const post = getPostDetail(Number(params.postId));
+  const isClient = viewer === 'client';
+  const user = isClient ? MOCK_CLIENT : MOCK_USER;
+  const listHref = isClient ? '/client/posts' : '/posts';
 
   if (!post) {
     return (
-      <AppShell user={MOCK_USER}>
+      <AppShell user={user}>
         <section className="bg-white py-[100px] text-center">
           <p className="text-xl font-semibold text-brand">공고를 찾을 수 없습니다.</p>
-          <Link href="/posts" className={cn(BUTTON, 'mx-auto mt-8 h-14 w-60 border border-line text-xl text-brand')}>
+          <Link href={listHref} className={cn(BUTTON, 'mx-auto mt-8 h-14 w-60 border border-line text-xl text-brand')}>
             목록으로
           </Link>
         </section>
@@ -65,14 +73,16 @@ export default function PostDetailPage() {
     );
   }
 
-  const label = BADGE[post.badge];
+  const label = isClient ? { text: '모집 중', tone: 'purple' as const } : BADGE[post.badge];
   const date = formatFullDate(daysFromNow(post.startsInDays));
   const duration = `약 ${post.hours}시간`;
   const pay = `시급 ${post.hourlyPay.toLocaleString()}원`;
   const location = `${post.region} ${post.district}`;
 
+  const editHref = `/client/posts/${post.id}/edit`;
+
   return (
-    <AppShell user={MOCK_USER}>
+    <AppShell user={user}>
       <section className="bg-white py-[50px]">
         <Container width="wide" className="grid items-start gap-[22px] lg:grid-cols-[858px_396px] lg:justify-center">
           <div className="flex min-w-0 flex-col gap-[22px]">
@@ -177,13 +187,19 @@ export default function PostDetailPage() {
             </section>
 
             <div className="flex gap-[15px]">
-              <Link href="/posts" className={cn(BUTTON, 'h-14 flex-1 border border-line bg-white text-xl text-brand hover:bg-line-soft')}>
+              <Link href={listHref} className={cn(BUTTON, 'h-14 flex-1 border border-line bg-white text-xl text-brand hover:bg-line-soft')}>
                 목록으로
               </Link>
-              {/* TODO: 지원 API(POST /api/v1/applications/{postId}) 연결 */}
-              <button type="button" className={cn(BUTTON, 'h-14 flex-1 bg-brand text-xl text-white hover:bg-brand-hover')}>
-                지원하기
-              </button>
+              {isClient ? (
+                <Link href={editHref} className={cn(BUTTON, 'h-14 flex-1 bg-brand text-xl text-white hover:bg-brand-hover')}>
+                  수정하기
+                </Link>
+              ) : (
+                // TODO: 지원 API(POST /api/v1/applications/{postId}) 연결
+                <button type="button" className={cn(BUTTON, 'h-14 flex-1 bg-brand text-xl text-white hover:bg-brand-hover')}>
+                  지원하기
+                </button>
+              )}
             </div>
           </div>
 
@@ -198,11 +214,17 @@ export default function PostDetailPage() {
               <InfoRow label="지역" labelWidth={94}>{location}</InfoRow>
             </dl>
             <div className="mt-3.5 flex flex-col gap-[5px]">
-              {/* TODO: 지원 API 연결 */}
-              <button type="button" className={cn(BUTTON, 'h-11 bg-brand text-base text-white hover:bg-brand-hover')}>
-                지원하기
-              </button>
-              <Link href="/posts" className={cn(BUTTON, 'h-11 border border-line bg-white text-base text-brand hover:bg-line-soft')}>
+              {isClient ? (
+                <Link href={editHref} className={cn(BUTTON, 'h-11 bg-brand text-base text-white hover:bg-brand-hover')}>
+                  수정하기
+                </Link>
+              ) : (
+                // TODO: 지원 API 연결
+                <button type="button" className={cn(BUTTON, 'h-11 bg-brand text-base text-white hover:bg-brand-hover')}>
+                  지원하기
+                </button>
+              )}
+              <Link href={listHref} className={cn(BUTTON, 'h-11 border border-line bg-white text-base text-brand hover:bg-line-soft')}>
                 목록으로
               </Link>
             </div>
