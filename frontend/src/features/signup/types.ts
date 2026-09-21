@@ -45,6 +45,11 @@ export type SignupFormValues = {
   guardianName: string;
   guardianPhone: string;
   careNote: string;
+  /** 동행 매니저 추가 정보 (백엔드 EscortProfile: bankName · accountHolder · accountNumber · intro) */
+  bankName: string;
+  accountHolder: string;
+  accountNumber: string;
+  intro: string;
 };
 
 /** 3단계 — 약관 동의 항목 */

@@ -13,4 +13,8 @@ export const INITIAL_FORM_VALUES: SignupFormValues = {
   guardianName: '',
   guardianPhone: '',
   careNote: '',
+  bankName: '',
+  accountHolder: '',
+  accountNumber: '',
+  intro: '',
 };
