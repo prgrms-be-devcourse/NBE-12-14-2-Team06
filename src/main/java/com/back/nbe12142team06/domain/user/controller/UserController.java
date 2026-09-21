@@ -101,6 +101,7 @@ public class UserController {
         );
     }
 
+    // 의뢰인 프로필 생성
     @PostMapping("/profile/client")
     public RsData<ClientProfileResponse> updateProfileClient(
             @AuthenticationPrincipal SecurityUser me,

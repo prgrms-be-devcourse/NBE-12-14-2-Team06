@@ -1428,4 +1428,67 @@ public class UserControllerTest {
 
     }
 
+    @Test
+    @DisplayName("[UserController] 프로필 생성 - 특이사항이 null이여도 정상 생성")
+    void t34() throws Exception {
+        Cookie userToken = signUp("user1");
+
+        Long userId = findUserId("user1");
+
+        String createProfileBody = """
+                {
+                    "emergencyContactName": "김철수",
+                    "emergencyContactPhone": "010-1234-5678",
+                    "careNote": null
+                }
+                """;
+
+
+        ResultActions resultActions = mvc.perform(
+                        post("/api/v1/users/profile/client")
+                                .cookie(userToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(createProfileBody)
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-5"))
+                .andExpect(jsonPath("$.msg").value("의뢰인 프로필이 생성되었습니다."))
+                .andExpect(jsonPath("$.data.userId").value(userId));
+
+    }
+
+    @Test
+    @DisplayName("[UserController] 프로필 생성 - 특이사항이 공백이여도 정상 생성")
+    void t35() throws Exception {
+        Cookie userToken = signUp("user1");
+
+        Long userId = findUserId("user1");
+
+        String createProfileBody = """
+                {
+                    "emergencyContactName": "김철수",
+                    "emergencyContactPhone": "010-1234-5678",
+                    "careNote": ""
+                }
+                """;
+
+
+        ResultActions resultActions = mvc.perform(
+                        post("/api/v1/users/profile/client")
+                                .cookie(userToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(createProfileBody)
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-5"))
+                .andExpect(jsonPath("$.msg").value("의뢰인 프로필이 생성되었습니다."))
+                .andExpect(jsonPath("$.data.userId").value(userId));
+
+    }
 }
