@@ -104,7 +104,7 @@ public class UserController {
 
     // 의뢰인 프로필 생성
     @PostMapping("/profile/client")
-    public RsData<ClientProfileResponse> updateProfileClient(
+    public RsData<ClientProfileResponse> createProfileClient(
             @AuthenticationPrincipal SecurityUser me,
             @RequestBody @Valid ClientProfileRequest request
     ){
@@ -116,5 +116,18 @@ public class UserController {
                 "의뢰인 프로필이 생성되었습니다.",
                 new ClientProfileResponse(clientProfile)
                 );
+    }
+
+    @GetMapping("/profile/client")
+    public RsData<ClientProfileResponse> getProfileClient(
+            @AuthenticationPrincipal SecurityUser me
+    ){
+        ClientProfile clientProfile = this.userService.getClientProfile(me.getId());
+
+        return new RsData<>(
+                "200-6",
+                "의뢰인 프로필 조회를 완료했습니다.",
+                new ClientProfileResponse(clientProfile)
+        );
     }
 }
