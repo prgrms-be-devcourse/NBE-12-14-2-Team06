@@ -12,7 +12,6 @@ import com.back.nbe12142team06.domain.payment.service.PaymentService;
 import com.back.nbe12142team06.domain.post.dto.PostWriteRequest;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.service.PostService;
-import com.back.nbe12142team06.domain.settlement.service.SettlementService;
 import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpRequest;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Gender;
@@ -21,14 +20,12 @@ import com.back.nbe12142team06.domain.user.service.UserService;
 import com.back.nbe12142team06.global.exception.InvalidException;
 import com.back.nbe12142team06.global.exception.NotFoundException;
 import jakarta.servlet.http.Cookie;
-import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpSession;
@@ -36,7 +33,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestClient;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -69,8 +65,6 @@ class PaymentControllerTest {
     private UserService userService;
     @Autowired
     private PostService postService;
-    @Autowired
-    private SettlementService settlementService;
 
     private Long savedUser1Id;
     private Long savedUser2Id;
@@ -269,20 +263,6 @@ class PaymentControllerTest {
         });
     }
 
-    private static @NonNull RestClient mockRestClient(HttpStatus httpStatus) {
-        RestClient restClient = mock(RestClient.class);
-        RestClient.RequestBodyUriSpec requestBodyUriSpec = mock(RestClient.RequestBodyUriSpec.class);
-        RestClient.RequestBodySpec requestBodySpec = mock(RestClient.RequestBodySpec.class);
-        RestClient.ResponseSpec responseSpec = mock(RestClient.ResponseSpec.class);
-
-        when(restClient.post()).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.uri(any(String.class))).thenReturn(requestBodySpec);
-        when(requestBodySpec.body(any(String.class))).thenReturn(requestBodySpec);
-        when(requestBodySpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.toEntity(any(Class.class))).thenReturn(new ResponseEntity<>(httpStatus));
-        return restClient;
-    }
-
     @Test
     @DisplayName("[PaymentController] 결제 정보 임시 저장")
     void tempSave() throws Exception {
@@ -291,7 +271,7 @@ class PaymentControllerTest {
         String amount = "10000";
 
         ResultActions resultActions = mvc.perform(
-                post("/api/v1/payments/saveAmount")
+                post("/api/v1/payments/save-amount")
                         .contentType(MediaType.APPLICATION_JSON)
                         .cookie(accessTokenCookie1)
                         .session(new MockHttpSession())
@@ -322,7 +302,7 @@ class PaymentControllerTest {
         session.setAttribute("amount", amount);
 
         ResultActions resultActions = mvc.perform(
-                post("/api/v1/payments/verifyAmount")
+                post("/api/v1/payments/verify-amount")
                         .contentType(MediaType.APPLICATION_JSON)
                         .cookie(accessTokenCookie1)
                         .session(session)
@@ -354,7 +334,7 @@ class PaymentControllerTest {
         session.setAttribute("amount", "10000");
 
         ResultActions resultActions = mvc.perform(
-                post("/api/v1/payments/verifyAmount")
+                post("/api/v1/payments/verify-amount")
                         .contentType(MediaType.APPLICATION_JSON)
                         .cookie(accessTokenCookie1)
                         .session(session)

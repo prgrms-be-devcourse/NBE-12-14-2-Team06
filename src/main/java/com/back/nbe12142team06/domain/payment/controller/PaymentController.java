@@ -39,15 +39,17 @@ public class PaymentController {
                 new PaymentConfirmResponse(request));
     }
 
-    @PostMapping("/saveAmount")
+    @PostMapping("/save-amount")
     public RsData<?> tempSave(HttpSession session, @RequestBody SaveAmountRequest request) {
         session.setAttribute("orderId", request.orderId());
         session.setAttribute("amount", request.amount());
 
+        log.info("세션 저장 완료 - orderId: %s, amount: %s".formatted(request.orderId(), request.amount()));
+
         return new RsData<>("201-n", "결제 정보 임시 저장에 성공했습니다.");
     }
 
-    @PostMapping("/verifyAmount")
+    @PostMapping("/verify-amount")
     public RsData<?> verifyAmount(HttpSession session, @RequestBody SaveAmountRequest request) {
         String orderId = (String) session.getAttribute("orderId");
         String amount = (String) session.getAttribute("amount");
