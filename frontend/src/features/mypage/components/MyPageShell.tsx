@@ -10,9 +10,9 @@ import { MOCK_USER } from '@/lib/mockSession';
 const MENU = [
   { label: '내 정보', href: '/mypage' },
   { label: '내가 신청한 공고', href: '/mypage/applications' },
-  // TODO: 아래 화면은 아직 디자인/구현이 없습니다.
-  { label: '내 정산', href: '#' },
-  { label: '받은 리뷰', href: '#' },
+  { label: '내 정산', href: '/mypage/settlements' },
+  { label: '받은 리뷰', href: '/mypage/reviews' },
+  // TODO: 설정 화면은 아직 디자인/구현이 없습니다.
   { label: '설정', href: '#' },
 ];
 
