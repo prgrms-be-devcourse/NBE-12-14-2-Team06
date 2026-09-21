@@ -549,6 +549,7 @@ public class AdminUserControllerTest {
         createTestAdmin();
         Cookie adminToken = loginAsAdmin();
 
+
         ResultActions resultActions = mvc.perform(
                         delete("/api/v1/admin/users/{id}", Long.MAX_VALUE)
                                 .cookie(adminToken)
@@ -560,5 +561,61 @@ public class AdminUserControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.statusCode").value("404"))
                 .andExpect(jsonPath("$.msg").value("회원 정보를 찾을 수 없습니다."));
+    }
+
+
+    @Test
+    @DisplayName("[AdminController] 회원 정보 탈퇴 - 관리자가 자신의 계정에 대한 탈퇴 요청 시 400-3")
+    void t16() throws Exception {
+        createTestAdmin();
+        Cookie adminToken = loginAsAdmin();
+        Long adminId = findUserId("adminTest");
+
+        ResultActions resultActions = mvc.perform(
+                        delete("/api/v1/admin/users/{id}", adminId)
+                                .cookie(adminToken)
+                )
+                .andDo(print());
+
+
+        resultActions
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.statusCode").value("400-3"))
+                .andExpect(jsonPath("$.msg").value("관리자는 자신의 계정을 탈퇴시킬 수 없습니다."));
+    }
+
+
+    @Test
+    @DisplayName("[AdminController] 회원 정보 탈퇴 - 이미 탈퇴한 회원에 대한 탈퇴 요청 시 400-4 반환")
+    void t17() throws Exception {
+        createTestAdmin();
+        Cookie adminToken = loginAsAdmin();
+
+        signUp("user1");
+        Long user1Id = findUserId("user1");
+
+        // 정상 탈퇴
+        ResultActions resultActions = mvc.perform(
+                        delete("/api/v1/admin/users/{id}", user1Id)
+                                .cookie(adminToken)
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-3"))
+                .andExpect(jsonPath("$.msg").value("회원 탈퇴가 완료되었습니다."));
+
+        // 또또 탈퇴 요청
+        ResultActions resultActions2 = mvc.perform(
+                        delete("/api/v1/admin/users/{id}", user1Id)
+                                .cookie(adminToken)
+                )
+                .andDo(print());
+
+        resultActions2
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.statusCode").value("400-4"))
+                .andExpect(jsonPath("$.msg").value("이미 탈퇴한 회원입니다."));
     }
 }
