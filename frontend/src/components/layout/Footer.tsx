@@ -1,13 +1,14 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import Container from '@/components/ui/Container';
 
 const LINKS = [
   { label: '서비스 소개', href: '#about' },
   { label: '이용 방법', href: '#steps' },
   { label: '고객센터', href: '/support' },
-  { label: '개인정보 처리방침', href: '#' },
+  { label: '개인정보 처리방침', href: '/privacy' },
 ];
 
 const SOCIAL = [
@@ -26,13 +27,13 @@ export default function Footer() {
 
         <nav aria-label="하단 메뉴" className="flex flex-wrap items-center gap-5 lg:gap-10">
           {LINKS.map((link) => (
-            <a
+            <Link
               key={link.label}
               href={link.href}
               className="text-lg leading-[18px] whitespace-nowrap text-footer transition-colors hover:text-brand"
             >
               {link.label}
-            </a>
+            </Link>
           ))}
         </nav>
 
