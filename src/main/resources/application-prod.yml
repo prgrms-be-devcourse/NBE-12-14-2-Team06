@@ -16,3 +16,7 @@ custom:
   cookie:
     secure: true
     same-site: Lax
+  claude:
+    api-key: ${CLAUDE_API_KEY}
+    model: claude-sonnet-5
+    max-tokens: 1024
