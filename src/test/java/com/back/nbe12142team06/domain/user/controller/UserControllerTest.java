@@ -1502,7 +1502,7 @@ public class UserControllerTest {
     }
 
     @Test
-    @DisplayName("[UserController] 의뢰인 프로필 조회 - 로그인 후 자신의 프로필 조회 시 200-6 반환")
+    @DisplayName("[UserController] 의뢰인 자기 자신의 프로필 조회 - 로그인 후 자신의 프로필 조회 시 200-6 반환")
     void t36() throws Exception {
         Cookie userToken = signUp("user1");
 
@@ -1544,5 +1544,25 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.data.emergencyContactName").value("김철수"))
                 .andExpect(jsonPath("$.data.emergencyContactPhone").value("010-1234-5678"))
                 .andExpect(jsonPath("$.data.careNote").value("졸리다..."));
+    }
+
+    @Test
+    @DisplayName("[UserController] 의뢰인 자기 자신의 프로필 조회 - 프로필이 없으면 404 반환")
+    void t37() throws Exception {
+        Cookie userToken = signUp("user1");
+
+        Long userId = findUserId("user1");
+
+
+        ResultActions resultActions = mvc.perform(
+                        get("/api/v1/users/profile/client")
+                                .cookie(userToken)
+                )
+                .andDo(print());
+
+
+        resultActions
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.msg").value("의뢰인 프로필이 존재하지 않습니다."));
     }
 }
