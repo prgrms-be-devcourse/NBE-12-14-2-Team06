@@ -1,4 +1,4 @@
-package com.back.nbe12142team06.domain.user.dto.user;
+package com.back.nbe12142team06.domain.user.dto.admin;
 
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Gender;
@@ -18,7 +18,8 @@ public record AdminUserResponse(
         String phoneNum,
         String region,
         LocalDateTime createdAt,
-        LocalDateTime deletedAt
+        LocalDateTime deletedAt,
+        boolean deleted
 ) {
     public AdminUserResponse(User user) {
         this(
@@ -32,6 +33,8 @@ public record AdminUserResponse(
                 user.getPhoneNum(),
                 user.getRegion(),
                 user.getCreatedAt(),
-                user.getDeletedAt());
+                user.getDeletedAt(),
+                user.isDeleted()
+        );
     }
 }
