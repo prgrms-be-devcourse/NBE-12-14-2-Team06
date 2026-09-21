@@ -130,4 +130,19 @@ public class UserController {
                 new ClientProfileResponse(clientProfile)
         );
     }
+
+    // 관리자, 동행인이 프로필 조회 시
+    @GetMapping("/{userId}/profile/client")
+    public RsData<ClientProfileResponse> getClientProfile(
+            @AuthenticationPrincipal SecurityUser me,
+            @PathVariable Long userId
+    ) {
+        ClientProfile clientProfile = this.userService.getClientProfile(me.getId(), userId);
+
+        return new RsData<>(
+                "200-6",
+                "의뢰인 프로필 조회가 완료되었습니다.",
+                new ClientProfileResponse(clientProfile)
+        );
+    }
 }

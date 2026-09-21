@@ -42,4 +42,19 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
 
     // 같은 동행인의 특정 상태 지원 조회
     List<Application> findAllByEscortAndStatus(User escort, ApplicationStatus status);
+
+    // 동행 매니저와 의뢰인 사이에 진행 중인 매칭이 있는지 확인
+    // 해당 지원의 상태는 ACCEPTED이면서 공고의 상태는 MATCHED or IN_PROGRESS 인 지원이 1개 이상일때 true
+    @Query("""
+        select case when count(a) > 0 then true else false end
+        from Application a
+        where a.escort.id = :escortId
+          and a.post.client.id = :clientId
+          and a.status = com.back.nbe12142team06.domain.application.enums.ApplicationStatus.ACCEPTED
+          and a.post.postStatus in (
+              com.back.nbe12142team06.domain.post.entity.PostStatus.MATCHED,
+              com.back.nbe12142team06.domain.post.entity.PostStatus.IN_PROGRESS
+          )
+        """)
+    boolean hasActiveMatching(@Param("escortId") Long escortId, @Param("clientId") Long clientId);
 }

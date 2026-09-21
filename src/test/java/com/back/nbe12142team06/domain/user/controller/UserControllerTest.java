@@ -1,7 +1,11 @@
 package com.back.nbe12142team06.domain.user.controller;
 
+import com.back.nbe12142team06.domain.application.entity.Application;
+import com.back.nbe12142team06.domain.application.repository.ApplicationRepository;
 import com.back.nbe12142team06.domain.auth.entity.RefreshToken;
 import com.back.nbe12142team06.domain.auth.repository.RefreshTokenRepository;
+import com.back.nbe12142team06.domain.post.entity.Post;
+import com.back.nbe12142team06.domain.post.repository.PostRepository;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Gender;
 import com.back.nbe12142team06.domain.user.enums.Role;
@@ -23,7 +27,9 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -55,6 +61,12 @@ public class UserControllerTest {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private PostRepository postRepository;
+
+    @Autowired
+    private ApplicationRepository applicationRepository;
 
     @Value("${custom.jwt.secret-key}")
     private String secretKey;
@@ -101,21 +113,21 @@ public class UserControllerTest {
         return login(ADMIN_USERNAME, ADMIN_PASSWORD);
     }
 
-    // 일반 회원 가입 후 accessToken 쿠키 반환 (가입 시 토큰이 발급됨)
-    private Cookie signUp(String username) throws Exception {
+    // 역할 지정 회원가입 후 accessToken 쿠키 반환
+    private Cookie signUp(String username, String role) throws Exception {
         String signUpBody = """
-                {
-                    "username": "%s",
-                    "password": "testPassword",
-                    "email": "%s@user.user",
-                    "name": "김춘식",
-                    "role": "CLIENT",
-                    "gender": "MALE",
-                    "birthDate": "1990-05-20",
-                    "phoneNum": "%s010-8080-0000",
-                    "region": "서울시"
-                }
-                """.formatted(username, username, username);
+            {
+                "username": "%s",
+                "password": "testPassword",
+                "email": "%s@user.user",
+                "name": "김춘식",
+                "role": "%s",
+                "gender": "MALE",
+                "birthDate": "1990-05-20",
+                "phoneNum": "%s010-8080-0000",
+                "region": "서울시"
+            }
+            """.formatted(username, username, role, username);
 
         Cookie accessToken = mvc.perform(post("/api/v1/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -129,10 +141,65 @@ public class UserControllerTest {
         return accessToken;
     }
 
+    // 의뢰인으로 회원가입
+    private Cookie signUp(String username) throws Exception {
+        return signUp(username, "CLIENT");
+    }
+
     private Long findUserId(String username) {
         return userRepository.findByUsername(username).orElseThrow().getId();
     }
 
+
+    // 의뢰인 프로필 생성
+    private void createClientProfile(Cookie clientToken) throws Exception {
+        mvc.perform(post("/api/v1/users/profile/client")
+                        .cookie(clientToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                            {
+                                "emergencyContactName": "김철수",
+                                "emergencyContactPhone": "010-1234-5678",
+                                "careNote": "혼자 보행 불가"
+                            }
+                            """))
+                .andExpect(status().isOk());
+    }
+
+    // 의뢰인의 공고 생성 (조회 권한 테스트용, 결제·이동수단 없이 공고만 저장)
+    private Post createPost(String clientUsername) {
+        User client = userRepository.findByUsername(clientUsername).orElseThrow();
+        LocalDateTime now = LocalDateTime.now();
+
+        return postRepository.save(Post.builder()
+                .client(client)
+                .title("병원 동행 구합니다")
+                .content("정기 검진 동행")
+                .region("서울시")
+                .hospitalName("서울병원")
+                .hospitalAddress("서울시 종로구")
+                .hospitalLat(new BigDecimal("37.5665351"))
+                .hospitalLng(new BigDecimal("126.9780000"))
+                .pickupAddress("서울시 중구")
+                .pickupLat(new BigDecimal("37.5600000"))
+                .pickupLng(new BigDecimal("126.9900000"))
+                .hourlyPay(15000)
+                .recruitStartAt(now.plusDays(1))
+                .recruitEndAt(now.plusDays(2))
+                .escortStartAt(now.plusDays(3))
+                .escortEndAt(now.plusDays(3).plusHours(2))
+                .build());
+    }
+
+    // 동행 매니저 지원 (PENDING 상태)
+    private Application apply(Post post, String escortUsername) {
+        User escort = userRepository.findByUsername(escortUsername).orElseThrow();
+
+        return applicationRepository.save(Application.builder()
+                .post(post)
+                .escort(escort)
+                .build());
+    }
 
     @Test
     @DisplayName("[UserController] 회원가입 -  정상 가입")
@@ -1565,4 +1632,227 @@ public class UserControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.msg").value("의뢰인 프로필이 존재하지 않습니다."));
     }
+
+    @Test
+    @DisplayName("[UserController] 의뢰인 프로필 타인 조회 - 관리자 조회 시 200-6 반환")
+    void t38() throws Exception {
+        createTestAdmin();
+        Cookie clientToken = signUp("client1");
+        createClientProfile(clientToken);
+        Long clientId = findUserId("client1");
+        Cookie adminToken = loginAsAdmin();
+
+        em.flush();
+        em.clear();
+
+        ResultActions resultActions = mvc.perform(
+                        get("/api/v1/users/{userId}/profile/client", clientId)
+                                .cookie(adminToken)
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-6"))
+                .andExpect(jsonPath("$.msg").value("의뢰인 프로필 조회가 완료되었습니다."))
+                .andExpect(jsonPath("$.data.userId").value(clientId))
+                .andExpect(jsonPath("$.data.emergencyContactName").value("김철수"))
+                .andExpect(jsonPath("$.data.emergencyContactPhone").value("010-1234-5678"))
+                .andExpect(jsonPath("$.data.careNote").value("혼자 보행 불가"));
+    }
+
+    @Test
+    @DisplayName("[UserController] 의뢰인 프로필 타인 조회 - 매칭된 동행 매니저 조회 시 200-6 반환")
+    void t39() throws Exception {
+        Cookie clientToken = signUp("client1");
+        createClientProfile(clientToken);
+        Long clientId = findUserId("client1");
+        Cookie escortToken = signUp("escort1", "ESCORT");
+
+        Post post = createPost("client1");
+        Application application = apply(post, "escort1");
+
+        // 매칭 확정
+        application.accept();
+        post.match();
+
+        em.flush();
+        em.clear();
+
+        ResultActions resultActions = mvc.perform(
+                        get("/api/v1/users/{userId}/profile/client", clientId)
+                                .cookie(escortToken)
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-6"))
+                .andExpect(jsonPath("$.data.userId").value(clientId))
+                .andExpect(jsonPath("$.data.emergencyContactName").value("김철수"));
+    }
+
+    @Test
+    @DisplayName("[UserController] 의뢰인 프로필 타인 조회 - 지원만 한 동행 매니저 조회 시 403-2 반환")
+    void t40() throws Exception {
+        Cookie clientToken = signUp("client1");
+        createClientProfile(clientToken);
+        Long clientId = findUserId("client1");
+        Cookie escortToken = signUp("escort1", "ESCORT");
+
+        // 지원만 하고 승인 전 (PENDING)
+        Post post = createPost("client1");
+        apply(post, "escort1");
+
+        em.flush();
+        em.clear();
+
+        ResultActions resultActions = mvc.perform(
+                        get("/api/v1/users/{userId}/profile/client", clientId)
+                                .cookie(escortToken)
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.statusCode").value("403-2"))
+                .andExpect(jsonPath("$.msg").value("매칭된 의뢰인의 프로필만 조회할 수 있습니다."));
+    }
+
+    @Test
+    @DisplayName("[UserController] 의뢰인 프로필 타인 조회 - 동행 완료 후 동행 매니저 조회 시 403-2 반환")
+    void t41() throws Exception {
+        Cookie clientToken = signUp("client1");
+        createClientProfile(clientToken);
+        Long clientId = findUserId("client1");
+        Cookie escortToken = signUp("escort1", "ESCORT");
+
+        Post post = createPost("client1");
+        Application application = apply(post, "escort1");
+
+        // 매칭 → 동행 완료
+        application.accept();
+        post.match();
+        post.complete(LocalDateTime.now());
+
+        em.flush();
+        em.clear();
+
+        ResultActions resultActions = mvc.perform(
+                        get("/api/v1/users/{userId}/profile/client", clientId)
+                                .cookie(escortToken)
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.statusCode").value("403-2"));
+    }
+
+    @Test
+    @DisplayName("[UserController] 의뢰인 프로필 타인 조회 - 매칭이 취소된 동행 매니저 조회 시 403-2 반환")
+    void t42() throws Exception {
+        Cookie clientToken = signUp("client1");
+        createClientProfile(clientToken);
+        Long clientId = findUserId("client1");
+        Cookie escortToken = signUp("escort1", "ESCORT");
+
+        Post post = createPost("client1");
+        Application application = apply(post, "escort1");
+
+        // 매칭 → 의뢰인이 매칭 취소 (지원은 ACCEPTED로 남음)
+        application.accept();
+        post.match();
+        post.matchedCancel();
+
+        em.flush();
+        em.clear();
+
+        ResultActions resultActions = mvc.perform(
+                        get("/api/v1/users/{userId}/profile/client", clientId)
+                                .cookie(escortToken)
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.statusCode").value("403-2"));
+    }
+
+    @Test
+    @DisplayName("[UserController] 의뢰인 프로필 타인 조회 - 매칭 이력 없는 동행 매니저 조회 시 403-2 반환")
+    void t43() throws Exception {
+        Cookie clientToken = signUp("client1");
+        createClientProfile(clientToken);
+        Long clientId = findUserId("client1");
+        Cookie escortToken = signUp("escort1", "ESCORT");
+
+        ResultActions resultActions = mvc.perform(
+                        get("/api/v1/users/{userId}/profile/client", clientId)
+                                .cookie(escortToken)
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.statusCode").value("403-2"));
+    }
+
+    @Test
+    @DisplayName("[UserController] 의뢰인 프로필 타인 조회 - 의뢰인이 다른 의뢰인 조회 시 403-1 반환")
+    void t44() throws Exception {
+        Cookie client1Token = signUp("client1");
+        createClientProfile(client1Token);
+        Long client1Id = findUserId("client1");
+        Cookie client2Token = signUp("client2");
+
+        ResultActions resultActions = mvc.perform(
+                        get("/api/v1/users/{userId}/profile/client", client1Id)
+                                .cookie(client2Token)
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.statusCode").value("403-1"))
+                .andExpect(jsonPath("$.msg").value("권한이 없습니다."));
+    }
+
+    @Test
+    @DisplayName("[UserController] 의뢰인 프로필 타인 조회 - 프로필 없는 의뢰인 조회 시 404 반환")
+    void t45() throws Exception {
+        createTestAdmin();
+        signUp("client1");   // 프로필 생성 안 함
+        Long clientId = findUserId("client1");
+        Cookie adminToken = loginAsAdmin();
+
+        ResultActions resultActions = mvc.perform(
+                        get("/api/v1/users/{userId}/profile/client", clientId)
+                                .cookie(adminToken)
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.msg").value("의뢰인 프로필이 존재하지 않습니다."));
+    }
+
+    @Test
+    @DisplayName("[UserController] 의뢰인 프로필 타인 조회 - 로그인 없이 조회 시 401-1 반환")
+    void t46() throws Exception {
+        Cookie clientToken = signUp("client1");
+        createClientProfile(clientToken);
+        Long clientId = findUserId("client1");
+
+        ResultActions resultActions = mvc.perform(
+                        get("/api/v1/users/{userId}/profile/client", clientId)
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.statusCode").value("401-1"))
+                .andExpect(jsonPath("$.msg").value("로그인 후 이용해주세요."));
+    }
+
 }
