@@ -2,10 +2,12 @@ package com.back.nbe12142team06.domain.user.service;
 
 import com.back.nbe12142team06.domain.auth.entity.RefreshToken;
 import com.back.nbe12142team06.domain.auth.repository.RefreshTokenRepository;
-import com.back.nbe12142team06.domain.user.dto.login.UserLoginRequest;
-import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpRequest;
 import com.back.nbe12142team06.domain.user.dto.admin.AdminUserProfileUpdateRequest;
+import com.back.nbe12142team06.domain.user.dto.login.UserLoginRequest;
+import com.back.nbe12142team06.domain.user.dto.profile.ClientProfileRequest;
+import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpRequest;
 import com.back.nbe12142team06.domain.user.dto.user.UserProfileUpdateRequest;
+import com.back.nbe12142team06.domain.user.entity.ClientProfile;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Role;
 import com.back.nbe12142team06.domain.user.repository.ClientProfileRepository;
@@ -223,6 +225,25 @@ public class UserService {
         withdraw(user);
     }
 
+    @Transactional
+    public User createClientProfile(Long userId, ClientProfileRequest request) {
+        User user = this.userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("회원 정보를 찾을 수 없습니다."));
+
+        String careNote = (request.careNote() == null || request.careNote().isBlank()) ? "특이사항 없음" : request.careNote();
+
+        ClientProfile profile = new ClientProfile(user, request.emergencyContactName(), request.emergencyContactPhone(), careNote);
+        this.clientProfileRepository.save(profile);
+
+        return user;
+    }
+
+
+
+
+
+
+
     // 프로필 삭제, 리프레시 토큰 폐기, 회원 정보 삭제
     private void withdraw(User user) {
         Long userId = user.getId();
@@ -240,7 +261,6 @@ public class UserService {
         user.deleteUser();
         this.userRepository.save(user);
     }
-
 
 
 }
