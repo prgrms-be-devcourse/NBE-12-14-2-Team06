@@ -8,7 +8,7 @@ const MENU = [
   { label: '서비스 소개', href: '#about' },
   { label: '공고 찾기', href: '/posts' },
   { label: '이용 방법', href: '#steps' },
-  { label: '고객센터', href: '#footer' },
+  { label: '고객센터', href: '/support' },
   { label: '개인정보 처리방침', href: '#footer' },
 ];
 
