@@ -7,6 +7,7 @@ import { CardButton, PostCard } from '@/features/post';
 import { cn } from '@/lib/cn';
 import { APPLICATIONS, STATUS_INFO, STATUS_TABS, type StatusTab } from '../model';
 import type { Application } from '../types';
+import EmptyState from './EmptyState';
 import MyPageShell from './MyPageShell';
 
 type Sort = 'latest' | 'oldest';
@@ -29,14 +30,14 @@ function ApplicationActions({ application }: { application: Application }) {
       return (
         <>
           {detail}
-          <CardButton variant="solid">동행 보기</CardButton>
+          <CardButton variant="solid" href={`/escort/${application.id}`}>동행 보기</CardButton>
         </>
       );
     case 'completed':
       return (
         <>
           {detail}
-          <CardButton variant="solid">보고서 보기</CardButton>
+          <CardButton variant="solid" href={`/escort/${application.id}/report`}>보고서 보기</CardButton>
         </>
       );
     case 'rejected':
@@ -181,9 +182,11 @@ export default function MyApplicationsPage() {
             })}
           </ul>
         ) : (
-          <p className="py-20 text-center text-base font-semibold text-brand-muted">
-            해당하는 신청 공고가 없습니다.
-          </p>
+          <EmptyState
+            title="아직 지원한 공고가 없습니다."
+            description="관심 있는 병원 동행 공고를 찾아 지원해보세요."
+            action={{ label: '공고 찾기', href: '/posts' }}
+          />
         )}
       </div>
     </MyPageShell>
