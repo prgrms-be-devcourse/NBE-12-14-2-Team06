@@ -94,7 +94,7 @@ public class UserController {
         this.rq.clearTokenCookies();
 
         return new RsData<>(
-                "204-1",
+                "200-4",
                 "회원 탈퇴가 완료되었습니다."
         );
     }

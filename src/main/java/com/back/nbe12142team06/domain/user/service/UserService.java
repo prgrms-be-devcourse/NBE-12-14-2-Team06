@@ -154,7 +154,7 @@ public class UserService {
                 request.phoneNum(),
                 request.region()
         );
-        return user;
+        return this.userRepository.save(user);
     }
 
     // 내 정보 수정·관리자 수정 공통 중복 검사
@@ -202,4 +202,36 @@ public class UserService {
 
         return this.userRepository.findAllIncludingDeleted(pageable);
     }
+
+    // [ADMIN] 관리자용 회원 탈퇴
+    @Transactional
+    public void deleteUser(Long adminId, Long userId) {
+        User user = this.userRepository.findByIdIncludingDeleted(userId)
+                .orElseThrow(() -> new NotFoundException("회원 정보를 찾을 수 없습니다."));
+
+        // 관리자는 자신에 대한 탈퇴 불가
+        if (adminId.equals(userId)) {
+            throw new InvalidException(3, "관리자는 자신의 계정을 탈퇴시킬 수 없습니다.");
+        }
+
+        // 이미 탈퇴한 회원은 탈퇴 불가
+        if (user.isDeleted()) {
+            throw new InvalidException(4, "이미 탈퇴한 회원입니다.");
+        }
+
+        // 해당 유저의 모든 리프레시 토큰 폐기
+        List<RefreshToken> refreshTokens = this.refreshTokenRepository.findAllByUserIdAndRevokedAtIsNull(userId);
+
+        for (RefreshToken refreshToken : refreshTokens) {
+            refreshToken.revoke();
+        }
+
+        user.deleteUser();
+
+        this.userRepository.save(user);
+    }
+
+
+
+
 }

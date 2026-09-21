@@ -36,4 +36,10 @@ public class Report extends BaseTimeEntity {  // createdAt, updatedAt 상속
 
     @Column(name = "summarized_at")
     private LocalDateTime summarizedAt;  // AI 요약 완료 시각 (nullable)
+
+    /** AI 요약 완료 시 호출 (JSON 문자열 저장) */
+    public void applySummary(String aiSummary) {
+        this.aiSummary = aiSummary;
+        this.summarizedAt = LocalDateTime.now();
+    }
 }
