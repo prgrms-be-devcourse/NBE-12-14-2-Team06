@@ -14,7 +14,7 @@ export const SERVICE_NAME = '‘가지’';
 export const OPERATOR_NAME = '가지 운영팀';
 
 /** 현재 방침의 시행일 (확정 필요) */
-export const EFFECTIVE_DATE = '2026년 9월 21일';
+export const EFFECTIVE_DATE = '2026년 10월 1일';
 
 /** 개인정보 보호책임자 (확정 필요: 지정 후 성명·연락처 기재) */
 export const PRIVACY_OFFICER = {
@@ -30,7 +30,7 @@ export const INTRO = [
 
 /** 개정 이력 (최신이 맨 위) */
 export const POLICY_VERSIONS: PolicyVersion[] = [
-  { label: '1차', date: '2026.09.21', summary: '개인정보 처리방침 제정' },
+  { label: '1차', date: '2026.10.01', summary: '개인정보 처리방침 제정' },
 ];
 
 export const POLICY_ARTICLES: PolicyArticle[] = [
