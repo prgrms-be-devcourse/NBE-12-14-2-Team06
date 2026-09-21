@@ -22,19 +22,22 @@ public class ClientProfile extends BaseTimeEntity {
     private User user;
 
     // 보호자 실명
-    @Column(length = 50)
+    @Column(nullable = false, length = 50)
     private String emergencyContactName;
 
     // 보호자 번호
-    @Column(length = 20)
+    @Column(nullable = false, length = 20)
     private String emergencyContactPhone;
 
     // 의뢰인 특이사항
     @Column(length = 500)
     private String careNote;
 
-    // 우선 user만 연결 생성자
-    public ClientProfile(User user) {
+
+    public ClientProfile(User user, String emergencyContactName,  String emergencyContactPhone, String careNote) {
         this.user = user;
+        this.emergencyContactName = emergencyContactName;
+        this.emergencyContactPhone = emergencyContactPhone;
+        this.careNote = careNote;
     }
 }
