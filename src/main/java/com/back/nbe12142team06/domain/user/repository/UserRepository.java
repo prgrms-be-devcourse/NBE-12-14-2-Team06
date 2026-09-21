@@ -1,7 +1,6 @@
 package com.back.nbe12142team06.domain.user.repository;
 
 
-import com.back.nbe12142team06.domain.settlement.dto.AccountDto;
 import com.back.nbe12142team06.domain.user.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -43,4 +42,3 @@ public interface UserRepository extends JpaRepository<User, Long> {
     )
     Page<User> findAllIncludingDeleted(Pageable pageable);
 }
-
