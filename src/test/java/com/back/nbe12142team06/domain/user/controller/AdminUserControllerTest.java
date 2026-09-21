@@ -541,6 +541,24 @@ public class AdminUserControllerTest {
         for  (RefreshToken refreshToken : refreshTokenList) {
             assertThat(refreshToken.isRevoked()).isTrue();
         }
+    }
 
+    @Test
+    @DisplayName("[AdminController] 회원 정보 탈퇴 - 존재하지 않는 회원 탈퇴 요청 시 404 반환")
+    void t15() throws Exception {
+        createTestAdmin();
+        Cookie adminToken = loginAsAdmin();
+
+        ResultActions resultActions = mvc.perform(
+                        delete("/api/v1/admin/users/{id}", Long.MAX_VALUE)
+                                .cookie(adminToken)
+                )
+                .andDo(print());
+
+
+        resultActions
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.statusCode").value("404"))
+                .andExpect(jsonPath("$.msg").value("회원 정보를 찾을 수 없습니다."));
     }
 }
