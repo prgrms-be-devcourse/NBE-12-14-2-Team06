@@ -5,6 +5,7 @@ import com.back.nbe12142team06.domain.report.dto.ReportWriteRequest;
 import com.back.nbe12142team06.domain.report.dto.ReportWriteResponse;
 import com.back.nbe12142team06.domain.report.entity.Report;
 import com.back.nbe12142team06.domain.report.service.ReportService;
+import com.back.nbe12142team06.domain.report.service.ReportSummaryService;
 import com.back.nbe12142team06.global.response.RsData;
 import com.back.nbe12142team06.global.security.SecurityUser;
 import jakarta.validation.Valid;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 public class ReportController {
 
     private final ReportService reportService;
+    private final ReportSummaryService reportSummaryService;
 
     // 진료 보고서 작성
     @PostMapping("/{applicationId}/report")
@@ -26,12 +28,17 @@ public class ReportController {
             @AuthenticationPrincipal SecurityUser actor,
             @RequestBody @Valid ReportWriteRequest request) {
 
+        // 원문 저장 (트랜잭션 종료)
         Report report = reportService.write(applicationId, actor.getId(), request);
+
+        // AI 요약 (트랜잭션 밖에서 외부 API 호출)
+        // 실패하더라도 원문은 이미 저장되어 있으므로 예외를 전파하지 않는다
+        reportSummaryService.summarize(report.getId());
 
         return new RsData<>(
                 "201-1",
                 "%d번 동행 건의 보고서가 등록되었습니다.".formatted(applicationId),
-                new ReportWriteResponse(report)
+                new ReportWriteResponse(reportService.findByApplicationId(applicationId, actor.getId()))
         );
     }
 
