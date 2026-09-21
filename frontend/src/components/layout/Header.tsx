@@ -16,8 +16,8 @@ const BUTTON_BASE =
   'inline-flex items-center justify-center rounded-[30px] px-6 py-[18px] text-base leading-[18px] font-semibold whitespace-nowrap transition-colors';
 
 type Props = {
-  /** 로그인한 사용자. 있으면 "로그인 / 회원가입" 대신 "이름 ⌄ / 로그아웃"을 보여줍니다. */
-  user?: { name: string };
+  /** 로그인한 사용자. 있으면 "로그인 / 회원가입" 대신 "이름 ⌄ / 로그아웃"을 보여줍니다. href 는 이름을 눌렀을 때 이동할 마이페이지 (기본 /mypage) */
+  user?: { name: string; href?: string };
 };
 
 export default function Header({ user }: Props) {
@@ -43,7 +43,7 @@ export default function Header({ user }: Props) {
         {user ? (
           <div className="flex items-center gap-[25px]">
             <Link
-              href="/mypage"
+              href={user.href ?? '/mypage'}
               className="flex items-center gap-2.5 text-lg leading-[18px] font-semibold text-brand transition-colors hover:text-brand-hover"
             >
               {user.name}
