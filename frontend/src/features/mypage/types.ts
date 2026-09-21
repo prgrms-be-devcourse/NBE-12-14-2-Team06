@@ -1,0 +1,40 @@
+/** 내가 신청한 공고의 진행 상태 */
+export type ApplicationStatus = 'pending' | 'matched' | 'inProgress' | 'completed' | 'rejected';
+
+/** 신청 카드 한 장 (모의 데이터용 모양) */
+export type Application = {
+  id: number;
+  /** 상세보기로 이동할 공고 번호 */
+  postId: number;
+  title: string;
+  hospitalName: string;
+  /** "서울 양천구" */
+  location: string;
+  /** "2026.11.16.(금)" */
+  dateLabel: string;
+  /** "오후 15:00" */
+  timeLabel: string;
+  durationLabel: string;
+  payLabel: string;
+  description: string[];
+  status: ApplicationStatus;
+};
+
+/** 최근 활동 요약 한 칸 */
+export type ActivityStat = {
+  label: string;
+  count: number;
+  icon: string;
+};
+
+export type MyProfile = {
+  name: string;
+  roleLabel: string;
+  username: string;
+  email: string;
+  phone: string;
+  address: string;
+  birthDate: string;
+  gender: string;
+  intro: string[];
+};
