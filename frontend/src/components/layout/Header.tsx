@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import Container from '@/components/ui/Container';
 
 const MENU = [
@@ -40,9 +41,9 @@ export default function Header() {
           >
             로그인
           </a>
-          <a href="#" className={`${BUTTON_BASE} bg-brand text-white hover:bg-brand-hover`}>
+          <Link href="/signup" className={`${BUTTON_BASE} bg-brand text-white hover:bg-brand-hover`}>
             회원가입
-          </a>
+          </Link>
         </div>
       </Container>
     </header>
