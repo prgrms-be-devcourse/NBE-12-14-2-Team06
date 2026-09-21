@@ -248,7 +248,7 @@ public class AdminUserControllerTest {
 
 
     @Test
-    @DisplayName("[AdminController] 회원 다건 조회 - 관리자가 정상 조회 시 200 반환")
+    @DisplayName("[AdminUserController] 회원 다건 조회 - 관리자가 정상 조회 시 200 반환")
     void t6() throws Exception {
         // 관리자 로그인
         createTestAdmin();
@@ -293,7 +293,7 @@ public class AdminUserControllerTest {
 
 
     @Test
-    @DisplayName("[AdminController] 회원 다건 조회 - 음수 페이지 요청 시 400-1 반환")
+    @DisplayName("[AdminUserController] 회원 다건 조회 - 음수 페이지 요청 시 400-1 반환")
     void t7() throws Exception {
         // 관리자 로그인
         createTestAdmin();
@@ -317,7 +317,7 @@ public class AdminUserControllerTest {
     }
 
     @Test
-    @DisplayName("[AdminController] 회원 다건 조회 - 로그인 없이 요청 시 401-1 반환")
+    @DisplayName("[AdminUserController] 회원 다건 조회 - 로그인 없이 요청 시 401-1 반환")
     void t8() throws Exception {
 
         // 다수의 회원 생성
@@ -337,7 +337,7 @@ public class AdminUserControllerTest {
     }
 
     @Test
-    @DisplayName("[AdminController] 회원 다건 조회 - 일반 회원이 조회 시 403-1 반환")
+    @DisplayName("[AdminUserController] 회원 다건 조회 - 일반 회원이 조회 시 403-1 반환")
     void t9() throws Exception {
 
         Cookie user1Token = signUp("user1");
@@ -504,7 +504,7 @@ public class AdminUserControllerTest {
 
 
     @Test
-    @DisplayName("[AdminController] 회원 정보 탈퇴 - 관리자의 정상 탈퇴 요청 시 200-3 반환")
+    @DisplayName("[AdminUserController] 회원 정보 탈퇴 - 관리자의 정상 탈퇴 요청 시 200-3 반환")
     void t14() throws Exception {
         createTestAdmin();
         Cookie adminToken = loginAsAdmin();
@@ -544,7 +544,7 @@ public class AdminUserControllerTest {
     }
 
     @Test
-    @DisplayName("[AdminController] 회원 정보 탈퇴 - 존재하지 않는 회원 탈퇴 요청 시 404 반환")
+    @DisplayName("[AdminUserController] 회원 정보 탈퇴 - 존재하지 않는 회원 탈퇴 요청 시 404 반환")
     void t15() throws Exception {
         createTestAdmin();
         Cookie adminToken = loginAsAdmin();
@@ -565,7 +565,7 @@ public class AdminUserControllerTest {
 
 
     @Test
-    @DisplayName("[AdminController] 회원 정보 탈퇴 - 관리자가 자신의 계정에 대한 탈퇴 요청 시 400-3")
+    @DisplayName("[AdminUserController] 회원 정보 탈퇴 - 관리자가 자신의 계정에 대한 탈퇴 요청 시 400-3")
     void t16() throws Exception {
         createTestAdmin();
         Cookie adminToken = loginAsAdmin();
@@ -586,7 +586,7 @@ public class AdminUserControllerTest {
 
 
     @Test
-    @DisplayName("[AdminController] 회원 정보 탈퇴 - 이미 탈퇴한 회원에 대한 탈퇴 요청 시 400-4 반환")
+    @DisplayName("[AdminUserController] 회원 정보 탈퇴 - 이미 탈퇴한 회원에 대한 탈퇴 요청 시 400-4 반환")
     void t17() throws Exception {
         createTestAdmin();
         Cookie adminToken = loginAsAdmin();
