@@ -1,5 +1,6 @@
 package com.back.nbe12142team06.domain.user.service;
 
+import com.back.nbe12142team06.domain.application.repository.ApplicationRepository;
 import com.back.nbe12142team06.domain.auth.entity.RefreshToken;
 import com.back.nbe12142team06.domain.auth.repository.RefreshTokenRepository;
 import com.back.nbe12142team06.domain.user.dto.admin.AdminUserProfileUpdateRequest;
@@ -41,6 +42,7 @@ public class UserService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final EscortProfileRepository escortProfileRepository;
     private final ClientProfileRepository clientProfileRepository;
+    private final ApplicationRepository applicationRepository;
 
     // 회원가입
     @Transactional
@@ -175,6 +177,7 @@ public class UserService {
         }
     }
 
+    // 일반 회원의 회원 탈퇴
     @Transactional
     public void deleteMyProfile(Long id) {
         User user = this.userRepository.findById(id)
@@ -187,6 +190,55 @@ public class UserService {
         // 회원 정보, 프로필, 토큰 전부 삭제
         withdraw(user);
     }
+
+    // 의뢰인 프로필 생성
+    @Transactional
+    public ClientProfile createClientProfile(Long userId, ClientProfileRequest request) {
+        User user = this.userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("회원 정보를 찾을 수 없습니다."));
+
+        if (this.clientProfileRepository.existsById(userId)) {
+            throw new DuplicatedException(4, "이미 의뢰인 프로필이 존재합니다.");
+        }
+
+        String careNote = (request.careNote() == null || request.careNote().isBlank()) ? "특이사항 없음" : request.careNote();
+
+        ClientProfile profile = new ClientProfile(user, request.emergencyContactName(), request.emergencyContactPhone(), careNote);
+
+
+        return this.clientProfileRepository.save(profile);
+    }
+
+    // 의뢰인 자기 자신 프로필 조회
+    @Transactional(readOnly = true)
+    public ClientProfile getClientProfile(Long clientId) {
+        return this.clientProfileRepository.findById(clientId)
+                .orElseThrow(() -> new NotFoundException("의뢰인 프로필이 존재하지 않습니다."));
+    }
+
+    // 관리자, 매칭이 완료된 동행인의 의뢰인 프로필 조회
+    // [관리자, 매칭된 동행 매니저] 의뢰인 프로필 조회
+    @Transactional(readOnly = true)
+    public ClientProfile getClientProfile(Long requesterId, Long clientId) {
+        User requester = this.userRepository.findById(requesterId)
+                .orElseThrow(() -> new UnauthorizedException("회원 정보를 찾을 수 없습니다. 다시 로그인해주세요."));
+
+        switch (requester.getRole()) {
+            case ADMIN -> {}
+            case ESCORT -> {
+                boolean isMatched = this.applicationRepository.hasActiveMatching(requesterId, clientId);
+
+                if (!isMatched) {
+                    throw new BusinessException("403-2", "매칭된 의뢰인의 프로필만 조회할 수 있습니다.");
+                }
+            }
+            default -> throw new BusinessException("403-2", "조회 권한이 없습니다.");
+        }
+
+        return this.clientProfileRepository.findById(clientId)
+                .orElseThrow(() -> new NotFoundException("의뢰인 프로필이 존재하지 않습니다."));
+    }
+
 
     // [ADMIN] 회원 정보 조회 (탈퇴한 회원 정보도 가능)
     @Transactional(readOnly = true)
@@ -225,19 +277,6 @@ public class UserService {
 
         // 회원 정보, 프로필, 토큰 전부 삭제
         withdraw(user);
-    }
-
-    @Transactional
-    public User createClientProfile(Long userId, ClientProfileRequest request) {
-        User user = this.userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("회원 정보를 찾을 수 없습니다."));
-
-        String careNote = (request.careNote() == null || request.careNote().isBlank()) ? "특이사항 없음" : request.careNote();
-
-        ClientProfile profile = new ClientProfile(user, request.emergencyContactName(), request.emergencyContactPhone(), careNote);
-        this.clientProfileRepository.save(profile);
-
-        return user;
     }
 
     // 프로필 삭제, 리프레시 토큰 폐기, 회원 정보 삭제
