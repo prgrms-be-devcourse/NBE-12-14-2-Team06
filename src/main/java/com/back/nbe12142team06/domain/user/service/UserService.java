@@ -189,16 +189,20 @@ public class UserService {
 
     // 의뢰인 프로필 생성
     @Transactional
-    public User createClientProfile(Long userId, ClientProfileRequest request) {
+    public ClientProfile createClientProfile(Long userId, ClientProfileRequest request) {
         User user = this.userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("회원 정보를 찾을 수 없습니다."));
+
+        if (this.clientProfileRepository.existsById(userId)) {
+            throw new DuplicatedException(4, "이미 의뢰인 프로필이 존재합니다.");
+        }
 
         String careNote = (request.careNote() == null || request.careNote().isBlank()) ? "특이사항 없음" : request.careNote();
 
         ClientProfile profile = new ClientProfile(user, request.emergencyContactName(), request.emergencyContactPhone(), careNote);
-        this.clientProfileRepository.save(profile);
 
-        return user;
+
+        return this.clientProfileRepository.save(profile);
     }
 
     // [ADMIN] 회원 정보 조회 (탈퇴한 회원 정보도 가능)

@@ -7,6 +7,7 @@ import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpRequest;
 import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpResponse;
 import com.back.nbe12142team06.domain.user.dto.user.UserProfileUpdateRequest;
 import com.back.nbe12142team06.domain.user.dto.user.UserResponse;
+import com.back.nbe12142team06.domain.user.entity.ClientProfile;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.service.UserService;
 import com.back.nbe12142team06.global.response.RsData;
@@ -108,12 +109,12 @@ public class UserController {
             @RequestBody @Valid ClientProfileRequest request
     ){
 
-        User user = this.userService.createClientProfile(me.getId(), request);
+        ClientProfile clientProfile = this.userService.createClientProfile(me.getId(), request);
 
         return new RsData<>(
                 "200-5",
                 "의뢰인 프로필이 생성되었습니다.",
-                new ClientProfileResponse(user)
+                new ClientProfileResponse(clientProfile)
                 );
     }
 }

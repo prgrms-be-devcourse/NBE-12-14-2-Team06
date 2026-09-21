@@ -1424,7 +1424,10 @@ public class UserControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value("200-5"))
                 .andExpect(jsonPath("$.msg").value("의뢰인 프로필이 생성되었습니다."))
-                .andExpect(jsonPath("$.data.userId").value(userId));
+                .andExpect(jsonPath("$.data.userId").value(userId))
+                .andExpect(jsonPath("$.data.emergencyContactName").value("김철수"))
+                .andExpect(jsonPath("$.data.emergencyContactPhone").value("010-1234-5678"))
+                .andExpect(jsonPath("$.data.careNote").value("여기 아프고 저기 아프고 레전드 아픔. 혼자 보행 불가합니다."));
 
     }
 
@@ -1456,7 +1459,10 @@ public class UserControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value("200-5"))
                 .andExpect(jsonPath("$.msg").value("의뢰인 프로필이 생성되었습니다."))
-                .andExpect(jsonPath("$.data.userId").value(userId));
+                .andExpect(jsonPath("$.data.userId").value(userId))
+                .andExpect(jsonPath("$.data.emergencyContactName").value("김철수"))
+                .andExpect(jsonPath("$.data.emergencyContactPhone").value("010-1234-5678"))
+                .andExpect(jsonPath("$.data.careNote").value("특이사항 없음"));
 
     }
 
@@ -1488,7 +1494,10 @@ public class UserControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value("200-5"))
                 .andExpect(jsonPath("$.msg").value("의뢰인 프로필이 생성되었습니다."))
-                .andExpect(jsonPath("$.data.userId").value(userId));
+                .andExpect(jsonPath("$.data.userId").value(userId))
+                .andExpect(jsonPath("$.data.emergencyContactName").value("김철수"))
+                .andExpect(jsonPath("$.data.emergencyContactPhone").value("010-1234-5678"))
+                .andExpect(jsonPath("$.data.careNote").value("특이사항 없음"));
 
     }
 }
