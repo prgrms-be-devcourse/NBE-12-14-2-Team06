@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/layout';
 import { Container, SectionHeading } from '@/components/ui';
 import { useSignupRole } from '../hooks/useSignupRole';
-import { REGIONS } from '../model';
+import { BANKS, REGIONS } from '../model';
 import { useSignup } from '../state/SignupContext';
 import type { SignupFormValues } from '../types';
 import SignupStepper from './SignupStepper';
@@ -20,10 +20,13 @@ import TextArea from './form/TextArea';
 import TextInput from './form/TextInput';
 
 const PHONE_HINT = '‘-’ 없이 숫자만 입력해주세요.';
+/** 계좌 정보 입력칸은 다른 칸보다 낮습니다 (Figma 높이 47) */
+const ACCOUNT_FIELD = 'h-[47px]!';
 const GRID = 'mx-auto grid w-full max-w-[998px] gap-x-8 gap-y-[21px] lg:grid-cols-2';
 
 /**
  * 회원가입 2단계(정보 입력) — Figma 공통_회원가입_의뢰인(정보 입력) 564:17746
+ *                              · 공통_회원가입_동행 매니저(정보 입력) 564:17621
  *
  * 형식 검사는 브라우저 기본 검사(required · pattern · type)를 씁니다.
  */
@@ -33,6 +36,8 @@ export default function SignupInfoPage() {
   // 입력값은 3·4단계와 공유하고, 이전 단계로 돌아와도 유지됩니다.
   const { values, setValues } = useSignup();
   const confirmRef = useRef<HTMLInputElement>(null);
+  // 계좌 정보는 선택이지만, 하나라도 적었다면 세 칸을 모두 채워야 합니다.
+  const accountRequired = Boolean(values.bankName || values.accountHolder || values.accountNumber);
 
   const handleChange =
     (key: keyof SignupFormValues) =>
@@ -206,7 +211,6 @@ export default function SignupInfoPage() {
               </FormCard>
             </section>
 
-            {/* 의뢰인 추가 정보 — 동행 매니저용 추가 정보 화면은 아직 디자인이 없어 표시하지 않습니다. */}
             {role === 'CLIENT' && (
               <section className="w-full">
                 <SectionHeading
@@ -250,6 +254,77 @@ export default function SignupInfoPage() {
                       />
                     </FormField>
                   </div>
+                </FormCard>
+              </section>
+            )}
+
+            {role === 'ESCORT' && (
+              <section className="w-full">
+                <SectionHeading
+                  title="동행 매니저 추가 정보"
+                  description="신뢰할 수 있는 매칭을 위해 추가 정보를 입력해주세요."
+                  className="mb-6"
+                />
+                <FormCard className="flex flex-col gap-2.5 px-5 py-8 lg:pr-[30px] lg:pl-8">
+                  {/* 정산받을 계좌 (선택) */}
+                  <div className="flex flex-col gap-[21px] py-2.5 lg:flex-row lg:justify-between lg:gap-8">
+                    <FormField label="은행" htmlFor="signup-bank" className="lg:w-[222px]">
+                      <SelectInput
+                        id="signup-bank"
+                        name="bankName"
+                        required={accountRequired}
+                        value={values.bankName}
+                        onChange={handleChange('bankName')}
+                        className={ACCOUNT_FIELD}
+                      >
+                        <option value="">은행을 선택해주세요.</option>
+                        {BANKS.map((bank) => (
+                          <option key={bank} value={bank} className="text-brand">
+                            {bank}
+                          </option>
+                        ))}
+                      </SelectInput>
+                    </FormField>
+                    <FormField label="예금주" htmlFor="signup-account-holder" className="lg:w-[222px]">
+                      <TextInput
+                        id="signup-account-holder"
+                        name="accountHolder"
+                        maxLength={50}
+                        required={accountRequired}
+                        placeholder="예금주명을 입력해주세요."
+                        value={values.accountHolder}
+                        onChange={handleChange('accountHolder')}
+                        className={ACCOUNT_FIELD}
+                      />
+                    </FormField>
+                    <FormField label="계좌번호" htmlFor="signup-account-number" className="lg:w-[222px]">
+                      <TextInput
+                        id="signup-account-number"
+                        name="accountNumber"
+                        inputMode="numeric"
+                        maxLength={30}
+                        required={accountRequired}
+                        pattern="[0-9\-]{8,30}"
+                        title="숫자와 ‘-’만 입력해주세요. (8자 이상)"
+                        placeholder="계좌번호를 입력해주세요."
+                        value={values.accountNumber}
+                        onChange={handleChange('accountNumber')}
+                        className={ACCOUNT_FIELD}
+                      />
+                    </FormField>
+                  </div>
+
+                  <FormField label="자기소개*" htmlFor="signup-intro">
+                    <TextArea
+                      id="signup-intro"
+                      name="intro"
+                      required
+                      maxLength={500}
+                      placeholder={'간단한 자기소개를 입력해주세요.\n예) 경력, 보유 자격증, 성격 등'}
+                      value={values.intro}
+                      onChange={handleChange('intro')}
+                    />
+                  </FormField>
                 </FormCard>
               </section>
             )}
