@@ -1396,21 +1396,36 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.msg").value("로그인 후 이용해주세요."));
     }
 
-//    @Test
-//    @DisplayName("[UserController] 프로필 생성 - 의뢰인의 정상 프로필 생성 시 200-5 반환")
-//    void t33() throws Exception {
-//        Cookie userToken = signUp("user1");
-//
-//        ResultActions resultActions = mvc.perform(
-//                        delete("/api/v1/users/profile")
-//                )
-//                .andDo(print());
-//
-//        resultActions
-//                .andExpect(status().isUnauthorized())
-//                .andExpect(jsonPath("$.statusCode").value("401-1"))
-//                .andExpect(jsonPath("$.msg").value("로그인 후 이용해주세요."));
-//
-//    }
+    @Test
+    @DisplayName("[UserController] 프로필 생성 - 의뢰인의 정상 프로필 생성 시 200-5 반환")
+    void t33() throws Exception {
+        Cookie userToken = signUp("user1");
+
+        Long userId = findUserId("user1");
+
+        String createProfileBody = """
+                {
+                    "emergencyContactName": "김철수",
+                    "emergencyContactPhone": "010-1234-5678",
+                    "careNote": "여기 아프고 저기 아프고 레전드 아픔. 혼자 보행 불가합니다."
+                }
+                """;
+
+
+        ResultActions resultActions = mvc.perform(
+                        post("/api/v1/users/profile/client")
+                                .cookie(userToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(createProfileBody)
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-5"))
+                .andExpect(jsonPath("$.msg").value("의뢰인 프로필이 생성되었습니다."))
+                .andExpect(jsonPath("$.data.userId").value(userId));
+
+    }
 
 }
