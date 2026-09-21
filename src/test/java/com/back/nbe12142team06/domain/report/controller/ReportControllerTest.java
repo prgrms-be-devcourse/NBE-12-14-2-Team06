@@ -6,6 +6,7 @@ import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.repository.PostRepository;
 import com.back.nbe12142team06.domain.report.entity.Report;
 import com.back.nbe12142team06.domain.report.repository.ReportRepository;
+import com.back.nbe12142team06.domain.report.service.ReportMasker;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Gender;
 import com.back.nbe12142team06.domain.user.enums.Role;
@@ -28,6 +29,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -56,6 +58,9 @@ public class ReportControllerTest {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private ReportMasker reportMasker;
 
     private Long testApplicationId;
 
@@ -136,6 +141,8 @@ public class ReportControllerTest {
                 .getResponse()
                 .getCookie("accessToken");
     }
+
+    // ── 보고서 작성 ────────────────────────────
 
     @Test
     @DisplayName("[ReportController] 진료 보고서 작성 - 정상 등록")
@@ -249,6 +256,8 @@ public class ReportControllerTest {
         resultActions.andExpect(status().isBadRequest());
     }
 
+    // ── 보고서 조회 ────────────────────────────
+
     @Test
     @DisplayName("[ReportController] 진료 보고서 조회 - 의뢰인 정상 조회")
     void 보고서_조회_성공() throws Exception {
@@ -321,5 +330,51 @@ public class ReportControllerTest {
         resultActions
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.statusCode").value("404-2"));
+    }
+
+    // ── AI 요약 ────────────────────────────────
+
+    @Test
+    @DisplayName("[ReportController] 진료 보고서 작성 - 요약이 함께 저장된다")
+    void 보고서_작성_시_요약_저장() throws Exception {
+
+        ResultActions resultActions = mvc.perform(
+                post("/api/v1/applications/%d/report".formatted(testApplicationId))
+                        .cookie(escortCookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "title": "정형외과 진료 결과",
+                                    "originContent": "무릎 통증으로 내원하셨고 물리치료 처방을 받으셨습니다."
+                                }
+                                """)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.aiSummary").isNotEmpty())
+                .andExpect(jsonPath("$.data.summarizedAt").isNotEmpty());
+    }
+
+    @Test
+    @DisplayName("[ReportMasker] 외부 API 전송 전 실명과 연락처가 마스킹된다")
+    void 마스킹_적용() {
+
+        Application application = applicationRepository.findById(testApplicationId).orElseThrow();
+
+        String origin = "의뢰인1 어르신께서 무릎 통증을 호소하셨습니다. "
+                + "보호자 연락처는 010-9999-8888 입니다. 동행인1 이 함께 이동했습니다.";
+
+        String masked = reportMasker.mask(
+                origin,
+                application.getPost().getClient(),
+                application.getEscort()
+        );
+
+        assertThat(masked).doesNotContain("의뢰인1");
+        assertThat(masked).doesNotContain("동행인1");
+        assertThat(masked).doesNotContain("010-9999-8888");
+        assertThat(masked).contains("환자분");
+        assertThat(masked).contains("무릎 통증");   // 진료 내용은 유지
     }
 }
