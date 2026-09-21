@@ -173,6 +173,7 @@ public class UserService {
         }
     }
 
+    // 일반 회원의 회원 탈퇴
     @Transactional
     public void deleteMyProfile(Long id) {
         User user = this.userRepository.findById(id)
@@ -184,6 +185,20 @@ public class UserService {
 
         // 회원 정보, 프로필, 토큰 전부 삭제
         withdraw(user);
+    }
+
+    // 의뢰인 프로필 생성
+    @Transactional
+    public User createClientProfile(Long userId, ClientProfileRequest request) {
+        User user = this.userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("회원 정보를 찾을 수 없습니다."));
+
+        String careNote = (request.careNote() == null || request.careNote().isBlank()) ? "특이사항 없음" : request.careNote();
+
+        ClientProfile profile = new ClientProfile(user, request.emergencyContactName(), request.emergencyContactPhone(), careNote);
+        this.clientProfileRepository.save(profile);
+
+        return user;
     }
 
     // [ADMIN] 회원 정보 조회 (탈퇴한 회원 정보도 가능)
@@ -224,26 +239,6 @@ public class UserService {
         // 회원 정보, 프로필, 토큰 전부 삭제
         withdraw(user);
     }
-
-    // 의뢰인 프로필 생성
-    @Transactional
-    public User createClientProfile(Long userId, ClientProfileRequest request) {
-        User user = this.userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("회원 정보를 찾을 수 없습니다."));
-
-        String careNote = (request.careNote() == null || request.careNote().isBlank()) ? "특이사항 없음" : request.careNote();
-
-        ClientProfile profile = new ClientProfile(user, request.emergencyContactName(), request.emergencyContactPhone(), careNote);
-        this.clientProfileRepository.save(profile);
-
-        return user;
-    }
-
-
-
-
-
-
 
     // 프로필 삭제, 리프레시 토큰 폐기, 회원 정보 삭제
     private void withdraw(User user) {
