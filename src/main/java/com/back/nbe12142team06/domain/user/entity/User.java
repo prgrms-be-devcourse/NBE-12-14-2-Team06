@@ -91,4 +91,9 @@ public class User extends BaseSoftDeleteTimeEntity {
         this.email = "deleted_%d".formatted(this.id);
         this.phoneNum = "deleted_%d".formatted(this.id);
     }
+
+    // 탈퇴 여부
+    public boolean isDeleted() {
+        return this.getDeletedAt() != null;
+    }
 }

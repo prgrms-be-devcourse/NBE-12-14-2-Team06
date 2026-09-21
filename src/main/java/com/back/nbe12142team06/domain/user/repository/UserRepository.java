@@ -30,13 +30,13 @@ public interface UserRepository extends JpaRepository<User, Long> {
     // 회원정보 수정 시 전화번호 중복 체크용
     boolean existsByPhoneNumAndIdNot(String phoneNum, Long id);
 
-    // [관리자] 탈퇴 회원 포함 단건 조회
+    // [ADMIN] 탈퇴 회원 포함 단건 조회
     @Query(value = "SELECT * FROM users WHERE id = :id", nativeQuery = true)
     Optional<User> findByIdIncludingDeleted(@Param("id") Long id);
 
-    // [관리자] 탈퇴 회원 포함 목록 조회
+    // [ADMIN] 탈퇴 회원 포함 목록 조회
     @Query(
-            value = "SELECT * FROM users",
+            value = "SELECT * FROM users order by id DESC",
             countQuery = "SELECT COUNT(*) FROM users",
             nativeQuery = true
     )

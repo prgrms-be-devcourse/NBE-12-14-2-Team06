@@ -4,16 +4,16 @@ import com.back.nbe12142team06.domain.auth.entity.RefreshToken;
 import com.back.nbe12142team06.domain.auth.repository.RefreshTokenRepository;
 import com.back.nbe12142team06.domain.user.dto.login.common.UserLoginRequest;
 import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpRequest;
+import com.back.nbe12142team06.domain.user.dto.admin.AdminUserProfileUpdateRequest;
 import com.back.nbe12142team06.domain.user.dto.user.UserProfileUpdateRequest;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Role;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
-import com.back.nbe12142team06.global.exception.BusinessException;
-import com.back.nbe12142team06.global.exception.DuplicatedException;
-import com.back.nbe12142team06.global.exception.NotFoundException;
-import com.back.nbe12142team06.global.exception.UnauthorizedException;
-import jakarta.validation.Valid;
+import com.back.nbe12142team06.global.exception.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -115,18 +115,11 @@ public class UserService {
 
     // 회원 정보 수정
     @Transactional
-    public User updateMyProfile(Long id, @Valid UserProfileUpdateRequest request) {
-
-
+    public User updateMyProfile(Long id, UserProfileUpdateRequest request) {
         User user = this.userRepository.findById(id)
                 .orElseThrow(() -> new UnauthorizedException("회원 정보를 찾을 수 없습니다. 다시 로그인해주세요."));
 
-        if (this.userRepository.existsByEmailAndIdNot(request.email(), id)) {
-            throw new DuplicatedException(DUPLICATED_EMAIL, "이미 사용 중인 이메일입니다.");
-        }
-        if (this.userRepository.existsByPhoneNumAndIdNot(request.phoneNum(), id)) {
-            throw new DuplicatedException(DUPLICATED_PHONE_NUM, "이미 사용 중인 전화번호입니다.");
-        }
+        validateDuplicatedEmailAndPhone(id, request.email(), request.phoneNum());
 
         user.updateUser(
                 passwordEncoder.encode(request.password()),
@@ -138,6 +131,40 @@ public class UserService {
         );
 
         return this.userRepository.save(user);
+    }
+
+    // [관리자] 회원 정보 수정
+    @Transactional
+    public User updateUserByAdmin(Long userId, AdminUserProfileUpdateRequest request) {
+
+        User user = this.userRepository.findByIdIncludingDeleted(userId)
+                .orElseThrow(() -> new NotFoundException("회원 정보를 찾을 수 없습니다."));
+
+        if (user.isDeleted()) {
+            throw new InvalidException(2, "탈퇴한 회원의 정보는 수정할 수 없습니다.");
+        }
+
+        validateDuplicatedEmailAndPhone(userId, request.email(), request.phoneNum());
+
+        user.updateUser(
+                user.getPassword(),   // 기존 비밀번호 해시 유지
+                request.email(),
+                request.name(),
+                request.birthDate(),
+                request.phoneNum(),
+                request.region()
+        );
+        return user;
+    }
+
+    // 내 정보 수정·관리자 수정 공통 중복 검사
+    private void validateDuplicatedEmailAndPhone(Long id, String email, String phoneNum) {
+        if (this.userRepository.existsByEmailAndIdNot(email, id)) {
+            throw new DuplicatedException(DUPLICATED_EMAIL, "이미 사용 중인 이메일입니다.");
+        }
+        if (this.userRepository.existsByPhoneNumAndIdNot(phoneNum, id)) {
+            throw new DuplicatedException(DUPLICATED_PHONE_NUM, "이미 사용 중인 전화번호입니다.");
+        }
     }
 
     @Transactional
@@ -157,10 +184,22 @@ public class UserService {
         this.userRepository.save(user);
     }
 
-    // [관리자] 회원 정보 조회 (탈퇴한 회원 정보도 가능)
+    // [ADMIN] 회원 정보 조회 (탈퇴한 회원 정보도 가능)
     @Transactional(readOnly = true)
-    public User findById(Long userId) {
+    public User findByIdIncludingDeleted(Long userId) {
         return userRepository.findByIdIncludingDeleted(userId)
                 .orElseThrow(() -> new NotFoundException("회원 정보를 찾을 수 없습니다."));
+    }
+
+    // [ADMIN] 회원 목록 조회 (탈퇴한 회원 정보도 가능)
+    @Transactional(readOnly = true)
+    public Page<User> findAllUsersIncludingDeleted(int page, int size) {
+        if (page < 0){
+            throw new InvalidException(1, "페이지 번호는 음수일 수 없습니다.");
+        }
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        return this.userRepository.findAllIncludingDeleted(pageable);
     }
 }
