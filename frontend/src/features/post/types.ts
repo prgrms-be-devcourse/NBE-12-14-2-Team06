@@ -1,5 +1,5 @@
 /** 상태 라벨 색 (Figma 라벨 컴포넌트) */
-export type LabelTone = 'green' | 'red' | 'blue' | 'gray' | 'strong';
+export type LabelTone = 'green' | 'red' | 'blue' | 'purple' | 'gray' | 'strong';
 
 /** 목록 카드 왼쪽 위 라벨: 신규 / 오늘 마감 / 모집 중 */
 export type PostBadge = 'new' | 'closing' | 'open';

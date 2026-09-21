@@ -6,4 +6,7 @@ export { default as TrackingPage } from './components/TrackingPage';
 export { default as ReportWritePage } from './components/ReportWritePage';
 export { default as ReportDonePage } from './components/ReportDonePage';
 export { default as ReportDetailPage } from './components/ReportDetailPage';
-export type { EscortCase, EscortStage } from './types';
+export { default as StageBar } from './components/tracking/StageBar';
+export { default as MapCard } from './components/tracking/MapCard';
+export { default as Timeline } from './components/tracking/Timeline';
+export type { EscortCase, EscortStage, TimelineStep } from './types';

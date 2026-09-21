@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import Link from 'next/link';
 import { cn } from '@/lib/cn';
 import { formatDotDate } from '../lib/date';
 import { ROLE_LABEL } from '../model';
@@ -72,14 +73,13 @@ export default function MemberTable({ members }: { members: Member[] }) {
                 <td className={cell}>{formatDotDate(member.joinedAt)}</td>
                 {/* chevron-right.svg 는 24px 박스 안에 7×14 화살표가 들어 있어 오른쪽 여백(8px)만큼 당깁니다. */}
                 <td className={cn(cell, 'pr-[21.7px] text-right')}>
-                  {/* TODO: 회원 상세 화면(GET /api/v1/admin/users/{userId}) 이 생기면 Link 로 바꾸세요. */}
-                  <button
-                    type="button"
+                  <Link
+                    href={`/admin/members/${member.id}`}
                     aria-label={`${member.name}(${member.id}) 상세 정보 보기`}
                     className="ml-auto block size-6 text-brand transition-opacity hover:opacity-60"
                   >
                     <Image src="/icons/chevron-right.svg" alt="" width={24} height={24} />
-                  </button>
+                  </Link>
                 </td>
               </tr>
             );
