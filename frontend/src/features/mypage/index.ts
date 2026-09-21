@@ -6,4 +6,5 @@ export { default as MyInfoPage } from './components/MyInfoPage';
 export { default as MyApplicationsPage } from './components/MyApplicationsPage';
 export { default as MySettlementsPage } from './components/MySettlementsPage';
 export { default as MyReviewsPage } from './components/MyReviewsPage';
-export type { Application, ApplicationStatus } from './types';
+export { default as MyPageShell } from './components/MyPageShell';
+export type { Application, ApplicationStatus, MyPageRole } from './types';
