@@ -225,6 +225,7 @@ public class UserService {
         withdraw(user);
     }
 
+    // 의뢰인 프로필 생성
     @Transactional
     public User createClientProfile(Long userId, ClientProfileRequest request) {
         User user = this.userRepository.findById(userId)
