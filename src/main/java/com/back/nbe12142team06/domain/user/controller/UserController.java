@@ -1,6 +1,8 @@
 package com.back.nbe12142team06.domain.user.controller;
 
 import com.back.nbe12142team06.domain.auth.service.RefreshTokenService;
+import com.back.nbe12142team06.domain.user.dto.profile.ClientProfileRequest;
+import com.back.nbe12142team06.domain.user.dto.profile.ClientProfileResponse;
 import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpRequest;
 import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpResponse;
 import com.back.nbe12142team06.domain.user.dto.user.UserProfileUpdateRequest;
@@ -97,5 +99,20 @@ public class UserController {
                 "200-4",
                 "회원 탈퇴가 완료되었습니다."
         );
+    }
+
+    @PostMapping("/profile/client")
+    public RsData<ClientProfileResponse> updateProfileClient(
+            @AuthenticationPrincipal SecurityUser me,
+            @RequestBody @Valid ClientProfileRequest request
+    ){
+
+        User user = this.userService.createClientProfile(me.getId(), request);
+
+        return new RsData<>(
+                "200-5",
+                "의뢰인 프로필이 생성되었습니다.",
+                new ClientProfileResponse(user)
+                );
     }
 }
