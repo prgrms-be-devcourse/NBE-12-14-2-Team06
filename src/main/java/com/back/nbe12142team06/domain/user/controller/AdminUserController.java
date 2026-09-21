@@ -5,9 +5,11 @@ import com.back.nbe12142team06.domain.user.dto.admin.AdminUserResponse;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.service.UserService;
 import com.back.nbe12142team06.global.response.RsData;
+import com.back.nbe12142team06.global.security.SecurityUser;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -51,7 +53,7 @@ public class AdminUserController {
 
     // [관리자] 회원 정보 수정 username, password는 변경 불가
     @PatchMapping("/users/{userId}")
-    public RsData<AdminUserResponse> updateProfile(
+    public RsData<AdminUserResponse> updateUser(
             @PathVariable Long userId,
             @Valid @RequestBody AdminUserProfileUpdateRequest request
     ) {
@@ -61,6 +63,21 @@ public class AdminUserController {
                 "200-3",
                 "회원 정보가 수정되었습니다.",
                 new AdminUserResponse(user)
+        );
+    }
+
+    // [관리자] 회원 탈퇴 - 이미 탈퇴한 회원 불가, 자기 자신 탈퇴 불가 (관리자가 한명일 때 대비용)
+    @DeleteMapping("/users/{id}")
+    public RsData<Void> deleteUser(
+            @AuthenticationPrincipal SecurityUser admin,
+            @PathVariable Long id
+    ) {
+        this.userService.deleteUser(admin.getId(), id);
+
+
+        return new RsData<>(
+                "200-3",
+                "회원 탈퇴가 완료되었습니다."
         );
     }
 }

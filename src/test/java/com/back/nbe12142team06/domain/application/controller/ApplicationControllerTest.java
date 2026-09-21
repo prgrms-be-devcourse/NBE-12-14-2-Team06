@@ -14,7 +14,7 @@ import com.back.nbe12142team06.domain.user.entity.EscortProfile;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Gender;
 import com.back.nbe12142team06.domain.user.enums.Role;
-import com.back.nbe12142team06.domain.user.repository.EscortRepository;
+import com.back.nbe12142team06.domain.user.repository.EscortProfileRepository;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
@@ -65,7 +65,7 @@ public class ApplicationControllerTest {
     private PaymentRepository paymentRepository;
 
     @Autowired
-    private EscortRepository escortRepository;
+    private EscortProfileRepository escortProfileRepository;
 
     @Autowired
     private EscortProgressLogRepository escortProgressLogRepository;
@@ -109,7 +109,7 @@ public class ApplicationControllerTest {
 
         // 테스트용 동행인 프로필 생성
         EscortProfile escortProfile = new EscortProfile(escort);
-        escortRepository.save(escortProfile);
+        escortProfileRepository.save(escortProfile);
 
         // 테스트용 공고
         Post post = Post.builder()
@@ -1386,7 +1386,7 @@ public class ApplicationControllerTest {
                 .andExpect(status().isOk());
 
         // 취소 전 노쇼 횟수 확인
-        EscortProfile escortProfile = escortRepository
+        EscortProfile escortProfile = escortProfileRepository
                 .findById(application.getEscort().getId())
                 .orElseThrow();
 
@@ -1418,7 +1418,7 @@ public class ApplicationControllerTest {
                 .orElseThrow();
 
         // 취소 후 동행인 프로필 확인
-        EscortProfile updatedEscortProfile = escortRepository
+        EscortProfile updatedEscortProfile = escortProfileRepository
                 .findById(application.getEscort().getId())
                 .orElseThrow();
 
@@ -1494,7 +1494,7 @@ public class ApplicationControllerTest {
         applicationRepository.save(application);
 
         // 취소 전 노쇼 횟수
-        EscortProfile escortProfile = escortRepository
+        EscortProfile escortProfile = escortProfileRepository
                 .findById(escort.getId())
                 .orElseThrow();
 
@@ -1526,7 +1526,7 @@ public class ApplicationControllerTest {
                 .orElseThrow();
 
         // 취소 후 동행인 프로필 확인
-        EscortProfile updatedEscortProfile = escortRepository
+        EscortProfile updatedEscortProfile = escortProfileRepository
                 .findById(escort.getId())
                 .orElseThrow();
 

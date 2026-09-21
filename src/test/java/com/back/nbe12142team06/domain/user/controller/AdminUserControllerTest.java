@@ -1,10 +1,13 @@
 package com.back.nbe12142team06.domain.user.controller;
 
+import com.back.nbe12142team06.domain.auth.entity.RefreshToken;
+import com.back.nbe12142team06.domain.auth.repository.RefreshTokenRepository;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Gender;
 import com.back.nbe12142team06.domain.user.enums.Role;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
 import com.jayway.jsonpath.JsonPath;
+import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -48,6 +51,12 @@ public class AdminUserControllerTest {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private EntityManager em;
+
+    @Autowired
+    private RefreshTokenRepository refreshTokenRepository;
 
     // 관리자 계정 주입
     private void createTestAdmin() {
@@ -165,7 +174,7 @@ public class AdminUserControllerTest {
         // user1 탈퇴
         mvc.perform(delete("/api/v1/users/profile")
                         .cookie(user1Token))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk());
 
         Cookie adminToken = loginAsAdmin();
 
@@ -417,7 +426,7 @@ public class AdminUserControllerTest {
                 delete("/api/v1/users/profile")
                         .cookie(userToken)
                 )
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk());
 
         // 회원 정보 수정
         ResultActions resultActions = mvc.perform(
@@ -493,4 +502,120 @@ public class AdminUserControllerTest {
                 .andExpect(jsonPath("$.msg").value("권한이 없습니다."));
     }
 
+
+    @Test
+    @DisplayName("[AdminController] 회원 정보 탈퇴 - 관리자의 정상 탈퇴 요청 시 200-3 반환")
+    void t14() throws Exception {
+        createTestAdmin();
+        Cookie adminToken = loginAsAdmin();
+
+        signUp("user1");
+        Long user1Id = findUserId("user1");
+
+        ResultActions resultActions = mvc.perform(
+                        delete("/api/v1/admin/users/{id}", user1Id)
+                                .cookie(adminToken)
+                )
+                .andDo(print());
+
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-3"))
+                .andExpect(jsonPath("$.msg").value("회원 탈퇴가 완료되었습니다."));
+
+        em.flush();
+        em.clear();
+
+        User deletedUser = this.userRepository.findByIdIncludingDeleted(user1Id).orElseThrow();
+
+        assertThat(deletedUser.getEmail()).isEqualTo("deleted_%d".formatted(user1Id));
+        assertThat(deletedUser.getUsername()).isEqualTo("deleted_%d".formatted(user1Id));
+        assertThat(deletedUser.getPhoneNum()).isEqualTo("deleted_%d".formatted(user1Id));
+        assertThat(deletedUser.getDeletedAt()).isNotNull();
+
+        List<RefreshToken> refreshTokenList = this.refreshTokenRepository.findAllByUserId(user1Id);
+
+        assertThat(refreshTokenList).isNotEmpty();
+
+        for  (RefreshToken refreshToken : refreshTokenList) {
+            assertThat(refreshToken.isRevoked()).isTrue();
+        }
+    }
+
+    @Test
+    @DisplayName("[AdminController] 회원 정보 탈퇴 - 존재하지 않는 회원 탈퇴 요청 시 404 반환")
+    void t15() throws Exception {
+        createTestAdmin();
+        Cookie adminToken = loginAsAdmin();
+
+
+        ResultActions resultActions = mvc.perform(
+                        delete("/api/v1/admin/users/{id}", Long.MAX_VALUE)
+                                .cookie(adminToken)
+                )
+                .andDo(print());
+
+
+        resultActions
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.statusCode").value("404"))
+                .andExpect(jsonPath("$.msg").value("회원 정보를 찾을 수 없습니다."));
+    }
+
+
+    @Test
+    @DisplayName("[AdminController] 회원 정보 탈퇴 - 관리자가 자신의 계정에 대한 탈퇴 요청 시 400-3")
+    void t16() throws Exception {
+        createTestAdmin();
+        Cookie adminToken = loginAsAdmin();
+        Long adminId = findUserId("adminTest");
+
+        ResultActions resultActions = mvc.perform(
+                        delete("/api/v1/admin/users/{id}", adminId)
+                                .cookie(adminToken)
+                )
+                .andDo(print());
+
+
+        resultActions
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.statusCode").value("400-3"))
+                .andExpect(jsonPath("$.msg").value("관리자는 자신의 계정을 탈퇴시킬 수 없습니다."));
+    }
+
+
+    @Test
+    @DisplayName("[AdminController] 회원 정보 탈퇴 - 이미 탈퇴한 회원에 대한 탈퇴 요청 시 400-4 반환")
+    void t17() throws Exception {
+        createTestAdmin();
+        Cookie adminToken = loginAsAdmin();
+
+        signUp("user1");
+        Long user1Id = findUserId("user1");
+
+        // 정상 탈퇴
+        ResultActions resultActions = mvc.perform(
+                        delete("/api/v1/admin/users/{id}", user1Id)
+                                .cookie(adminToken)
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-3"))
+                .andExpect(jsonPath("$.msg").value("회원 탈퇴가 완료되었습니다."));
+
+        // 또또 탈퇴 요청
+        ResultActions resultActions2 = mvc.perform(
+                        delete("/api/v1/admin/users/{id}", user1Id)
+                                .cookie(adminToken)
+                )
+                .andDo(print());
+
+        resultActions2
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.statusCode").value("400-4"))
+                .andExpect(jsonPath("$.msg").value("이미 탈퇴한 회원입니다."));
+    }
 }

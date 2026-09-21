@@ -1,4 +1,4 @@
-package com.back.nbe12142team06.domain.user.dto.login.common;
+package com.back.nbe12142team06.domain.user.dto.login;
 
 import jakarta.validation.constraints.NotBlank;
 
