@@ -37,7 +37,6 @@ public class AuthController {
                 );
     }
 
-    // 로그인
     @Operation(summary = "로그인", description = "사용자 정보를 확인한 후 Access Token과 Refresh Token을 발급합니다.")
     @PostMapping("/login")
     public RsData<UserLoginResponse> login(@RequestBody @Valid UserLoginRequest request) {
@@ -56,7 +55,6 @@ public class AuthController {
         );
     }
 
-    // 로그아웃
     @Operation(summary = "로그아웃", description = "Refresh Token을 폐기하고 인증 토큰 쿠키를 삭제합니다.")
     @DeleteMapping("/logout")
     public RsData<Void> logout() {
