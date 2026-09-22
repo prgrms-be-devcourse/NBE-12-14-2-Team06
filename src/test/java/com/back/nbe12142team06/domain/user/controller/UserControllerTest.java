@@ -116,18 +116,18 @@ public class UserControllerTest {
     // 역할 지정 회원가입 후 accessToken 쿠키 반환
     private Cookie signUp(String username, String role) throws Exception {
         String signUpBody = """
-            {
-                "username": "%s",
-                "password": "testPassword",
-                "email": "%s@user.user",
-                "name": "김춘식",
-                "role": "%s",
-                "gender": "MALE",
-                "birthDate": "1990-05-20",
-                "phoneNum": "%s010-8080-0000",
-                "region": "서울시"
-            }
-            """.formatted(username, username, role, username);
+                {
+                    "username": "%s",
+                    "password": "testPassword",
+                    "email": "%s@user.user",
+                    "name": "김춘식",
+                    "role": "%s",
+                    "gender": "MALE",
+                    "birthDate": "1990-05-20",
+                    "phoneNum": "%s010-8080-0000",
+                    "region": "서울시"
+                }
+                """.formatted(username, username, role, username);
 
         Cookie accessToken = mvc.perform(post("/api/v1/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -157,12 +157,28 @@ public class UserControllerTest {
                         .cookie(clientToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                            {
-                                "emergencyContactName": "김철수",
-                                "emergencyContactPhone": "010-1234-5678",
-                                "careNote": "혼자 보행 불가"
-                            }
-                            """))
+                                {
+                                    "emergencyContactName": "김철수",
+                                    "emergencyContactPhone": "010-1234-5678",
+                                    "careNote": "혼자 보행 불가"
+                                }
+                                """))
+                .andExpect(status().isOk());
+    }
+
+    // 동행 매니저 프로필 생성
+    private void createEscortProfile(Cookie escortToken) throws Exception {
+        mvc.perform(post("/api/v1/users/profile/escort")
+                        .cookie(escortToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "intro": "동행 매니저입니다.",
+                                    "bankName": "오픈은행",
+                                    "accountHolder": "김춘식",
+                                    "accountNumber": "123-0000000-123"
+                                }
+                                """))
                 .andExpect(status().isOk());
     }
 
@@ -249,18 +265,18 @@ public class UserControllerTest {
     @DisplayName("[UserController] 회원가입 - 중복된 아이디로 가입 시 409 반환")
     void t2() throws Exception {
         String body = """
-            {
-                "username": "testUsername",
-                "password": "testPassword",
-                "email": "%s",
-                "name": "김춘식",
-                "role": "CLIENT",
-                "gender": "MALE",
-                "birthDate": "1990-05-20",
-                "phoneNum": "%s",
-                "region": "서울시"
-            }
-            """;
+                {
+                    "username": "testUsername",
+                    "password": "testPassword",
+                    "email": "%s",
+                    "name": "김춘식",
+                    "role": "CLIENT",
+                    "gender": "MALE",
+                    "birthDate": "1990-05-20",
+                    "phoneNum": "%s",
+                    "region": "서울시"
+                }
+                """;
 
         // 첫 번째 가입 성공
         mvc.perform(post("/api/v1/users")
@@ -285,18 +301,18 @@ public class UserControllerTest {
     @DisplayName("[UserController] 회원가입 - 중복된 이메일로 가입 시 409 반환")
     void t3() throws Exception {
         String body = """
-            {
-                "username": "%s",
-                "password": "testPassword",
-                "email": "testEmail@test.test",
-                "name": "김춘식",
-                "role": "CLIENT",
-                "gender": "MALE",
-                "birthDate": "1990-05-20",
-                "phoneNum": "%s",
-                "region": "서울시"
-            }
-            """;
+                {
+                    "username": "%s",
+                    "password": "testPassword",
+                    "email": "testEmail@test.test",
+                    "name": "김춘식",
+                    "role": "CLIENT",
+                    "gender": "MALE",
+                    "birthDate": "1990-05-20",
+                    "phoneNum": "%s",
+                    "region": "서울시"
+                }
+                """;
 
         // 첫 번째 가입 성공
         mvc.perform(post("/api/v1/users")
@@ -321,18 +337,18 @@ public class UserControllerTest {
     @DisplayName("[UserController] 회원가입 - 중복된 전화번호로 가입 시 409 반환")
     void t4() throws Exception {
         String body = """
-            {
-                "username": "%s",
-                "password": "testPassword",
-                "email": "%s",
-                "name": "김춘식",
-                "role": "CLIENT",
-                "gender": "MALE",
-                "birthDate": "1990-05-20",
-                "phoneNum": "010-1234-5678",
-                "region": "서울시"
-            }
-            """;
+                {
+                    "username": "%s",
+                    "password": "testPassword",
+                    "email": "%s",
+                    "name": "김춘식",
+                    "role": "CLIENT",
+                    "gender": "MALE",
+                    "birthDate": "1990-05-20",
+                    "phoneNum": "010-1234-5678",
+                    "region": "서울시"
+                }
+                """;
 
         // 첫 번째 가입 성공
         mvc.perform(post("/api/v1/users")
@@ -360,18 +376,18 @@ public class UserControllerTest {
         ResultActions resultActions = mvc.perform(post("/api/v1/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                        {
-                            "username": "",
-                            "password": "testPassword",
-                            "email": "testEmail@test.test",
-                            "name": "김춘식",
-                            "role": "CLIENT",
-                            "gender": "MALE",
-                            "birthDate": "1990-05-20",
-                            "phoneNum": "010-1234-5678",
-                            "region": "서울시"
-                        }
-                        """))
+                                {
+                                    "username": "",
+                                    "password": "testPassword",
+                                    "email": "testEmail@test.test",
+                                    "name": "김춘식",
+                                    "role": "CLIENT",
+                                    "gender": "MALE",
+                                    "birthDate": "1990-05-20",
+                                    "phoneNum": "010-1234-5678",
+                                    "region": "서울시"
+                                }
+                                """))
                 .andDo(print());
 
         resultActions
@@ -388,18 +404,18 @@ public class UserControllerTest {
         ResultActions resultActions = mvc.perform(post("/api/v1/users")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                        {
-                            "username": "user",
-                            "password": "testPassword",
-                            "email": "testEmail@test.test",
-                            "name": "김춘식",
-                            "role": "CLIENT",
-                            "gender": "HELICOPTER",
-                            "birthDate": "1990-05-20",
-                            "phoneNum": "010-1234-5678",
-                            "region": "서울시"
-                        }
-                        """))
+                                {
+                                    "username": "user",
+                                    "password": "testPassword",
+                                    "email": "testEmail@test.test",
+                                    "name": "김춘식",
+                                    "role": "CLIENT",
+                                    "gender": "HELICOPTER",
+                                    "birthDate": "1990-05-20",
+                                    "phoneNum": "010-1234-5678",
+                                    "region": "서울시"
+                                }
+                                """))
                 .andDo(print());
 
         resultActions
@@ -412,18 +428,18 @@ public class UserControllerTest {
     @DisplayName("[UserController] 회원가입 - 회원가입 시 쿠키 발급")
     void t7() throws Exception {
         String body = """
-        {
-            "username": "testUsername",
-            "password": "testPassword",
-            "email": "first@test.test",
-            "name": "김춘식",
-            "role": "CLIENT",
-            "gender": "MALE",
-            "birthDate": "1990-05-20",
-            "phoneNum": "010-1234-5678",
-            "region": "서울시"
-        }
-        """;
+                {
+                    "username": "testUsername",
+                    "password": "testPassword",
+                    "email": "first@test.test",
+                    "name": "김춘식",
+                    "role": "CLIENT",
+                    "gender": "MALE",
+                    "birthDate": "1990-05-20",
+                    "phoneNum": "010-1234-5678",
+                    "region": "서울시"
+                }
+                """;
 
         // 회원 가입
         ResultActions resultActions = mvc.perform(post("/api/v1/users")
@@ -441,30 +457,29 @@ public class UserControllerTest {
     }
 
 
-
     @Test
     @DisplayName("[UserController] 내 정보 조회 - 존재하는 아이디로 정상 로그인 후 내 정보 조회 요청")
     void t11() throws Exception {
         String signUpBody = """
-        {
-            "username": "user1",
-            "password": "pwd1",
-            "email": "first@test.test",
-            "name": "김춘식",
-            "role": "CLIENT",
-            "gender": "MALE",
-            "birthDate": "1990-05-20",
-            "phoneNum": "010-1234-5678",
-            "region": "서울시"
-        }
-        """;
+                {
+                    "username": "user1",
+                    "password": "pwd1",
+                    "email": "first@test.test",
+                    "name": "김춘식",
+                    "role": "CLIENT",
+                    "gender": "MALE",
+                    "birthDate": "1990-05-20",
+                    "phoneNum": "010-1234-5678",
+                    "region": "서울시"
+                }
+                """;
 
         String body = """
-        {
-            "username": "user1",
-            "password": "pwd1"
-        }
-        """;
+                {
+                    "username": "user1",
+                    "password": "pwd1"
+                }
+                """;
 
         // 회원 가입
         mvc.perform(post("/api/v1/users")
@@ -550,10 +565,10 @@ public class UserControllerTest {
     @DisplayName("[UserController] Username 중복 검사 - 사용 가능한 username은 true")
     void t15() throws Exception {
         ResultActions resultActions = mvc.perform(
-                get("/api/v1/users/username")
-                        .param("username", "user1")
-        )
-        .andDo(print());
+                        get("/api/v1/users/username")
+                                .param("username", "user1")
+                )
+                .andDo(print());
 
         resultActions
                 .andExpect(status().isOk())
@@ -566,18 +581,18 @@ public class UserControllerTest {
     @DisplayName("[UserController] Username 중복 검사 - 이미 존재하는 username은 false")
     void t16() throws Exception {
         String signUpBody = """
-        {
-            "username": "user1",
-            "password": "pwd1",
-            "email": "first@test.test",
-            "name": "김춘식",
-            "role": "CLIENT",
-            "gender": "MALE",
-            "birthDate": "1990-05-20",
-            "phoneNum": "010-1234-5678",
-            "region": "서울시"
-        }
-        """;
+                {
+                    "username": "user1",
+                    "password": "pwd1",
+                    "email": "first@test.test",
+                    "name": "김춘식",
+                    "role": "CLIENT",
+                    "gender": "MALE",
+                    "birthDate": "1990-05-20",
+                    "phoneNum": "010-1234-5678",
+                    "region": "서울시"
+                }
+                """;
 
         // 회원 가입
         mvc.perform(post("/api/v1/users")
@@ -603,29 +618,29 @@ public class UserControllerTest {
     @DisplayName("[UserController] 회원 정보 수정 - 정상 수정은 200-3 반환")
     void t18() throws Exception {
         String signUpBody = """
-        {
-            "username": "user1",
-            "password": "pwd1",
-            "email": "first@test.test",
-            "name": "김춘식",
-            "role": "CLIENT",
-            "gender": "MALE",
-            "birthDate": "1990-05-20",
-            "phoneNum": "010-1234-5678",
-            "region": "서울시"
-        }
-        """;
+                {
+                    "username": "user1",
+                    "password": "pwd1",
+                    "email": "first@test.test",
+                    "name": "김춘식",
+                    "role": "CLIENT",
+                    "gender": "MALE",
+                    "birthDate": "1990-05-20",
+                    "phoneNum": "010-1234-5678",
+                    "region": "서울시"
+                }
+                """;
 
         String updateBody = """
-        {
-            "password": "pwd123",
-            "email": "firssst@test.test",
-            "name": "김춘자",
-            "birthDate": "1990-05-29",
-            "phoneNum": "010-1334-5678",
-            "region": "경기도"
-        }
-        """;
+                {
+                    "password": "pwd123",
+                    "email": "firssst@test.test",
+                    "name": "김춘자",
+                    "birthDate": "1990-05-29",
+                    "phoneNum": "010-1334-5678",
+                    "region": "경기도"
+                }
+                """;
 
         // 회원 가입
         MvcResult signUpResult = mvc.perform(post("/api/v1/users")
@@ -676,29 +691,29 @@ public class UserControllerTest {
     @DisplayName("[UserController] 회원 정보 수정 - 정상 수정은 200-3 반환 - 지역만 수정")
     void t19() throws Exception {
         String signUpBody = """
-        {
-            "username": "user1",
-            "password": "pwd1",
-            "email": "first@test.test",
-            "name": "김춘식",
-            "role": "CLIENT",
-            "gender": "MALE",
-            "birthDate": "1990-05-20",
-            "phoneNum": "010-1234-5678",
-            "region": "서울시"
-        }
-        """;
+                {
+                    "username": "user1",
+                    "password": "pwd1",
+                    "email": "first@test.test",
+                    "name": "김춘식",
+                    "role": "CLIENT",
+                    "gender": "MALE",
+                    "birthDate": "1990-05-20",
+                    "phoneNum": "010-1234-5678",
+                    "region": "서울시"
+                }
+                """;
 
         String updateBody = """
-        {
-            "password": "pwd1",
-            "email": "first@test.test",
-            "name": "김춘식",
-            "birthDate": "1990-05-20",
-            "phoneNum": "010-1234-5678",
-            "region": "서울시이이이"
-        }
-        """;
+                {
+                    "password": "pwd1",
+                    "email": "first@test.test",
+                    "name": "김춘식",
+                    "birthDate": "1990-05-20",
+                    "phoneNum": "010-1234-5678",
+                    "region": "서울시이이이"
+                }
+                """;
 
         // 회원 가입
         MvcResult signUpResult = mvc.perform(post("/api/v1/users")
@@ -737,29 +752,29 @@ public class UserControllerTest {
     @DisplayName("[UserController] 회원 정보 수정 - 정상 수정은 200-3 반환 - 전화번호만 수정")
     void t20() throws Exception {
         String signUpBody = """
-        {
-            "username": "user1",
-            "password": "pwd1",
-            "email": "first@test.test",
-            "name": "김춘식",
-            "role": "CLIENT",
-            "gender": "MALE",
-            "birthDate": "1990-05-20",
-            "phoneNum": "010-1234-5678",
-            "region": "서울시"
-        }
-        """;
+                {
+                    "username": "user1",
+                    "password": "pwd1",
+                    "email": "first@test.test",
+                    "name": "김춘식",
+                    "role": "CLIENT",
+                    "gender": "MALE",
+                    "birthDate": "1990-05-20",
+                    "phoneNum": "010-1234-5678",
+                    "region": "서울시"
+                }
+                """;
 
         String updateBody = """
-        {
-            "password": "pwd1",
-            "email": "first@test.test",
-            "name": "김춘식",
-            "birthDate": "1990-05-20",
-            "phoneNum": "010-3333-5678",
-            "region": "서울시"
-        }
-        """;
+                {
+                    "password": "pwd1",
+                    "email": "first@test.test",
+                    "name": "김춘식",
+                    "birthDate": "1990-05-20",
+                    "phoneNum": "010-3333-5678",
+                    "region": "서울시"
+                }
+                """;
 
         // 회원 가입
         MvcResult signUpResult = mvc.perform(post("/api/v1/users")
@@ -798,29 +813,29 @@ public class UserControllerTest {
     @DisplayName("[UserController] 회원 정보 수정 - 정상 수정은 200-3 반환 - 생일만 수정")
     void t21() throws Exception {
         String signUpBody = """
-        {
-            "username": "user1",
-            "password": "pwd1",
-            "email": "first@test.test",
-            "name": "김춘식",
-            "role": "CLIENT",
-            "gender": "MALE",
-            "birthDate": "1990-05-20",
-            "phoneNum": "010-1234-5678",
-            "region": "서울시"
-        }
-        """;
+                {
+                    "username": "user1",
+                    "password": "pwd1",
+                    "email": "first@test.test",
+                    "name": "김춘식",
+                    "role": "CLIENT",
+                    "gender": "MALE",
+                    "birthDate": "1990-05-20",
+                    "phoneNum": "010-1234-5678",
+                    "region": "서울시"
+                }
+                """;
 
         String updateBody = """
-        {
-            "password": "pwd1",
-            "email": "first@test.test",
-            "name": "김춘식",
-            "birthDate": "1990-05-29",
-            "phoneNum": "010-1234-5678",
-            "region": "서울시"
-        }
-        """;
+                {
+                    "password": "pwd1",
+                    "email": "first@test.test",
+                    "name": "김춘식",
+                    "birthDate": "1990-05-29",
+                    "phoneNum": "010-1234-5678",
+                    "region": "서울시"
+                }
+                """;
 
         // 회원 가입
         MvcResult signUpResult = mvc.perform(post("/api/v1/users")
@@ -859,29 +874,29 @@ public class UserControllerTest {
     @DisplayName("[UserController] 회원 정보 수정 - 정상 수정은 200-3 반환 - 이름만 수정")
     void t22() throws Exception {
         String signUpBody = """
-        {
-            "username": "user1",
-            "password": "pwd1",
-            "email": "first@test.test",
-            "name": "김춘식",
-            "role": "CLIENT",
-            "gender": "MALE",
-            "birthDate": "1990-05-20",
-            "phoneNum": "010-1234-5678",
-            "region": "서울시"
-        }
-        """;
+                {
+                    "username": "user1",
+                    "password": "pwd1",
+                    "email": "first@test.test",
+                    "name": "김춘식",
+                    "role": "CLIENT",
+                    "gender": "MALE",
+                    "birthDate": "1990-05-20",
+                    "phoneNum": "010-1234-5678",
+                    "region": "서울시"
+                }
+                """;
 
         String updateBody = """
-        {
-            "password": "pwd1",
-            "email": "first@test.test",
-            "name": "김춘자",
-            "birthDate": "1990-05-20",
-            "phoneNum": "010-1234-5678",
-            "region": "서울시"
-        }
-        """;
+                {
+                    "password": "pwd1",
+                    "email": "first@test.test",
+                    "name": "김춘자",
+                    "birthDate": "1990-05-20",
+                    "phoneNum": "010-1234-5678",
+                    "region": "서울시"
+                }
+                """;
 
         // 회원 가입
         MvcResult signUpResult = mvc.perform(post("/api/v1/users")
@@ -920,29 +935,29 @@ public class UserControllerTest {
     @DisplayName("[UserController] 회원 정보 수정 - 정상 수정은 200-3 반환 - 이메일만 수정")
     void t23() throws Exception {
         String signUpBody = """
-        {
-            "username": "user1",
-            "password": "pwd1",
-            "email": "first@test.test",
-            "name": "김춘식",
-            "role": "CLIENT",
-            "gender": "MALE",
-            "birthDate": "1990-05-20",
-            "phoneNum": "010-1234-5678",
-            "region": "서울시"
-        }
-        """;
+                {
+                    "username": "user1",
+                    "password": "pwd1",
+                    "email": "first@test.test",
+                    "name": "김춘식",
+                    "role": "CLIENT",
+                    "gender": "MALE",
+                    "birthDate": "1990-05-20",
+                    "phoneNum": "010-1234-5678",
+                    "region": "서울시"
+                }
+                """;
 
         String updateBody = """
-        {
-            "password": "pwd1",
-            "email": "huhuhuhuh@test.test",
-            "name": "김춘식",
-            "birthDate": "1990-05-20",
-            "phoneNum": "010-1234-5678",
-            "region": "서울시"
-        }
-        """;
+                {
+                    "password": "pwd1",
+                    "email": "huhuhuhuh@test.test",
+                    "name": "김춘식",
+                    "birthDate": "1990-05-20",
+                    "phoneNum": "010-1234-5678",
+                    "region": "서울시"
+                }
+                """;
 
         // 회원 가입
         MvcResult signUpResult = mvc.perform(post("/api/v1/users")
@@ -981,29 +996,29 @@ public class UserControllerTest {
     @DisplayName("[UserController] 회원 정보 수정 - 정상 수정은 200-3 반환 - 비밀번호만 수정")
     void t24() throws Exception {
         String signUpBody = """
-        {
-            "username": "user1",
-            "password": "pwd1",
-            "email": "first@test.test",
-            "name": "김춘식",
-            "role": "CLIENT",
-            "gender": "MALE",
-            "birthDate": "1990-05-20",
-            "phoneNum": "010-1234-5678",
-            "region": "서울시"
-        }
-        """;
+                {
+                    "username": "user1",
+                    "password": "pwd1",
+                    "email": "first@test.test",
+                    "name": "김춘식",
+                    "role": "CLIENT",
+                    "gender": "MALE",
+                    "birthDate": "1990-05-20",
+                    "phoneNum": "010-1234-5678",
+                    "region": "서울시"
+                }
+                """;
 
         String updateBody = """
-        {
-            "password": "pwd12222222222222222222",
-            "email": "first@test.test",
-            "name": "김춘식",
-            "birthDate": "1990-05-20",
-            "phoneNum": "010-1234-5678",
-            "region": "서울시"
-        }
-        """;
+                {
+                    "password": "pwd12222222222222222222",
+                    "email": "first@test.test",
+                    "name": "김춘식",
+                    "birthDate": "1990-05-20",
+                    "phoneNum": "010-1234-5678",
+                    "region": "서울시"
+                }
+                """;
 
         // 회원 가입
         MvcResult signUpResult = mvc.perform(post("/api/v1/users")
@@ -1051,43 +1066,43 @@ public class UserControllerTest {
     @DisplayName("[UserController] 회원 정보 수정 - 존재하는 email로 수정 시도 시 409-2")
     void t25() throws Exception {
         String signUp1Body = """
-        {
-            "username": "user1",
-            "password": "pwd1",
-            "email": "first@test.test",
-            "name": "김춘식",
-            "role": "CLIENT",
-            "gender": "MALE",
-            "birthDate": "1990-05-20",
-            "phoneNum": "010-1234-5678",
-            "region": "서울시"
-        }
-        """;
+                {
+                    "username": "user1",
+                    "password": "pwd1",
+                    "email": "first@test.test",
+                    "name": "김춘식",
+                    "role": "CLIENT",
+                    "gender": "MALE",
+                    "birthDate": "1990-05-20",
+                    "phoneNum": "010-1234-5678",
+                    "region": "서울시"
+                }
+                """;
 
         String signUp2Body = """
-        {
-            "username": "user13",
-            "password": "pwd1",
-            "email": "first1@test.test",
-            "name": "김춘식",
-            "role": "CLIENT",
-            "gender": "MALE",
-            "birthDate": "1990-05-20",
-            "phoneNum": "010-3333-5678",
-            "region": "서울시"
-        }
-        """;
+                {
+                    "username": "user13",
+                    "password": "pwd1",
+                    "email": "first1@test.test",
+                    "name": "김춘식",
+                    "role": "CLIENT",
+                    "gender": "MALE",
+                    "birthDate": "1990-05-20",
+                    "phoneNum": "010-3333-5678",
+                    "region": "서울시"
+                }
+                """;
 
         String updateBody = """
-        {
-            "password": "pwd1222",
-            "email": "first@test.test",
-            "name": "김춘식22",
-            "birthDate": "1990-05-25",
-            "phoneNum": "010-3333-5678",
-            "region": "서울시"
-        }
-        """;
+                {
+                    "password": "pwd1222",
+                    "email": "first@test.test",
+                    "name": "김춘식22",
+                    "birthDate": "1990-05-25",
+                    "phoneNum": "010-3333-5678",
+                    "region": "서울시"
+                }
+                """;
 
         // 회원 가입
         mvc.perform(post("/api/v1/users")
@@ -1123,43 +1138,43 @@ public class UserControllerTest {
     @DisplayName("[UserController] 회원 정보 수정 - 존재하는 전화번호로 수정 시도 시 409-3")
     void t26() throws Exception {
         String signUp1Body = """
-        {
-            "username": "user1",
-            "password": "pwd1",
-            "email": "first@test.test",
-            "name": "김춘식",
-            "role": "CLIENT",
-            "gender": "MALE",
-            "birthDate": "1990-05-20",
-            "phoneNum": "010-1234-5678",
-            "region": "서울시"
-        }
-        """;
+                {
+                    "username": "user1",
+                    "password": "pwd1",
+                    "email": "first@test.test",
+                    "name": "김춘식",
+                    "role": "CLIENT",
+                    "gender": "MALE",
+                    "birthDate": "1990-05-20",
+                    "phoneNum": "010-1234-5678",
+                    "region": "서울시"
+                }
+                """;
 
         String signUp2Body = """
-        {
-            "username": "user13",
-            "password": "pwd1",
-            "email": "first1@test.test",
-            "name": "김춘식",
-            "role": "CLIENT",
-            "gender": "MALE",
-            "birthDate": "1990-05-20",
-            "phoneNum": "010-3333-5678",
-            "region": "서울시"
-        }
-        """;
+                {
+                    "username": "user13",
+                    "password": "pwd1",
+                    "email": "first1@test.test",
+                    "name": "김춘식",
+                    "role": "CLIENT",
+                    "gender": "MALE",
+                    "birthDate": "1990-05-20",
+                    "phoneNum": "010-3333-5678",
+                    "region": "서울시"
+                }
+                """;
 
         String updateBody = """
-        {
-            "password": "pwd1222",
-            "email": "first3@test.test",
-            "name": "김춘식22",
-            "birthDate": "1990-05-25",
-            "phoneNum": "010-1234-5678",
-            "region": "서울시"
-        }
-        """;
+                {
+                    "password": "pwd1222",
+                    "email": "first3@test.test",
+                    "name": "김춘식22",
+                    "birthDate": "1990-05-25",
+                    "phoneNum": "010-1234-5678",
+                    "region": "서울시"
+                }
+                """;
 
         // 회원 가입
         mvc.perform(post("/api/v1/users")
@@ -1195,18 +1210,18 @@ public class UserControllerTest {
     @DisplayName("[UserController] 회원 탈퇴 - 자기 자신의 계정을 정상적으로 탈퇴하는 경우 200-4 반환")
     void t27() throws Exception {
         String signUpBody = """
-        {
-            "username": "user1",
-            "password": "pwd1",
-            "email": "first@test.test",
-            "name": "김춘식",
-            "role": "CLIENT",
-            "gender": "MALE",
-            "birthDate": "1990-05-20",
-            "phoneNum": "010-1234-5678",
-            "region": "서울시"
-        }
-        """;
+                {
+                    "username": "user1",
+                    "password": "pwd1",
+                    "email": "first@test.test",
+                    "name": "김춘식",
+                    "role": "CLIENT",
+                    "gender": "MALE",
+                    "birthDate": "1990-05-20",
+                    "phoneNum": "010-1234-5678",
+                    "region": "서울시"
+                }
+                """;
 
         // 회원 가입
         MvcResult signupResult = mvc.perform(post("/api/v1/users")
@@ -1219,8 +1234,8 @@ public class UserControllerTest {
 
         // 회원 탈퇴
         ResultActions resultActions = mvc.perform(
-                delete("/api/v1/users/profile")
-                        .cookie(accessToken)
+                        delete("/api/v1/users/profile")
+                                .cookie(accessToken)
                 )
                 .andDo(print());
 
@@ -1261,7 +1276,7 @@ public class UserControllerTest {
 
         assertThat(refreshTokenList).isNotEmpty();
 
-        for  (RefreshToken refreshToken : refreshTokenList) {
+        for (RefreshToken refreshToken : refreshTokenList) {
             assertThat(refreshToken.isRevoked()).isTrue();
         }
     }
@@ -1270,18 +1285,18 @@ public class UserControllerTest {
     @DisplayName("[UserController] 회원 탈퇴 - 탈퇴 후 기존 accessToken으로 요청 시 401")
     void t28() throws Exception {
         String signUpBody = """
-    {
-        "username": "user1",
-        "password": "pwd1",
-        "email": "first@test.test",
-        "name": "김춘식",
-        "role": "CLIENT",
-        "gender": "MALE",
-        "birthDate": "1990-05-20",
-        "phoneNum": "010-1234-5678",
-        "region": "서울시"
-    }
-    """;
+                {
+                    "username": "user1",
+                    "password": "pwd1",
+                    "email": "first@test.test",
+                    "name": "김춘식",
+                    "role": "CLIENT",
+                    "gender": "MALE",
+                    "birthDate": "1990-05-20",
+                    "phoneNum": "010-1234-5678",
+                    "region": "서울시"
+                }
+                """;
 
         // 회원 가입
         MvcResult signUpResult = mvc.perform(post("/api/v1/users")
@@ -1316,18 +1331,18 @@ public class UserControllerTest {
     @DisplayName("[UserController] 회원 탈퇴 - 탈퇴 후 같은 아이디, 이메일, 전화번호로 재가입 가능")
     void t29() throws Exception {
         String signUpBody = """
-    {
-        "username": "user1",
-        "password": "pwd1",
-        "email": "first@test.test",
-        "name": "김춘식",
-        "role": "CLIENT",
-        "gender": "MALE",
-        "birthDate": "1990-05-20",
-        "phoneNum": "010-1234-5678",
-        "region": "서울시"
-    }
-    """;
+                {
+                    "username": "user1",
+                    "password": "pwd1",
+                    "email": "first@test.test",
+                    "name": "김춘식",
+                    "role": "CLIENT",
+                    "gender": "MALE",
+                    "birthDate": "1990-05-20",
+                    "phoneNum": "010-1234-5678",
+                    "region": "서울시"
+                }
+                """;
 
         // 회원 가입
         MvcResult signUpResult = mvc.perform(post("/api/v1/users")
@@ -1360,18 +1375,18 @@ public class UserControllerTest {
     @DisplayName("[UserController] 회원가입 - 대소문자만 다른 이메일로 가입 시 409-2")
     void t30() throws Exception {
         String body = """
-        {
-            "username": "%s",
-            "password": "testPassword",
-            "email": "%s",
-            "name": "김춘식",
-            "role": "CLIENT",
-            "gender": "MALE",
-            "birthDate": "1990-05-20",
-            "phoneNum": "%s",
-            "region": "서울시"
-        }
-        """;
+                {
+                    "username": "%s",
+                    "password": "testPassword",
+                    "email": "%s",
+                    "name": "김춘식",
+                    "role": "CLIENT",
+                    "gender": "MALE",
+                    "birthDate": "1990-05-20",
+                    "phoneNum": "%s",
+                    "region": "서울시"
+                }
+                """;
 
         // 첫 번째 가입
         mvc.perform(post("/api/v1/users")
@@ -1395,29 +1410,29 @@ public class UserControllerTest {
     @DisplayName("[UserController] 회원 정보 수정 - 대소문자만 다른 이메일로 수정 시 409-2")
     void t31() throws Exception {
         String signUpBody = """
-        {
-            "username": "%s",
-            "password": "pwd1",
-            "email": "%s",
-            "name": "김춘식",
-            "role": "CLIENT",
-            "gender": "MALE",
-            "birthDate": "1990-05-20",
-            "phoneNum": "%s",
-            "region": "서울시"
-        }
-        """;
+                {
+                    "username": "%s",
+                    "password": "pwd1",
+                    "email": "%s",
+                    "name": "김춘식",
+                    "role": "CLIENT",
+                    "gender": "MALE",
+                    "birthDate": "1990-05-20",
+                    "phoneNum": "%s",
+                    "region": "서울시"
+                }
+                """;
 
         String updateBody = """
-        {
-            "password": "pwd1",
-            "email": "FIRST@TEST.TEST",
-            "name": "김춘식",
-            "birthDate": "1990-05-20",
-            "phoneNum": "010-3333-5678",
-            "region": "서울시"
-        }
-        """;
+                {
+                    "password": "pwd1",
+                    "email": "FIRST@TEST.TEST",
+                    "name": "김춘식",
+                    "birthDate": "1990-05-20",
+                    "phoneNum": "010-3333-5678",
+                    "region": "서울시"
+                }
+                """;
 
         // user1 가입
         mvc.perform(post("/api/v1/users")
@@ -1585,11 +1600,11 @@ public class UserControllerTest {
 
 
         mvc.perform(
-                post("/api/v1/users/profile/client")
-                        .cookie(userToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(createProfileBody)
-        )
+                        post("/api/v1/users/profile/client")
+                                .cookie(userToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(createProfileBody)
+                )
                 .andDo(print())
                 .andExpect(status().isOk());
 
@@ -1597,9 +1612,9 @@ public class UserControllerTest {
         em.clear();
 
         ResultActions resultActions = mvc.perform(
-                get("/api/v1/users/profile/client")
-                        .cookie(userToken)
-        )
+                        get("/api/v1/users/profile/client")
+                                .cookie(userToken)
+                )
                 .andDo(print());
 
 
@@ -1855,4 +1870,76 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.msg").value("로그인 후 이용해주세요."));
     }
 
+    @Test
+    @DisplayName("[UserController] 동행 매니저 프로필 생성 -  정상 생성")
+    void t100() throws Exception {
+        String username = "t1";
+
+        Cookie accessToken = signUp(username, "ESCORT");
+
+        String requestBody = """
+                {
+                    "intro": "동행 매니저입니다.",
+                    "bankName": "오픈은행",
+                    "accountHolder": "김춘식",
+                    "accountNumber": "123-0000000-123"
+                }
+                """;
+
+        ResultActions resultActions = mvc.perform(
+                        post("/api/v1/users/profile/escort")
+                                .cookie(accessToken)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(requestBody))
+                .andDo(print());
+
+        resultActions.andExpect(handler().handlerType(UserController.class));
+        resultActions.andExpect(handler().methodName("createProfileEscort"));
+        resultActions.andExpect(status().isOk());
+        resultActions.andExpect(jsonPath("$.statusCode").value("200-8"));
+        resultActions.andExpect(jsonPath("$.msg").value("동행 매니저 프로필이 생성되었습니다."));
+        resultActions.andExpect(jsonPath("$.data.accountHolder").value("김춘식"));
+        resultActions.andExpect(jsonPath("$.data.accountNumber").value("123-0000000-123"));
+    }
+
+    @Test
+    @DisplayName("[UserController] 동행 매니저 프로필 조회 - 정상 생성")
+    void t101() throws Exception {
+        String username = "t1";
+
+        Cookie accessToken = signUp(username, "ESCORT");
+        createEscortProfile(accessToken);
+
+        ResultActions resultActions = mvc.perform(
+                        get("/api/v1/users/profile/escort")
+                                .cookie(accessToken))
+                .andDo(print());
+
+        resultActions.andExpect(handler().handlerType(UserController.class));
+        resultActions.andExpect(handler().methodName("getProfileEscort"));
+        resultActions.andExpect(status().isOk());
+        resultActions.andExpect(jsonPath("$.statusCode").value("200-9"));
+        resultActions.andExpect(jsonPath("$.msg").value("동행 매니저 프로필 조회를 완료했습니다."));
+        resultActions.andExpect(jsonPath("$.data.accountHolder").value("김춘식"));
+        resultActions.andExpect(jsonPath("$.data.accountNumber").value("123-0000000-123"));
+    }
+
+    @Test
+    @DisplayName("[UserController] 동행 매니저 프로필 조회 - 찾을 수 없음")
+    void t102() throws Exception {
+        String username = "t1";
+
+        Cookie accessToken = signUp(username, "ESCORT");
+
+        ResultActions resultActions = mvc.perform(
+                        get("/api/v1/users/profile/escort")
+                                .cookie(accessToken))
+                .andDo(print());
+
+        resultActions.andExpect(handler().handlerType(UserController.class));
+        resultActions.andExpect(handler().methodName("getProfileEscort"));
+        resultActions.andExpect(status().isNotFound());
+        resultActions.andExpect(jsonPath("$.statusCode").value("404"));
+        resultActions.andExpect(jsonPath("$.msg").value("동행 매니저 프로필이 존재하지 않습니다."));
+    }
 }
