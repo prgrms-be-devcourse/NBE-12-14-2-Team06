@@ -28,20 +28,27 @@ export type PostSummary = {
   badge: PostBadge;
 };
 
-/** 공고 상세 (요약 + 상세 화면 전용 항목) */
+/**
+ * 공고 상세 (요약 + 상세 화면 전용 항목).
+ * ⚠️ 백엔드 PostDto 에는 진료과 · 이동수단 · 의뢰인 유형/보호자 동행 여부/성별 선호/소개가 없어서
+ *    이 화면에서 그 항목들은 빠졌습니다.
+ */
 export type PostDetail = PostSummary & {
+  /** 작성자(의뢰인) 아이디 */
+  clientId: string;
+  /** 백엔드 postStatus 원문 ("모집 중" · "매칭 완료" · "동행 진행 중" · "동행 완료" · "취소됨" · "마감 기한 초과") */
+  postStatus: string;
   /** "2026.09.12   18:12" */
   postedAt: string;
-  department: string;
-  transport: string;
+  hospitalAddress: string;
+  pickupAddress: string;
   /** 공고 설명 (문단) */
   details: string[];
-  /** 요청사항 / 특이사항 */
-  requests: string[];
-  clientType: string;
-  withGuardian: string;
-  genderPreference: string;
-  clientIntro: string[];
+  /** 환자 특이사항. 작성하지 않았으면 빈 배열 */
+  patientNote: string[];
+  reportRequired: boolean;
+  /** "2026.10.02(금) 오전 9:00 ~ 10.05(월) 오후 6:00" */
+  recruitPeriod: string;
 };
 
 export type PostSort = 'latest' | 'payHigh' | 'payLow';

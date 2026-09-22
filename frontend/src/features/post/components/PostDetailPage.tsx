@@ -2,15 +2,16 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
-import type { ReactNode } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState, type ReactNode } from 'react';
 import { AppShell } from '@/components/layout';
 import { Container, InfoRow } from '@/components/ui';
+import { applyToPost } from '@/features/application';
 import { cn } from '@/lib/cn';
 import { MOCK_CLIENT, MOCK_USER } from '@/lib/mockSession';
+import { deletePost, fetchPost } from '../api';
 import { daysFromNow, formatFullDate } from '../lib/date';
-import { getPostDetail } from '../model';
-import type { LabelTone, PostBadge } from '../types';
+import type { LabelTone, PostBadge, PostDetail } from '../types';
 import StatusLabel from './StatusLabel';
 
 const BADGE: Record<PostBadge, { text: string; tone: LabelTone }> = {
@@ -23,7 +24,7 @@ const BADGE: Record<PostBadge, { text: string; tone: LabelTone }> = {
 const CARD = 'rounded-[30px] border border-line bg-white shadow-card';
 const CARD_TITLE = 'text-2xl leading-6 font-semibold text-brand';
 const BUTTON =
-  'flex items-center justify-center rounded-[25px] px-6 font-semibold transition-colors';
+  'flex items-center justify-center rounded-[25px] px-6 font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50';
 
 type SectionProps = {
   title: string;
@@ -45,40 +46,90 @@ function Section({ title, children, className, titleGap = 'mb-5' }: SectionProps
 }
 
 type Props = {
-  /** 누가 보는지. 동행 매니저는 "지원하기", 의뢰인(작성자)은 "수정하기" 버튼이 나옵니다. */
+  /** 누가 보는지. 동행 매니저는 "지원하기", 의뢰인(작성자)은 "수정하기·삭제" 버튼이 나옵니다. */
   viewer?: 'common' | 'escort' | 'client';
 };
 
 /**
  * 공고 상세 — Figma 동행 매니저_공고 상세 225:1146 · 의뢰인_공고 상세 521:2254
  *
- * ⚠️ 모의 데이터(model/posts.ts)를 보여줍니다. 상세 API(GET /api/v1/posts/{postId}) 연결 전입니다.
+ * 상세 API(GET /api/v1/posts/{postId})로 조회합니다. 삭제·지원하기도 여기서 연결합니다.
+ * ⚠️ 백엔드에 없는 항목(진료과 · 이동수단 · 의뢰인 유형/보호자 동행 여부/성별 선호/소개)은 화면에서 뺐습니다.
  */
 export default function PostDetailPage({ viewer = 'common' }: Props) {
   const params = useParams<{ postId: string }>();
-  const post = getPostDetail(Number(params.postId));
+  const router = useRouter();
+  const postId = Number(params.postId);
+
+  // result.postId 로 "지금 postId 의 결과인지"를 판단합니다. (postId 가 바뀐 직후에는 이전 결과를 버리고 loading 으로 봅니다)
+  const [result, setResult] = useState<{ postId: number; data?: PostDetail; error?: string }>();
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string>();
+  const [applyState, setApplyState] = useState<'idle' | 'applying' | 'applied'>('idle');
+  const [applyError, setApplyError] = useState<string>();
+
+  useEffect(() => {
+    let ignore = false;
+    fetchPost(postId)
+      .then((data) => !ignore && setResult({ postId, data }))
+      .catch((error: Error) => !ignore && setResult({ postId, error: error.message }));
+    return () => {
+      ignore = true;
+    };
+  }, [postId]);
+
+  const loading = result?.postId !== postId;
+  const post = loading ? undefined : result?.data;
+  const loadError = loading ? undefined : result?.error;
 
   const isClient = viewer === 'client';
 
   const user =
-      viewer === 'client'
-          ? MOCK_CLIENT
-          : viewer === 'escort'
-              ? MOCK_USER
-              : undefined;
+    viewer === 'client'
+      ? MOCK_CLIENT
+      : viewer === 'escort'
+        ? MOCK_USER
+        : undefined;
 
   const listHref =
-      viewer === 'client'
-          ? '/client/posts'
-          : viewer === 'escort'
-              ? '/escort/posts'
-              : '/posts';
+    viewer === 'client'
+      ? '/client/posts'
+      : viewer === 'escort'
+        ? '/escort/posts'
+        : '/posts';
+
+  const handleDelete = async () => {
+    if (!window.confirm('이 공고를 삭제할까요? 되돌릴 수 없습니다.')) return;
+    setDeleting(true);
+    setDeleteError(undefined);
+    try {
+      // TODO: 삭제 API(DELETE /api/v1/posts/{postId})는 로그인 쿠키(작성자 본인)가 있어야 합니다.
+      await deletePost(postId);
+      router.push(listHref);
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : '삭제에 실패했습니다.');
+      setDeleting(false);
+    }
+  };
+
+  const handleApply = async () => {
+    // TODO: 지원 API(POST /api/v1/applications/{postId})는 동행 매니저(ESCORT) 로그인 쿠키가 있어야 합니다.
+    setApplyState('applying');
+    setApplyError(undefined);
+    try {
+      await applyToPost(postId);
+      setApplyState('applied');
+    } catch (error) {
+      setApplyState('idle');
+      setApplyError(error instanceof Error ? error.message : '지원에 실패했습니다.');
+    }
+  };
 
   if (!post) {
     return (
       <AppShell user={user}>
         <section className="bg-white py-[100px] text-center">
-          <p className="text-xl font-semibold text-brand">공고를 찾을 수 없습니다.</p>
+          <p className="text-xl font-semibold text-brand">{loadError ? `공고를 불러오지 못했습니다. (${loadError})` : '공고를 불러오는 중입니다.'}</p>
           <Link href={listHref} className={cn(BUTTON, 'mx-auto mt-8 h-14 w-60 border border-line text-xl text-brand')}>
             목록으로
           </Link>
@@ -92,6 +143,9 @@ export default function PostDetailPage({ viewer = 'common' }: Props) {
   const duration = `약 ${post.hours}시간`;
   const pay = `시급 ${post.hourlyPay.toLocaleString()}원`;
   const location = `${post.region} ${post.district}`;
+  const applyClosed = post.badge === 'closed';
+  const applyLabel = applyState === 'applied' ? '지원 완료' : applyState === 'applying' ? '지원 중…' : applyClosed ? '지원 불가' : '지원하기';
+  const applyDisabled = applyClosed || applyState !== 'idle';
 
   const editHref = `/client/posts/${post.id}/edit`;
 
@@ -129,16 +183,16 @@ export default function PostDetailPage({ viewer = 'common' }: Props) {
               <dl className="grid gap-x-[22px] lg:grid-cols-[1fr_1px_1fr]">
                 <div className="flex flex-col gap-[3px]">
                   <InfoRow label="병원명" labelWidth={90}>{post.hospitalName}</InfoRow>
-                  <InfoRow label="진료과" labelWidth={90}>{post.department}</InfoRow>
+                  <InfoRow label="병원 주소" labelWidth={90}>{post.hospitalAddress}</InfoRow>
                   <InfoRow label="날짜" labelWidth={90}>{date}</InfoRow>
                   <InfoRow label="시간" labelWidth={92}>{post.startTime}</InfoRow>
                 </div>
                 <div aria-hidden="true" className="hidden self-center bg-[#e6e8ec] opacity-50 lg:block lg:h-40" />
                 <div className="flex flex-col gap-[3px]">
+                  <InfoRow label="출발지" labelWidth={124}>{post.pickupAddress}</InfoRow>
                   <InfoRow label="예상 소요 시간" labelWidth={124}>{duration}</InfoRow>
                   <InfoRow label="지역" labelWidth={124}>{location}</InfoRow>
                   <InfoRow label="시급/보수" labelWidth={124}>{pay}</InfoRow>
-                  <InfoRow label="이동수단" labelWidth={124}>{post.transport}</InfoRow>
                 </div>
               </dl>
             </Section>
@@ -152,36 +206,25 @@ export default function PostDetailPage({ viewer = 'common' }: Props) {
               </div>
             </Section>
 
-            {/* 요청사항 / 특이사항 */}
-            <Section title="요청사항 / 특이사항" titleGap="mb-[26px]" className="lg:min-h-[239px]">
-              <ul className="flex flex-col gap-[7px] px-0.5">
-                {post.requests.map((request) => (
-                  <li key={request} className="flex items-center gap-[15px] text-base leading-5 font-semibold text-brand">
-                    <Image src="/icons/check-circle-fill.svg" alt="" width={20} height={20} className="shrink-0" />
-                    {request}
-                  </li>
-                ))}
-              </ul>
-            </Section>
+            {/* 환자 특이사항 (작성하지 않았으면 섹션 자체를 생략) */}
+            {post.patientNote.length > 0 && (
+              <Section title="환자 특이사항" titleGap="mb-[26px]" className="lg:min-h-[239px]">
+                <ul className="flex flex-col gap-[7px] px-0.5">
+                  {post.patientNote.map((note) => (
+                    <li key={note} className="flex items-center gap-[15px] text-base leading-5 font-semibold text-brand">
+                      <Image src="/icons/check-circle-fill.svg" alt="" width={20} height={20} className="shrink-0" />
+                      {note}
+                    </li>
+                  ))}
+                </ul>
+              </Section>
+            )}
 
-            {/* 의뢰인 정보 */}
-            <Section title="의뢰인 정보" titleGap="mb-[22px]" className="lg:min-h-[228px]">
-              <dl className="grid gap-x-[22px] lg:grid-cols-[1fr_1px_1fr]">
-                <div className="flex flex-col gap-[3px]">
-                  <InfoRow label="의뢰인 유형" labelWidth={138}>{post.clientType}</InfoRow>
-                  <InfoRow label="보호자 동행 여부" labelWidth={138}>{post.withGuardian}</InfoRow>
-                </div>
-                <div aria-hidden="true" className="hidden self-center bg-[#e6e8ec] opacity-50 lg:block lg:h-[70px]" />
-                <div className="flex flex-col gap-[3px]">
-                  <InfoRow label="성별 선호" labelWidth={138}>{post.genderPreference}</InfoRow>
-                  <InfoRow label="간단한 소개" labelWidth={138} className="items-start">
-                    {post.clientIntro.map((line) => (
-                      <span key={line} className="block">
-                        {line}
-                      </span>
-                    ))}
-                  </InfoRow>
-                </div>
+            {/* 모집 정보 */}
+            <Section title="모집 정보" titleGap="mb-[22px]" className="lg:min-h-[120px]">
+              <dl className="flex flex-col gap-[3px]">
+                <InfoRow label="모집 기간" labelWidth={110}>{post.recruitPeriod}</InfoRow>
+                <InfoRow label="보고서 요청" labelWidth={110}>{post.reportRequired ? '동행 후 보고서 작성을 요청합니다.' : '보고서를 요청하지 않습니다.'}</InfoRow>
               </dl>
             </Section>
 
@@ -200,18 +243,32 @@ export default function PostDetailPage({ viewer = 'common' }: Props) {
               </div>
             </section>
 
+            {(deleteError || applyError) && (
+              <p role="alert" className="px-2 text-sm font-medium text-[#b91d1d]">
+                {deleteError || applyError}
+              </p>
+            )}
             <div className="flex gap-[15px]">
               <Link href={listHref} className={cn(BUTTON, 'h-14 flex-1 border border-line bg-white text-xl text-brand hover:bg-line-soft')}>
                 목록으로
               </Link>
               {isClient ? (
-                <Link href={editHref} className={cn(BUTTON, 'h-14 flex-1 bg-brand text-xl text-white hover:bg-brand-hover')}>
-                  수정하기
-                </Link>
+                <>
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className={cn(BUTTON, 'h-14 flex-1 border border-line bg-white text-xl text-[#b91d1d] hover:bg-line-soft')}
+                  >
+                    {deleting ? '삭제 중…' : '삭제하기'}
+                  </button>
+                  <Link href={editHref} className={cn(BUTTON, 'h-14 flex-1 bg-brand text-xl text-white hover:bg-brand-hover')}>
+                    수정하기
+                  </Link>
+                </>
               ) : (
-                // TODO: 지원 API(POST /api/v1/applications/{postId}) 연결
-                <button type="button" className={cn(BUTTON, 'h-14 flex-1 bg-brand text-xl text-white hover:bg-brand-hover')}>
-                  지원하기
+                <button type="button" onClick={handleApply} disabled={applyDisabled} className={cn(BUTTON, 'h-14 flex-1 bg-brand text-xl text-white hover:bg-brand-hover')}>
+                  {applyLabel}
                 </button>
               )}
             </div>
@@ -229,13 +286,22 @@ export default function PostDetailPage({ viewer = 'common' }: Props) {
             </dl>
             <div className="mt-3.5 flex flex-col gap-[5px]">
               {isClient ? (
-                <Link href={editHref} className={cn(BUTTON, 'h-11 bg-brand text-base text-white hover:bg-brand-hover')}>
-                  수정하기
-                </Link>
+                <>
+                  <Link href={editHref} className={cn(BUTTON, 'h-11 bg-brand text-base text-white hover:bg-brand-hover')}>
+                    수정하기
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className={cn(BUTTON, 'h-11 border border-line bg-white text-base text-[#b91d1d] hover:bg-line-soft')}
+                  >
+                    {deleting ? '삭제 중…' : '삭제하기'}
+                  </button>
+                </>
               ) : (
-                // TODO: 지원 API 연결
-                <button type="button" className={cn(BUTTON, 'h-11 bg-brand text-base text-white hover:bg-brand-hover')}>
-                  지원하기
+                <button type="button" onClick={handleApply} disabled={applyDisabled} className={cn(BUTTON, 'h-11 bg-brand text-base text-white hover:bg-brand-hover')}>
+                  {applyLabel}
                 </button>
               )}
               <Link href={listHref} className={cn(BUTTON, 'h-11 border border-line bg-white text-base text-brand hover:bg-line-soft')}>

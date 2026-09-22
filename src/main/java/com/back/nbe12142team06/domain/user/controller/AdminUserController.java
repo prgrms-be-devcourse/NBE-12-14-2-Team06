@@ -2,6 +2,8 @@ package com.back.nbe12142team06.domain.user.controller;
 
 import com.back.nbe12142team06.domain.user.dto.admin.AdminUserProfileUpdateRequest;
 import com.back.nbe12142team06.domain.user.dto.admin.AdminUserResponse;
+import com.back.nbe12142team06.domain.user.dto.profile.EscortProfileResponse;
+import com.back.nbe12142team06.domain.user.entity.EscortProfile;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.service.UserService;
 import com.back.nbe12142team06.global.response.RsData;
@@ -51,7 +53,7 @@ public class AdminUserController {
     }
 
 
-    // [관리자] 회원 정보 수정 username, password는 변경 불가
+    // [ADMIN] 회원 정보 수정 username, password는 변경 불가
     @PatchMapping("/users/{userId}")
     public RsData<AdminUserResponse> updateUser(
             @PathVariable Long userId,
@@ -66,7 +68,7 @@ public class AdminUserController {
         );
     }
 
-    // [관리자] 회원 탈퇴 - 이미 탈퇴한 회원 불가, 자기 자신 탈퇴 불가 (관리자가 한명일 때 대비용)
+    // [ADMIN] 회원 탈퇴 - 이미 탈퇴한 회원 불가, 자기 자신 탈퇴 불가 (관리자가 한명일 때 대비용)
     @DeleteMapping("/users/{id}")
     public RsData<Void> deleteUser(
             @AuthenticationPrincipal SecurityUser admin,
@@ -76,8 +78,20 @@ public class AdminUserController {
 
 
         return new RsData<>(
-                "200-3",
+                "200-4",
                 "회원 탈퇴가 완료되었습니다."
+        );
+    }
+
+    // [ADMIN] 의뢰인의 동행 매니저 프로필 조회 (계좌 정보 포함)
+    @GetMapping("/users/{userId}/profile/escort")
+    public RsData<EscortProfileResponse> getProfileEscortByAdmin(@PathVariable Long userId){
+        EscortProfile escortProfile = this.userService.getEscortProfile(userId);
+
+        return new RsData<>(
+                "200-9",
+                "동행 매니저 프로필 조회를 완료했습니다.",
+                new EscortProfileResponse(escortProfile)
         );
     }
 }

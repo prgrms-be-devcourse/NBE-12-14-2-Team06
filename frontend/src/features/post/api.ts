@@ -1,7 +1,7 @@
-import { api, type SpringPage } from '@/lib/api';
+import { api, apiDelete, type SpringPage } from '@/lib/api';
 import { daysFromNow, toDateTimeParam } from './lib/date';
-import { toPostSummary } from './model/mapper';
-import type { PostDto, PostFilters, PostSummary } from './types';
+import { toPostDetail, toPostSummary } from './model/mapper';
+import type { PostDetail, PostDto, PostFilters, PostSummary } from './types';
 
 /** 목록 화면이 쓰는 결과 (공고 카드 + 페이지 정보) */
 export type PostPage = {
@@ -41,4 +41,18 @@ export async function fetchPosts(filters: PostFilters, page: number, size: numbe
     totalPages: data.totalPages,
     totalElements: data.totalElements,
   };
+}
+
+/** 공고 상세 조회 — GET /api/v1/posts/{postId} (로그인 없이도 됩니다) */
+export async function fetchPost(postId: number): Promise<PostDetail> {
+  const dto = await api<PostDto>(`/api/v1/posts/${postId}`);
+  return toPostDetail(dto);
+}
+
+/**
+ * 공고 삭제 — DELETE /api/v1/posts/{postId}
+ * 작성자(의뢰인) 본인만 지울 수 있고, 로그인 쿠키가 있어야 합니다.
+ */
+export async function deletePost(postId: number): Promise<void> {
+  await apiDelete<void>(`/api/v1/posts/${postId}`);
 }
