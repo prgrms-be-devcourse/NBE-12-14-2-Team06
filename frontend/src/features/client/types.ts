@@ -87,9 +87,18 @@ export type ClientEscortCase = {
 export type PostFormValues = {
   title: string;
   hospitalName: string;
+  /** 카카오맵 검색으로 채워지는 병원 주소 (도로명 우선) */
+  hospitalAddress: string;
+  hospitalLat: number | null;
+  hospitalLng: number | null;
+  /** 병원 주소에서 뽑은 시/도 (백엔드가 쓰는 짧은 표기: "서울" · "경기" 등) */
   region: string;
+  /** 병원 주소에서 뽑은 구/군 */
   district: string;
+  /** 출발지(픽업 주소). 카카오맵 검색으로 채워집니다. */
   departure: string;
+  pickupLat: number | null;
+  pickupLng: number | null;
   date: string;
   startTime: string;
   endTime: string;
