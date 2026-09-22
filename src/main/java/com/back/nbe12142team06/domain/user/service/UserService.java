@@ -7,8 +7,10 @@ import com.back.nbe12142team06.domain.user.dto.admin.AdminUserProfileUpdateReque
 import com.back.nbe12142team06.domain.user.dto.login.UserLoginRequest;
 import com.back.nbe12142team06.domain.user.dto.profile.ClientProfileRequest;
 import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpRequest;
+import com.back.nbe12142team06.domain.user.dto.profile.EscortProfileRequest;
 import com.back.nbe12142team06.domain.user.dto.user.UserProfileUpdateRequest;
 import com.back.nbe12142team06.domain.user.entity.ClientProfile;
+import com.back.nbe12142team06.domain.user.entity.EscortProfile;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Role;
 import com.back.nbe12142team06.domain.user.repository.ClientProfileRepository;
@@ -110,7 +112,7 @@ public class UserService {
     }
 
     // access token 파싱
-    public Map<String, Object> payload(String jwt){
+    public Map<String, Object> payload(String jwt) {
         return authTokenService.payload(jwt);
     }
 
@@ -248,7 +250,7 @@ public class UserService {
     // [ADMIN] 회원 목록 조회 (탈퇴한 회원 정보도 가능)
     @Transactional(readOnly = true)
     public Page<User> findAllUsersIncludingDeleted(int page, int size) {
-        if (page < 0){
+        if (page < 0) {
             throw new InvalidException(1, "페이지 번호는 음수일 수 없습니다.");
         }
 
@@ -295,5 +297,28 @@ public class UserService {
         this.userRepository.save(user);
     }
 
+    @Transactional
+    public EscortProfile createEscortProfile(Long userId, EscortProfileRequest request) {
 
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("회원 정보를 찾을 수 없습니다."));
+
+        if (escortProfileRepository.existsEscortProfileByUser(user)) {
+            throw new DuplicatedException("이미 존재하는 동행 매니저 프로필입니다.");
+        }
+
+        // 프로필 생성 및 회원 연결
+        EscortProfile escortProfile = new EscortProfile(user);
+
+        // 계좌 등록
+        escortProfile.updateAccount(request.bankName(), request.accountHolder(), request.accountNumber());
+
+        return this.escortProfileRepository.save(escortProfile);
+    }
+
+    @Transactional(readOnly = true)
+    public EscortProfile getEscortProfile(Long escortId) {
+        return this.escortProfileRepository.findByUserId(escortId)
+                .orElseThrow(() -> new NotFoundException("동행 매니저 프로필이 존재하지 않습니다."));
+    }
 }

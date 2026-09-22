@@ -45,7 +45,7 @@ function Section({ title, children, className, titleGap = 'mb-5' }: SectionProps
 
 type Props = {
   /** 누가 보는지. 동행 매니저는 "지원하기", 의뢰인(작성자)은 "수정하기" 버튼이 나옵니다. */
-  viewer?: 'escort' | 'client';
+  viewer?: 'common' | 'escort' | 'client';
 };
 
 /**
@@ -53,12 +53,25 @@ type Props = {
  *
  * ⚠️ 모의 데이터(model/posts.ts)를 보여줍니다. 상세 API(GET /api/v1/posts/{postId}) 연결 전입니다.
  */
-export default function PostDetailPage({ viewer = 'escort' }: Props) {
+export default function PostDetailPage({ viewer = 'common' }: Props) {
   const params = useParams<{ postId: string }>();
   const post = getPostDetail(Number(params.postId));
+
   const isClient = viewer === 'client';
-  const user = isClient ? MOCK_CLIENT : MOCK_USER;
-  const listHref = isClient ? '/client/posts' : '/posts';
+
+  const user =
+      viewer === 'client'
+          ? MOCK_CLIENT
+          : viewer === 'escort'
+              ? MOCK_USER
+              : undefined;
+
+  const listHref =
+      viewer === 'client'
+          ? '/client/posts'
+          : viewer === 'escort'
+              ? '/escort/posts'
+              : '/posts';
 
   if (!post) {
     return (

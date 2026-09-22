@@ -29,15 +29,22 @@ export default function Header({ user }: Props) {
           aria-label="주요 메뉴"
           className="order-2 flex w-full items-center gap-5 overflow-x-auto pb-1 lg:order-none lg:w-auto lg:gap-[33px] lg:overflow-visible lg:pb-0"
         >
-          {MENU.map((item) => (
-            <Link
-              key={item.label}
-              href={item.href}
-              className="text-base leading-[18px] whitespace-nowrap text-brand transition-colors hover:text-brand-hover lg:text-lg"
-            >
-              {item.label}
-            </Link>
-          ))}
+          {MENU.map((item) => {
+            const href =
+                item.label === '공고 찾기' && user
+                    ? '/escort/posts'
+                    : item.href;
+
+            return (
+                <Link
+                    key={item.label}
+                    href={href}
+                    className="text-base leading-[18px] whitespace-nowrap text-brand transition-colors hover:text-brand-hover lg:text-lg"
+                >
+                  {item.label}
+                </Link>
+            );
+          })}
         </nav>
 
         {user ? (
