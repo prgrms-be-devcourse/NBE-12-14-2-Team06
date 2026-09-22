@@ -2,6 +2,7 @@ package com.back.nbe12142team06.domain.application.service;
 
 import com.back.nbe12142team06.domain.application.dto.ApplicationAcceptResponse;
 import com.back.nbe12142team06.domain.application.dto.ApplicationApplyResponse;
+import com.back.nbe12142team06.domain.application.dto.ApplicationEscortProfileResponse;
 import com.back.nbe12142team06.domain.application.dto.ApplicationListResponse;
 import com.back.nbe12142team06.domain.application.entity.Application;
 import com.back.nbe12142team06.domain.application.entity.EscortProgressLog;
@@ -280,5 +281,40 @@ public class ApplicationService {
         if (progress == EscortProgress.DEPARTED) {
             application.getPost().startProgress(occurredAt);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public ApplicationEscortProfileResponse getEscortProfile(Long applicationId, Long userId) {
+
+        Application application = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new NotFoundException("지원을 찾을 수 없습니다."));
+
+        Post post = application.getPost();
+
+        // 본인 공고에 지원한 동행인 프로필만 조회 가능
+        if (!post.getClient().getId().equals(userId)) {
+            throw new ForbiddenException("본인 공고의 지원자 프로필만 조회할 수 있습니다.");
+        }
+
+        User escort = application.getEscort();
+
+        EscortProfile escortProfile = escortProfileRepository.findByUserId(escort.getId())
+                .orElseThrow(() -> new NotFoundException("동행인 프로필을 찾을 수 없습니다."));
+
+        double rating = escortProfile.getRatingCount() == 0
+                ? 0.0
+                : (double) escortProfile.getRatingSum()
+                / escortProfile.getRatingCount();
+
+        return new ApplicationEscortProfileResponse(
+                escort.getId(),
+                escort.getName(),
+                escortProfile.getVerified(),
+                escortProfile.getIntro(),
+                escortProfile.getCompletedCount(),
+                rating,
+                escortProfile.getRatingCount(),
+                escortProfile.getNoShowCount()
+        );
     }
 }
