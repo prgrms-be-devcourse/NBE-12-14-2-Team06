@@ -141,7 +141,7 @@ class SettlementControllerTest {
                 "", true
         );
 
-        savedPost1 = postService.write(savedUser1.getId(), postWriteRequest1);
+        savedPost1 = postService.findById(postService.write(savedUser1.getId(), postWriteRequest1).id());
 
         PostWriteRequest postWriteRequest2 = new PostWriteRequest(
                 title + "2", content + "2", postRegion + "2", hospitalName + "2", hospitalAddress + "2",

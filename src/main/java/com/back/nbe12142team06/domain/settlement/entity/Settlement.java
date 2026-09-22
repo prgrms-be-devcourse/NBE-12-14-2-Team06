@@ -36,6 +36,7 @@ public class Settlement extends BaseSoftDeleteTimeEntity {
             nullable = false,
             check = @CheckConstraint(name = "chk_platform_fee", constraint = "platform_fee >= 0")
     )
+    @Builder.Default
     private int platformFee = 0;
 
     // 정산 상태
