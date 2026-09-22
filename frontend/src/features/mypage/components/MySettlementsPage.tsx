@@ -2,11 +2,11 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { SectionHeading } from '@/components/ui';
 import { cn } from '@/lib/cn';
-import { SETTLEMENTS, SETTLEMENT_SUMMARY } from '../model';
-import type { Settlement, SettlementStatus } from '../types';
+import { fetchSettlements, requestSettlement } from '../api';
+import type { SettlementDto, SettlementStatus } from '../types';
 import DateRangeFilter from './DateRangeFilter';
 import EmptyState from './EmptyState';
 import MyPageShell from './MyPageShell';
@@ -16,41 +16,72 @@ type Tab = 'all' | SettlementStatus;
 
 const TABS: { value: Tab; label: string }[] = [
   { value: 'all', label: '전체' },
-  { value: 'waiting', label: '정산 대기' },
-  { value: 'done', label: '정산 완료' },
+  { value: 'PENDING', label: '정산 대기' },
+  { value: 'COMPLETED', label: '정산 완료' },
 ];
 
-const BADGE: Record<SettlementStatus, string> = {
-  waiting: 'bg-[#e6e8ec] text-footer',
-  done: 'bg-[#d3d5da] text-[#62656d]',
+const BADGE: Record<SettlementStatus, { label: string; className: string }> = {
+  PENDING: { label: '정산 대기', className: 'bg-[#e6e8ec] text-footer' },
+  COMPLETED: { label: '정산 완료', className: 'bg-[#d3d5da] text-[#62656d]' },
+  FAILED: { label: '정산 실패', className: 'bg-[#ffe3e3] text-[#b91d1d]' },
 };
 
-const BUTTON = 'flex h-[37px] flex-1 items-center justify-center rounded-[17px] text-sm leading-[18px] font-semibold transition-colors';
+const BUTTON = 'flex h-[37px] flex-1 items-center justify-center rounded-[17px] text-sm leading-[18px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60';
 
-function SettlementCard({ settlement }: { settlement: Settlement }) {
-  const label = settlement.status === 'waiting' ? '정산 대기' : '정산 완료';
+/** "2026-09-22T09:00:00" → "2026.09.22" */
+function formatDate(value: string): string {
+  return value.slice(0, 10).replaceAll('-', '.');
+}
+
+/** date input(YYYY-MM-DD) → 그 날 00:00:00 / 23:59:59 */
+function toDayStart(date: string): string {
+  return `${date}T00:00:00`;
+}
+function toDayEnd(date: string): string {
+  return `${date}T23:59:59`;
+}
+
+function SettlementCard({ settlement, onRequested }: { settlement: SettlementDto; onRequested: (updated: SettlementDto) => void }) {
+  const [requesting, setRequesting] = useState(false);
+  const [error, setError] = useState('');
+  const badge = BADGE[settlement.status];
+
+  const handleRequest = async () => {
+    setRequesting(true);
+    setError('');
+    try {
+      // TODO: 정산 요청 API(POST /api/v1/settlements/{settlementId})는 정산 대기 상태에서만 됩니다.
+      await requestSettlement(settlement.id);
+      onRequested({ ...settlement, status: 'COMPLETED', settledAt: new Date().toISOString() });
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : '정산 요청에 실패했습니다.');
+    } finally {
+      setRequesting(false);
+    }
+  };
+
   return (
     <article className="flex min-h-[271px] flex-col gap-2.5 rounded-[30px] border-[0.68px] border-line bg-white px-[22px] py-5 shadow-[0_0.68px_2.7px_rgba(25,33,61,0.08)]">
-      <span className={cn('inline-flex h-6 w-fit items-center rounded-full px-4 text-sm leading-[18px] font-semibold', BADGE[settlement.status])}>
-        {label}
+      <span className={cn('inline-flex h-6 w-fit items-center rounded-full px-4 text-sm leading-[18px] font-semibold', badge.className)}>
+        {badge.label}
       </span>
       <div className="flex items-center gap-5">
         <Image src="/icons/image-placeholder.svg" alt="" width={60} height={60} className="size-[60px] shrink-0" />
         <div className="min-w-0">
-          <p className="truncate text-base leading-4 font-semibold text-brand">{settlement.title}</p>
+          <p className="truncate text-base leading-4 font-semibold text-brand">{settlement.post.title}</p>
           <p className="mt-2.5 flex items-center gap-2 text-xs leading-4 font-medium text-brand">
-            {settlement.hospitalName}
+            {settlement.post.hospitalName}
             <span aria-hidden="true" className="h-3 w-px bg-[#e6e8ec]" />
-            {settlement.location}
+            {settlement.post.region}
           </p>
         </div>
       </div>
       <dl className="grid grid-cols-2 gap-x-6 gap-y-2 py-2 text-xs leading-4 text-brand">
         {[
-          ['동행일', settlement.dateLabel],
-          ['소요 시간', settlement.durationLabel],
-          ['정산 예정일', settlement.dueLabel],
-          ['정산금액', `${settlement.amount.toLocaleString()}원`],
+          ['동행일', formatDate(settlement.post.escortStartAt)],
+          ['소요 시간', `약 ${settlement.post.escortHours}시간`],
+          ['정산 완료일', settlement.settledAt ? formatDate(settlement.settledAt) : '-'],
+          ['정산금액', `${settlement.payoutAmount.toLocaleString()}원`],
         ].map(([term, value]) => (
           <div key={term} className="flex gap-3">
             <dt className="w-[72px] shrink-0 font-semibold">{term}</dt>
@@ -58,17 +89,15 @@ function SettlementCard({ settlement }: { settlement: Settlement }) {
           </div>
         ))}
       </dl>
+      {error && <p role="alert" className="text-xs font-medium text-[#b91d1d]">{error}</p>}
       <div className="mt-auto flex gap-[10px]">
-        <Link href={`/posts/${settlement.postId}`} className={cn(BUTTON, 'border border-line bg-white text-brand hover:bg-line-soft')}>
+        <Link href={`/posts/${settlement.post.id}`} className={cn(BUTTON, 'border border-line bg-white text-brand hover:bg-line-soft')}>
           상세보기
         </Link>
-        {settlement.status === 'waiting' ? (
-          // TODO: 정산 요청 API 연결
-          <button type="button" className={cn(BUTTON, 'bg-brand text-white hover:bg-brand-hover')}>정산 요청</button>
-        ) : (
-          <Link href={`/escort/${settlement.applicationId}`} className={cn(BUTTON, 'bg-brand text-white hover:bg-brand-hover')}>
-            동행 보기
-          </Link>
+        {settlement.status === 'PENDING' && (
+          <button type="button" onClick={handleRequest} disabled={requesting} className={cn(BUTTON, 'bg-brand text-white hover:bg-brand-hover')}>
+            {requesting ? '요청 중…' : '정산 요청'}
+          </button>
         )}
       </div>
     </article>
@@ -78,7 +107,8 @@ function SettlementCard({ settlement }: { settlement: Settlement }) {
 /**
  * 마이페이지 — 정산 목록 (Figma 522:3149 전체 · 525:3977 대기 · 525:4251 완료 · 562:13878 빈 상태)
  *
- * ⚠️ 모의 데이터(model/settlements.ts)를 보여줍니다. 정산 API 연결 전입니다.
+ * GET /api/v1/settlements 로 조회하고, 정산 요청은 POST /api/v1/settlements/{settlementId} 로 보냅니다.
+ * ⚠️ "동행 보기" 버튼은 이 응답에 신청(application) 번호가 없어서 뺐습니다.
  */
 export default function MySettlementsPage() {
   const [tab, setTab] = useState<Tab>('all');
@@ -86,12 +116,35 @@ export default function MySettlementsPage() {
   const [toInput, setToInput] = useState('');
   const [range, setRange] = useState({ from: '', to: '' });
 
-  const settlements = SETTLEMENTS.filter(
-    (item) =>
-      (tab === 'all' || item.status === tab) &&
-      (!range.from || item.dueDate >= range.from) &&
-      (!range.to || item.dueDate <= range.to),
-  );
+  const requestKey = JSON.stringify(range);
+  const [result, setResult] = useState<{ key: string; settlements?: SettlementDto[]; error?: string }>();
+
+  useEffect(() => {
+    let ignore = false;
+    fetchSettlements({
+      startDate: range.from ? toDayStart(range.from) : undefined,
+      endDate: range.to ? toDayEnd(range.to) : undefined,
+      size: 100,
+    })
+      .then(({ settlements }) => !ignore && setResult({ key: requestKey, settlements }))
+      .catch((error: Error) => !ignore && setResult({ key: requestKey, error: error.message }));
+    return () => {
+      ignore = true;
+    };
+  }, [range, requestKey]);
+
+  const loading = result?.key !== requestKey;
+  const all = (!loading && result?.settlements) || [];
+  const errorMessage = !loading ? result?.error : undefined;
+  const settlements = tab === 'all' ? all : all.filter((item) => item.status === tab);
+
+  const updateSettlement = (updated: SettlementDto) => {
+    setResult((prev) => prev && { ...prev, settlements: prev.settlements?.map((item) => (item.id === updated.id ? updated : item)) });
+  };
+
+  const totalAmount = all.reduce((sum, item) => sum + item.payoutAmount, 0);
+  const pendingCount = all.filter((item) => item.status === 'PENDING').length;
+  const completedCount = all.filter((item) => item.status === 'COMPLETED').length;
 
   return (
     <MyPageShell>
@@ -129,9 +182,9 @@ export default function MySettlementsPage() {
 
         <StatBar
           items={[
-            { icon: '/icons/mypage/stat-amount.svg', label: '정산 금액', value: `${SETTLEMENT_SUMMARY.total.toLocaleString()}원` },
-            { icon: '/icons/mypage/stat-pending.svg', label: '정산 대기', value: `${SETTLEMENT_SUMMARY.waiting}건` },
-            { icon: '/icons/mypage/stat-done.svg', label: '정산 완료', value: `${SETTLEMENT_SUMMARY.done}건` },
+            { icon: '/icons/mypage/stat-amount.svg', label: '정산 금액', value: `${totalAmount.toLocaleString()}원` },
+            { icon: '/icons/mypage/stat-pending.svg', label: '정산 대기', value: `${pendingCount}건` },
+            { icon: '/icons/mypage/stat-done.svg', label: '정산 완료', value: `${completedCount}건` },
           ]}
         />
 
@@ -143,11 +196,15 @@ export default function MySettlementsPage() {
           onSearch={() => setRange({ from: fromInput, to: toInput })}
         />
 
-        {settlements.length > 0 ? (
+        {loading ? (
+          <p className="py-10 text-center text-base font-semibold text-brand-muted">불러오는 중입니다.</p>
+        ) : errorMessage ? (
+          <p role="alert" className="py-10 text-center text-base font-semibold text-brand-muted">불러오지 못했습니다. ({errorMessage})</p>
+        ) : settlements.length > 0 ? (
           <ul className="grid w-full max-w-[910px] gap-4 sm:grid-cols-2">
             {settlements.map((settlement) => (
               <li key={settlement.id}>
-                <SettlementCard settlement={settlement} />
+                <SettlementCard settlement={settlement} onRequested={updateSettlement} />
               </li>
             ))}
           </ul>

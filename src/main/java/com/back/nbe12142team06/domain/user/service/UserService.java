@@ -292,16 +292,19 @@ public class UserService {
     }
 
     // 동행인 프로필 조회
+    // findByIdWithUser 로 user 를 함께 가져옵니다. 응답 DTO(EscortProfileResponse 등)가
+    // escortProfile.getUser() 를 쓰는데, 트랜잭션이 끝난 뒤(컨트롤러)에 지연 로딩된 user 에
+    // 접근하면 LazyInitializationException 이 나기 때문입니다.
     @Transactional(readOnly = true)
     public EscortProfile getEscortProfile(Long escortId) {
-        return this.escortProfileRepository.findById(escortId)
+        return this.escortProfileRepository.findByIdWithUser(escortId)
                 .orElseThrow(() -> new NotFoundException("동행 매니저 프로필이 존재하지 않습니다."));
     }
 
     // 동행인 프로필 수정
     @Transactional
     public EscortProfile updateEscortProfile(Long escortId, EscortProfileModifyRequest request) {
-        EscortProfile escortProfile = this.escortProfileRepository.findById(escortId)
+        EscortProfile escortProfile = this.escortProfileRepository.findByIdWithUser(escortId)
                 .orElseThrow(() -> new NotFoundException("동행 매니저 프로필이 존재하지 않습니다."));
 
         escortProfile.updateProfile(request.intro(),  request.bankName(), request.accountHolder(), request.accountNumber());
