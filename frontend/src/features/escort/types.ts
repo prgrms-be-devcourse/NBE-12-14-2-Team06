@@ -21,24 +21,6 @@ export type EscortReport = {
   submittedAt: string;
 };
 
-/**
- * 백엔드 진료 보고서 응답 (ReportDto) — 작성·조회 API 가 돌려주는 모양 그대로.
- * department 는 응답에서 한글 과목명("정형외과")으로 내려옵니다. 요청 시에는 ENUM 이름을 보내야 합니다 (model/departments.ts).
- */
-export type ReportDto = {
-  id: number;
-  applicationId: number;
-  title: string;
-  department: string;
-  purpose: string;
-  originContent: string;
-  notes: string | null;
-  aiSummary: string | null;
-  summarizedAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
-
 /** 동행 현황 화면 하나 (신청 한 건에 대응). 모의 데이터용 모양 */
 export type EscortCase = {
   /** 내가 신청한 공고(신청 번호) */

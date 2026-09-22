@@ -7,22 +7,16 @@ import { useEffect, useState } from 'react';
 import { AppShell } from '@/components/layout';
 import { Container, InfoRow, SectionHeading } from '@/components/ui';
 import { StatusLabel } from '@/features/post';
-import type { ApiError } from '@/lib/api';
+import { aiSummaryItems, fetchReport, isReportNotFoundError, parseAiSummary, type ReportDto } from '@/features/report';
 import { cn } from '@/lib/cn';
 import { MOCK_USER } from '@/lib/mockSession';
-import { fetchReport } from '../api';
 import { formatDateTime } from '../lib/date';
 import { getEscortCase } from '../model/cases';
-import { aiSummaryItems, parseAiSummary } from '../model/reportSummary';
-import type { ReportDto } from '../types';
 
 const CARD = 'rounded-[30px] border border-line bg-white px-6 py-8 shadow-card lg:px-[35px]';
 const TITLE = 'text-2xl leading-6 font-semibold text-brand';
 const MENU_BUTTON = 'flex h-[45px] w-full items-center justify-center gap-2.5 rounded-[25px] border border-line bg-white text-base leading-[18px] font-semibold text-brand transition-colors hover:bg-line-soft';
 const MUTED_NOTICE = 'text-sm leading-6 font-medium text-brand-muted';
-
-/** 보고서가 없을 때(404-2) 백엔드가 던지는 메시지. 다른 404("동행 건 없음")와 구분하는 데 씁니다. */
-const REPORT_NOT_FOUND_STATUS = '404-2';
 
 type ReportResult =
   | { status: 'notFound' }
@@ -63,13 +57,11 @@ export default function ReportDetailPage() {
       })
       .catch((error: unknown) => {
         if (ignore) return;
-        const statusCode = (error as Partial<ApiError>).statusCode;
         setResult({
           key: targetApplicationId,
-          data:
-            statusCode === REPORT_NOT_FOUND_STATUS
-              ? { status: 'notFound' }
-              : { status: 'error', message: error instanceof Error ? error.message : '보고서를 불러오지 못했습니다.' },
+          data: isReportNotFoundError(error)
+            ? { status: 'notFound' }
+            : { status: 'error', message: error instanceof Error ? error.message : '보고서를 불러오지 못했습니다.' },
         });
       });
 

@@ -3,8 +3,10 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { AppShell } from '@/components/layout';
 import { Container, InfoRow, SectionHeading } from '@/components/ui';
+import { aiSummaryItems, fetchReport, isReportNotFoundError, parseAiSummary, type ReportDto } from '@/features/report';
 import { cn } from '@/lib/cn';
 import { MOCK_CLIENT } from '@/lib/mockSession';
 import { STAGE_VIEW, getClientEscortCase } from '../model/escort';
@@ -15,21 +17,59 @@ const CARD = 'rounded-[30px] border border-line bg-white px-6 py-8 shadow-card l
 const TITLE = 'text-2xl leading-6 font-semibold text-brand';
 const MENU_BUTTON = 'flex h-11 w-full items-center justify-center gap-2.5 rounded-[25px] border border-line bg-white text-base leading-[18px] font-semibold text-brand transition-colors hover:bg-line-soft';
 
+type ReportResult =
+  | { status: 'notFound' }
+  | { status: 'error'; message: string }
+  | { status: 'ready'; report: ReportDto };
+
+/** 줄바꿈이 있는 텍스트를 줄 단위 배열로 바꿉니다. */
+function lines(text: string): string[] {
+  return text.split('\n').filter((line) => line.trim() !== '');
+}
+
 /**
  * 진료 보고서 (의뢰인이 보는 화면) — Figma 의뢰인_보고서 조회 459:3004
  *
- * ⚠️ 모의 데이터(model/escort.ts)를 보여줍니다. 보고서 조회·AI 요약·PDF 저장 API 는 아직 없습니다.
+ * 진료 내용은 GET /api/v1/applications/{applicationId}/report 로 가져옵니다(동행인 화면과 같은 API).
+ * 동행 정보·매니저 정보는 아직 연결 전이라 모의 데이터(model/escort.ts)를 그대로 씁니다.
  */
 export default function ClientReportPage() {
   const { applicationId } = useParams<{ applicationId: string }>();
   const escort = getClientEscortCase(Number(applicationId));
-  const report = escort?.report;
+  const targetApplicationId = escort?.applicationId;
 
-  if (!escort || !report) {
+  const [result, setResult] = useState<{ key?: number; data?: ReportResult }>({});
+
+  useEffect(() => {
+    if (targetApplicationId === undefined) return;
+    let ignore = false;
+
+    fetchReport(targetApplicationId)
+      .then((report) => {
+        if (!ignore) setResult({ key: targetApplicationId, data: { status: 'ready', report } });
+      })
+      .catch((error: unknown) => {
+        if (ignore) return;
+        setResult({
+          key: targetApplicationId,
+          data: isReportNotFoundError(error)
+            ? { status: 'notFound' }
+            : { status: 'error', message: error instanceof Error ? error.message : '보고서를 불러오지 못했습니다.' },
+        });
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [targetApplicationId]);
+
+  const state = result.key === targetApplicationId ? result.data : undefined;
+
+  if (!escort) {
     return (
       <AppShell user={MOCK_CLIENT}>
         <section className="bg-white py-[100px] text-center">
-          <p className="text-xl font-semibold text-brand">제출된 보고서가 없습니다.</p>
+          <p className="text-xl font-semibold text-brand">동행 정보를 찾을 수 없습니다.</p>
           <Link href="/client/posts" className={cn(MENU_BUTTON, 'mx-auto mt-8 h-14 w-60')}>
             작성한 공고로
           </Link>
@@ -37,6 +77,46 @@ export default function ClientReportPage() {
       </AppShell>
     );
   }
+
+  if (!state) {
+    return (
+      <AppShell user={MOCK_CLIENT}>
+        <section className="bg-white py-[100px] text-center">
+          <p className="text-xl font-semibold text-brand">보고서를 불러오는 중입니다.</p>
+        </section>
+      </AppShell>
+    );
+  }
+
+  if (state.status === 'notFound') {
+    return (
+      <AppShell user={MOCK_CLIENT}>
+        <section className="bg-white py-[100px] text-center">
+          <p className="text-xl font-semibold text-brand">아직 보고서가 작성되지 않았습니다.</p>
+          <Link href={`/client/escort/${escort.applicationId}`} className={cn(MENU_BUTTON, 'mx-auto mt-8 h-14 w-60')}>
+            동행 현황으로 돌아가기
+          </Link>
+        </section>
+      </AppShell>
+    );
+  }
+
+  if (state.status === 'error') {
+    return (
+      <AppShell user={MOCK_CLIENT}>
+        <section className="bg-white py-[100px] text-center">
+          <p role="alert" className="text-xl font-semibold text-brand">{state.message}</p>
+          <Link href={`/client/escort/${escort.applicationId}`} className={cn(MENU_BUTTON, 'mx-auto mt-8 h-14 w-60')}>
+            동행 현황으로 돌아가기
+          </Link>
+        </section>
+      </AppShell>
+    );
+  }
+
+  const report = state.report;
+  const aiSummary = parseAiSummary(report.aiSummary);
+  const summaryItems = aiSummary ? aiSummaryItems(aiSummary) : [];
 
   return (
     <AppShell user={MOCK_CLIENT}>
@@ -63,8 +143,8 @@ export default function ClientReportPage() {
                   <InfoRow label="진료 과목" labelWidth={132}>{report.department}</InfoRow>
                   <InfoRow label="진료 목적" labelWidth={132}>{report.purpose}</InfoRow>
                   <InfoRow label="진료 내용 요약" labelWidth={132} className="items-start">
-                    {report.summary.map((line) => (
-                      <span key={line} className="block">{line}</span>
+                    {lines(report.originContent).map((line, index) => (
+                      <span key={index} className="block">{line}</span>
                     ))}
                   </InfoRow>
                 </dl>
@@ -73,41 +153,31 @@ export default function ClientReportPage() {
               <section className={CARD}>
                 <h2 className={cn(TITLE, 'mb-[30px]')}>AI 요약</h2>
                 <ul className="flex flex-col rounded-[30px] border border-line bg-line-soft px-[30px] py-5">
-                  {report.aiSummary.map((line) => (
-                    <li key={line} className="flex min-h-[41px] items-center gap-[19px] text-base leading-[30px] font-semibold text-brand">
-                      <Image src="/icons/escort/bullet.svg" alt="" width={7.5} height={7.5} className="shrink-0" />
-                      {line}
+                  {summaryItems.length > 0 ? (
+                    summaryItems.map((item) => (
+                      <li key={item.label} className="flex min-h-[41px] items-center gap-[19px] text-base leading-[30px] font-semibold text-brand">
+                        <Image src="/icons/escort/bullet.svg" alt="" width={7.5} height={7.5} className="shrink-0" />
+                        {item.label}: {item.value}
+                      </li>
+                    ))
+                  ) : (
+                    <li className="flex min-h-[41px] items-center gap-[19px] text-base leading-[30px] font-semibold text-brand-muted">
+                      AI 요약을 준비 중입니다.
                     </li>
-                  ))}
+                  )}
                 </ul>
               </section>
 
-              <section className={CARD}>
-                <h2 className={cn(TITLE, 'mb-5')}>특이사항</h2>
-                <p className="text-sm leading-6 font-medium text-brand">
-                  {report.notes.map((line) => (
-                    <span key={line} className="block">{line}</span>
-                  ))}
-                </p>
-              </section>
-
-              <section className={CARD}>
-                <div className="mb-[30px] flex items-center justify-between gap-2">
-                  <h2 className={TITLE}>첨부사진({report.photoCount}장)</h2>
-                  {/* TODO: 첨부 파일 다운로드 연결 */}
-                  <button type="button" className="flex h-[38px] items-center gap-2.5 rounded-[30px] border border-[#e6e8ec] bg-line-soft px-6 text-base leading-[22px] font-semibold text-brand transition-colors hover:bg-line">
-                    <Image src="/icons/escort/download.svg" alt="" width={16} height={16} className="size-3.5" />
-                    전체 다운로드
-                  </button>
-                </div>
-                <ul className="grid grid-cols-2 gap-[15px] sm:grid-cols-4">
-                  {Array.from({ length: report.photoCount }, (_, index) => (
-                    <li key={index} className="grid aspect-[186/137] place-items-center rounded-[22px] bg-[#e6e8ec]">
-                      <Image src="/icons/escort/photo-icon.svg" alt={`첨부사진 ${index + 1}`} width={41} height={36} />
-                    </li>
-                  ))}
-                </ul>
-              </section>
+              {report.notes && (
+                <section className={CARD}>
+                  <h2 className={cn(TITLE, 'mb-5')}>특이사항</h2>
+                  <p className="text-sm leading-6 font-medium text-brand">
+                    {lines(report.notes).map((line, index) => (
+                      <span key={index} className="block">{line}</span>
+                    ))}
+                  </p>
+                </section>
+              )}
             </div>
 
             <div className="flex min-w-0 flex-col gap-[22px]">
@@ -119,11 +189,6 @@ export default function ClientReportPage() {
                   <Link href={`/client/escort/${escort.applicationId}/review`} className={cn(MENU_BUTTON, 'border-brand bg-brand text-white hover:bg-brand-hover')}>
                     리뷰 작성하기
                   </Link>
-                  {/* TODO: PDF 저장 연결 */}
-                  <button type="button" className={MENU_BUTTON}>
-                    <Image src="/icons/escort/download.svg" alt="" width={12} height={12} />
-                    PDF 저장
-                  </button>
                   <Link href="/client/posts" className={MENU_BUTTON}>
                     <Image src="/icons/client/list.svg" alt="" width={10} height={8} />내 공고 보기
                   </Link>

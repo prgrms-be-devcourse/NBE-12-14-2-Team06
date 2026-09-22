@@ -8,7 +8,7 @@ import { AppShell } from '@/components/layout';
 import { Container, InfoRow, SectionHeading } from '@/components/ui';
 import { cn } from '@/lib/cn';
 import { MOCK_USER } from '@/lib/mockSession';
-import { writeReport } from '../api';
+import { writeReport } from '@/features/report';
 import { getEscortCase } from '../model/cases';
 import { DEPARTMENTS } from '../model/departments';
 

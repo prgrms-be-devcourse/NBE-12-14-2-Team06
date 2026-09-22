@@ -1,6 +1,6 @@
 /**
  * Report.aiSummary 는 백엔드가 Claude 응답을 그대로 저장한 JSON 문자열입니다.
- * 동행인 화면(ReportDetailPage)과 의뢰인 화면에서 함께 씁니다.
+ * 동행인 화면(escort)과 의뢰인 화면(client)에서 함께 씁니다.
  */
 export type ReportAiSummary = {
   visitPurpose: string | null;
