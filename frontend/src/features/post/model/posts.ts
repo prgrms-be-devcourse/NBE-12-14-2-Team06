@@ -75,6 +75,7 @@ export function getPostDetail(id: number): PostDetail | undefined {
   return {
     ...summary,
     clientId: 'client01',
+    postStatus: '모집 중',
     postedAt: '2026.09.12   18:12',
     hospitalAddress: `${summary.region} ${summary.district}`,
     pickupAddress: `${summary.region} ${summary.district}`,

@@ -24,14 +24,17 @@ export type ClientPost = {
   applicationId?: number;
 };
 
-/** 동행 매니저 프로필 (지원자 카드 · 동행 정보 카드 공용) */
+/**
+ * 동행 매니저 프로필 (지원자 카드 · 동행 정보 카드 공용).
+ * ⚠️ 지역(region)·태그(tags)는 백엔드 지원자 프로필 API(escort-profile)에 없어서, 실제 데이터로 채울 땐 빠집니다.
+ */
 export type Manager = {
   name: string;
   rating: number;
   completedCount: number;
-  /** "서울 강남구" */
-  region: string;
-  tags: string[];
+  /** "서울 강남구". 값이 없으면 화면에서 이 줄을 생략합니다. */
+  region?: string;
+  tags?: string[];
   intro: string[];
 };
 

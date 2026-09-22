@@ -36,6 +36,8 @@ export type PostSummary = {
 export type PostDetail = PostSummary & {
   /** 작성자(의뢰인) 아이디 */
   clientId: string;
+  /** 백엔드 postStatus 원문 ("모집 중" · "매칭 완료" · "동행 진행 중" · "동행 완료" · "취소됨" · "마감 기한 초과") */
+  postStatus: string;
   /** "2026.09.12   18:12" */
   postedAt: string;
   hospitalAddress: string;
