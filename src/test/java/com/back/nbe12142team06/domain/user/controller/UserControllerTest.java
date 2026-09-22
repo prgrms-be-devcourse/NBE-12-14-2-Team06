@@ -1985,6 +1985,32 @@ public class UserControllerTest {
     }
 
     @Test
+    @DisplayName("[UserController] 의뢰인 자기 자신 프로필 수정 - 로그인 없이 수정 시도 시 403-1 반환")
+    void t51() throws Exception {
+        Cookie clientToken = signUp("client1");
+
+        createClientProfile(clientToken);
+
+        ResultActions resultActions = mvc.perform(put("/api/v1/users/profile/client")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "emergencyContactName": "정상수",
+                                    "emergencyContactPhone": "010-9999-9999",
+                                    "careNote": ""
+                                }
+                                """))
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.statusCode").value("401-1"))
+                .andExpect(jsonPath("$.msg").value("로그인 후 이용해주세요."));
+    }
+
+
+
+    @Test
     @DisplayName("[UserController] 동행 매니저 프로필 생성 -  정상 생성")
     void t100() throws Exception {
         String username = "t1";
