@@ -1989,4 +1989,126 @@ public class ApplicationControllerTest {
                 .andExpect(jsonPath("$.msg")
                         .value("이미 동행이 완료되었습니다."));
     }
+
+    @Test
+    @DisplayName("[ApplicationController] 지원자 프로필 조회 - 정상 조회")
+    void t33() throws Exception {
+
+        // 동행인이 공고에 지원
+        mvc.perform(
+                        post("/api/v1/applications/{postId}", testPostId)
+                                .cookie(escortAccessTokenCookie)
+                )
+                .andDo(print())
+                .andExpect(status().isCreated());
+
+        // 생성된 지원 조회
+        Application application = applicationRepository
+                .findAllByPostIdWithEscort(testPostId)
+                .get(0);
+
+        // 의뢰인이 지원자의 프로필 조회
+        ResultActions resultActions = mvc.perform(
+                get("/api/v1/applications/{applicationId}/escort-profile",
+                        application.getId())
+                        .cookie(clientAccessTokenCookie)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(ApplicationController.class))
+                .andExpect(handler().methodName("profile"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-2"))
+                .andExpect(jsonPath("$.msg")
+                        .value("지원자 프로필 조회가 완료되었습니다."))
+                .andExpect(jsonPath("$.data.escortId")
+                        .value(application.getEscort().getId()))
+                .andExpect(jsonPath("$.data.name")
+                        .value("동행인1"))
+                .andExpect(jsonPath("$.data.verified").exists())
+                .andExpect(jsonPath("$.data.completedCount").exists())
+                .andExpect(jsonPath("$.data.rating").exists())
+                .andExpect(jsonPath("$.data.ratingCount").exists())
+                .andExpect(jsonPath("$.data.noShowCount").exists());
+    }
+
+    @Test
+    @DisplayName("[ApplicationController] 지원자 프로필 조회 - 다른 의뢰인이 조회 시 403 반환")
+    void t34() throws Exception {
+
+        // 동행인이 공고에 지원
+        mvc.perform(
+                        post("/api/v1/applications/{postId}", testPostId)
+                                .cookie(escortAccessTokenCookie)
+                )
+                .andExpect(status().isCreated());
+
+        Application application = applicationRepository
+                .findAllByPostIdWithEscort(testPostId)
+                .get(0);
+
+        // 다른 의뢰인 생성
+        User otherClient = new User(
+                "client2",
+                passwordEncoder.encode("testPassword"),
+                "client2@test.com",
+                "의뢰인2",
+                Role.CLIENT,
+                Gender.MALE,
+                LocalDate.of(1990, 1, 1),
+                "010-3333-3333",
+                "서울"
+        );
+
+        userRepository.save(otherClient);
+
+        // 다른 의뢰인 로그인
+        Cookie otherClientAccessTokenCookie = mvc.perform(
+                        post("/api/v1/auth/login")
+                                .contentType("application/json")
+                                .content("""
+                                {
+                                  "username": "client2",
+                                  "password": "testPassword"
+                                }
+                                """)
+                )
+                .andReturn()
+                .getResponse()
+                .getCookie("accessToken");
+
+        // 다른 의뢰인이 지원자 프로필 조회 시도
+        ResultActions resultActions = mvc.perform(
+                get("/api/v1/applications/{applicationId}/escort-profile",
+                        application.getId())
+                        .cookie(otherClientAccessTokenCookie)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.statusCode").value("403"))
+                .andExpect(jsonPath("$.msg")
+                        .value("본인 공고의 지원자 프로필만 조회할 수 있습니다."));
+    }
+
+    @Test
+    @DisplayName("[ApplicationController] 지원자 프로필 조회 - 존재하지 않는 지원 조회 시 404 반환")
+    void t35() throws Exception {
+
+        Long notExistingApplicationId = 999L;
+
+        ResultActions resultActions = mvc.perform(
+                get("/api/v1/applications/{applicationId}/escort-profile",
+                        notExistingApplicationId)
+                        .cookie(clientAccessTokenCookie)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(ApplicationController.class))
+                .andExpect(handler().methodName("profile"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.statusCode").value("404"))
+                .andExpect(jsonPath("$.msg")
+                        .value("지원을 찾을 수 없습니다."));
+    }
 }
