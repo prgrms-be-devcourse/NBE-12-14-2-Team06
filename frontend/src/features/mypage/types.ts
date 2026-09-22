@@ -20,39 +20,50 @@ export type Application = {
   status: ApplicationStatus;
 };
 
-/** 정산 상태 */
-export type SettlementStatus = 'waiting' | 'done';
+/** 백엔드 SettlementStatus */
+export type SettlementStatus = 'PENDING' | 'COMPLETED' | 'FAILED';
 
-export type Settlement = {
+/** 백엔드 SettlementResponse 의 post 부분 (settlement 카드에 필요한 값만) */
+export type SettlementPost = {
   id: number;
-  applicationId: number;
-  /** 상세보기로 이동할 공고 번호 */
-  postId: number;
-  status: SettlementStatus;
   title: string;
   hospitalName: string;
-  location: string;
-  /** "2026.10.28 (수)" */
-  dateLabel: string;
-  dueLabel: string;
-  /** 정산 예정일 (기간 검색용, YYYY-MM-DD) */
-  dueDate: string;
-  durationLabel: string;
-  amount: number;
+  region: string;
+  escortStartAt: string;
+  escortHours: number;
 };
 
-/** 받은 리뷰 (별점 이미지가 3~5점만 있어 3~5로 제한) */
-export type Review = {
+/** 백엔드 GET /api/v1/settlements 응답 한 줄 (SettlementResponse) */
+export type SettlementDto = {
   id: number;
-  title: string;
-  hospitalName: string;
-  location: string;
-  /** 작성일 (기간 검색용, YYYY-MM-DD) */
-  date: string;
-  rating: 3 | 4 | 5;
-  positives: string[];
-  negatives: string[];
-  comment: string;
+  payoutAmount: number;
+  platformFee: number;
+  status: SettlementStatus;
+  /** 정산 완료된 날짜. 아직 정산 전이면 null */
+  settledAt: string | null;
+  post: SettlementPost;
+};
+
+/** 백엔드 ReviewTag(긍정/부정 태그) 이름 → 화면 문구 */
+export type ReviewTagName =
+  | 'KIND'
+  | 'PUNCTUAL'
+  | 'DETAILED_REPORT'
+  | 'GOOD_COMMUNICATION'
+  | 'CAREFUL'
+  | 'LATE'
+  | 'POOR_COMMUNICATION'
+  | 'UNKIND'
+  | 'INSUFFICIENT_REPORT';
+
+/** 백엔드 GET /api/v1/users/{userId}/reviews 응답 한 줄 (ReviewDto) */
+export type ReviewDto = {
+  id: number;
+  applicationId: number;
+  rating: number;
+  tags: ReviewTagName[];
+  content: string | null;
+  createdAt: string;
 };
 
 /** 최근 활동 요약 한 칸 */
@@ -62,6 +73,7 @@ export type ActivityStat = {
   icon: string;
 };
 
+/** 의뢰인 마이페이지(role='client')용 모의 프로필. "/client" 는 이번 작업 범위가 아니라 그대로 둡니다. */
 export type MyProfile = {
   name: string;
   roleLabel: string;
@@ -71,10 +83,22 @@ export type MyProfile = {
   address: string;
   birthDate: string;
   gender: string;
-  /** 동행 매니저 자기소개 */
   intro?: string[];
-  /** 의뢰인 추가 정보 (백엔드 ClientProfile: emergencyContactName / emergencyContactPhone / careNote) */
   guardian?: { name: string; phone: string; careNote: string };
+};
+
+/** 백엔드 GET/PUT /api/v1/users/profile/escort 응답 (EscortProfileResponse) */
+export type EscortProfileDto = {
+  userId: number;
+  name: string;
+  region: string;
+  intro: string | null;
+  averageRating: number | null;
+  completedCount: number;
+  verified: boolean;
+  bankName: string | null;
+  accountHolder: string | null;
+  accountNumber: string | null;
 };
 
 /** 마이페이지를 보는 사람. 왼쪽 메뉴와 내용이 달라집니다. */

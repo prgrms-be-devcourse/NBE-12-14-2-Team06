@@ -5,6 +5,8 @@ type Props = {
   title: string;
   /** 제목 오른쪽 작은 버튼 문구 (예: "수정하기") */
   action?: string;
+  /** action 버튼을 눌렀을 때. 없으면 버튼이 아무 동작도 하지 않습니다(TODO 표시용). */
+  onAction?: () => void;
   children: ReactNode;
   /** 카드 최소 높이 등 */
   className?: string;
@@ -16,6 +18,7 @@ type Props = {
 export default function InfoCard({
   title,
   action,
+  onAction,
   children,
   className,
   paddingBottom = 'pb-[30px]',
@@ -27,9 +30,9 @@ export default function InfoCard({
       <div className="flex h-9 items-center justify-between gap-4">
         <h2 className="text-2xl leading-6 font-semibold text-brand">{title}</h2>
         {action && (
-          // TODO: 내 정보 수정 API(PATCH /api/v1/users/profile) 연결
           <button
             type="button"
+            onClick={onAction}
             className="h-[35px] shrink-0 rounded-[10px] border border-[#e6e8ec] bg-line-soft px-4 text-base leading-5 font-semibold text-brand transition-colors hover:bg-line"
           >
             {action}

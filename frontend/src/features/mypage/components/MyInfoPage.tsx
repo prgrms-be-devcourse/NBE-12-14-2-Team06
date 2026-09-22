@@ -3,8 +3,9 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { InfoRow } from '@/components/ui';
-import { ACTIVITY_STATS, CLIENT_ACTIVITY_STATS, CLIENT_PROFILE, MY_PROFILE } from '../model';
+import { CLIENT_ACTIVITY_STATS, CLIENT_PROFILE } from '../model';
 import type { MyPageRole } from '../types';
+import EscortInfoView from './EscortInfoView';
 import InfoCard from './InfoCard';
 import MyPageShell from './MyPageShell';
 
@@ -13,12 +14,20 @@ const ACCOUNT_ACTIONS = ['비밀번호 변경', '이메일 변경', '회원 탈�
 /**
  * 마이페이지 — 내 정보 (Figma 동행매니저_마이페이지 210:1079 · 의뢰인_마이페이지 210:746)
  *
- * ⚠️ 모의 데이터(model/profile.ts)를 보여줍니다. 내 정보 API(GET /api/v1/users/profile) 연결 전입니다.
+ * - role='escort' ("/mypage"): 실제 API 로 연결했습니다 → EscortInfoView.tsx
+ * - role='client' ("/client"): 이번 작업 범위가 아니라 모의 데이터(model/profile.ts)를 그대로 보여줍니다.
  */
 export default function MyInfoPage({ role = 'escort' }: { role?: MyPageRole }) {
-  const isClient = role === 'client';
-  const profile = isClient ? CLIENT_PROFILE : MY_PROFILE;
-  const stats = isClient ? CLIENT_ACTIVITY_STATS : ACTIVITY_STATS;
+  if (role === 'escort') {
+    return (
+      <MyPageShell role={role}>
+        <EscortInfoView />
+      </MyPageShell>
+    );
+  }
+
+  const profile = CLIENT_PROFILE;
+  const stats = CLIENT_ACTIVITY_STATS;
 
   return (
     <MyPageShell role={role}>
@@ -113,7 +122,7 @@ export default function MyInfoPage({ role = 'escort' }: { role?: MyPageRole }) {
           <div className="flex h-[47px] items-center justify-between">
             <h2 className="text-2xl leading-6 font-semibold text-brand">최근 활동 요약</h2>
             <Link
-              href={isClient ? '/client/posts' : '/mypage/applications'}
+              href="/client/posts"
               className="flex items-center gap-4 text-base leading-5 font-semibold text-brand transition-colors hover:text-brand-hover"
             >
               전체 보기
