@@ -90,3 +90,24 @@ export type PostDto = {
   createdAt: string;
   updatedAt: string;
 };
+
+/** 백엔드 공고 등록·수정 요청 (PostWriteRequest) — POST/PUT /api/v1/posts 에 그대로 보냅니다. */
+export type PostWriteRequest = {
+  title: string;
+  content: string;
+  region: string;
+  hospitalName: string;
+  hospitalAddress: string;
+  hospitalLat: number;
+  hospitalLng: number;
+  pickupAddress: string;
+  pickupLat: number;
+  pickupLng: number;
+  hourlyPay: number;
+  recruitStartAt: string;
+  recruitEndAt: string;
+  escortStartAt: string;
+  escortEndAt: string;
+  patientNote: string | null;
+  reportRequired: boolean;
+};
