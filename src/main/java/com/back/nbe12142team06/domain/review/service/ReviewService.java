@@ -3,6 +3,7 @@ package com.back.nbe12142team06.domain.review.service;
 import com.back.nbe12142team06.domain.application.entity.Application;
 import com.back.nbe12142team06.domain.application.enums.ApplicationStatus;
 import com.back.nbe12142team06.domain.application.repository.ApplicationRepository;
+import com.back.nbe12142team06.domain.review.dto.ReviewDto;
 import com.back.nbe12142team06.domain.review.dto.ReviewWriteRequest;
 import com.back.nbe12142team06.domain.review.entity.Review;
 import com.back.nbe12142team06.domain.review.entity.ReviewTag;
@@ -62,14 +63,23 @@ public class ReviewService {
         );
     }
 
-    // 특정 동행인이 받은 리뷰 목록 조회 (클래스의 readOnly 적용)
-    public List<Review> findAllByEscortId(Long escortId) {
+    /**
+     * 특정 동행인이 받은 리뷰 목록 조회 (클래스의 readOnly 적용)
+     * <p>
+     * DTO 변환을 컨트롤러가 아니라 여기서 한다.
+     * 엔티티를 그대로 반환하면 트랜잭션이 끝난 뒤 JSON 으로 바꿀 때 태그를 읽게 되어
+     * LazyInitializationException 이 발생한다. (open-in-view: false 라 트랜잭션 종료와 함께 세션이 닫힌다)
+     */
+    public List<ReviewDto> findAllByEscortId(Long escortId) {
 
         // 리뷰가 0건인 것은 정상이므로, 회원 존재 여부만 확인
         if (!userRepository.existsById(escortId)) {
             throw new NotFoundException(2, "존재하지 않는 회원입니다.");
         }
 
-        return reviewRepository.findAllByEscortIdWithApplication(escortId);
+        return reviewRepository.findAllByEscortIdWithApplication(escortId)
+                .stream()
+                .map(ReviewDto::new)
+                .toList();
     }
 }
