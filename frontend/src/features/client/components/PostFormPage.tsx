@@ -19,9 +19,11 @@ import {
   diffMinutes,
   estimateAmount,
   formatMinutes,
+  minSelectableTime,
   parsePay,
   splitRegion,
   toIsoDateTime,
+  todayDateString,
 } from '../model/postForm';
 import type { PostFormValues } from '../types';
 import AddressSearchField from './form/AddressSearchField';
@@ -159,6 +161,7 @@ function PostFormFields({ postId, initial, sample }: FormFieldsProps) {
   const [pickupLat, setPickupLat] = useState(initial.pickupLat);
   const [pickupLng, setPickupLng] = useState(initial.pickupLng);
 
+  const [date, setDate] = useState(initial.date);
   const [startTime, setStartTime] = useState(initial.startTime);
   const [endTime, setEndTime] = useState(initial.endTime);
   const [hourlyPay, setHourlyPay] = useState(initial.hourlyPay);
@@ -172,6 +175,25 @@ function PostFormFields({ postId, initial, sample }: FormFieldsProps) {
   const minutes = diffMinutes(startTime, endTime);
   const amount = estimateAmount(hourlyPay, minutes);
   const timeError = startTime && endTime && minutes <= 0 ? '종료 시간은 시작 시간보다 늦어야 합니다.' : '';
+
+  // 동행 날짜가 오늘이면 지금 이전 시간은 "시작 시간" 에서 아예 선택 못하게 막습니다.
+  const startTimeBound = minSelectableTime(date);
+  const startDisabled = startTimeBound ? TIME_OPTIONS.filter((option) => option <= startTimeBound) : [];
+  // "예상 종료 시간" 은 시작 시간보다 늦어야 하니, 시작 시간(없으면 위 기준 시각) 이하는 막습니다.
+  const endTimeBound = startTime || startTimeBound;
+  const endDisabled = endTimeBound ? TIME_OPTIONS.filter((option) => option <= endTimeBound) : [];
+
+  const handleDateChange = (value: string) => {
+    setDate(value);
+    const bound = minSelectableTime(value);
+    if (bound && startTime && startTime <= bound) setStartTime('');
+    if (bound && endTime && endTime <= bound) setEndTime('');
+  };
+
+  const handleStartTimeChange = (value: string) => {
+    setStartTime(value);
+    if (endTime && endTime <= value) setEndTime('');
+  };
 
   let recruitError = '';
   if (recruitStartDate && recruitEndDate) {
@@ -230,8 +252,8 @@ function PostFormFields({ postId, initial, sample }: FormFieldsProps) {
       hourlyPay: parsePay(hourlyPay),
       recruitStartAt: toIsoDateTime(recruitStartDate, recruitStartTime),
       recruitEndAt: toIsoDateTime(recruitEndDate, recruitEndTime),
-      escortStartAt: toIsoDateTime(value('date'), startTime),
-      escortEndAt: toIsoDateTime(value('date'), endTime),
+      escortStartAt: toIsoDateTime(date, startTime),
+      escortEndAt: toIsoDateTime(date, endTime),
       patientNote: value('note') || null,
       reportRequired: form.get('reportRequested') === 'on',
     };
@@ -298,14 +320,42 @@ function PostFormFields({ postId, initial, sample }: FormFieldsProps) {
 
               <FormSection title="일정 정보">
                 <FormRow label="동행 날짜*" htmlFor="post-date">
-                  <input id="post-date" name="date" type="date" required defaultValue={initial.date} className={cn(FIELD, 'sm:w-[201px]')} />
+                  <input
+                    id="post-date"
+                    name="date"
+                    type="date"
+                    required
+                    min={todayDateString()}
+                    value={date}
+                    onChange={(event) => handleDateChange(event.target.value)}
+                    className={cn(FIELD, 'sm:w-[201px]')}
+                  />
                 </FormRow>
                 <div className="grid gap-[5px] sm:grid-cols-2 sm:gap-x-[11px]">
                   <FormRow label="시작 시간*" htmlFor="post-start">
-                    <SelectField id="post-start" name="startTime" placeholder="시간 선택" options={TIME_OPTIONS} value={startTime} onChange={setStartTime} required />
+                    <SelectField
+                      id="post-start"
+                      name="startTime"
+                      placeholder="시간 선택"
+                      options={TIME_OPTIONS}
+                      value={startTime}
+                      onChange={handleStartTimeChange}
+                      disabledOptions={startDisabled}
+                      required
+                    />
                   </FormRow>
                   <FormRow label="예상 종료 시간*" htmlFor="post-end">
-                    <SelectField id="post-end" name="endTime" placeholder="시간 선택" options={TIME_OPTIONS} value={endTime} onChange={setEndTime} required customMessage={timeError} />
+                    <SelectField
+                      id="post-end"
+                      name="endTime"
+                      placeholder="시간 선택"
+                      options={TIME_OPTIONS}
+                      value={endTime}
+                      onChange={setEndTime}
+                      disabledOptions={endDisabled}
+                      required
+                      customMessage={timeError}
+                    />
                   </FormRow>
                 </div>
                 <FormRow label="예상 소요 시간" htmlFor="post-duration">

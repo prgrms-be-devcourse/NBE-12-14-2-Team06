@@ -49,10 +49,12 @@ type SelectProps = {
   required?: boolean;
   disabled?: boolean;
   customMessage?: string;
+  /** 이 목록에 있는 option 은 선택할 수 없게 흐리게 표시합니다 (예: 이미 지난 시간). */
+  disabledOptions?: string[];
 };
 
 /** 화살표가 있는 선택 상자 */
-export function SelectField({ id, name, placeholder, options, value, defaultValue, onChange, required, disabled, customMessage }: SelectProps) {
+export function SelectField({ id, name, placeholder, options, value, defaultValue, onChange, required, disabled, customMessage, disabledOptions }: SelectProps) {
   const controlled = value !== undefined;
   return (
     <div className="relative">
@@ -70,7 +72,7 @@ export function SelectField({ id, name, placeholder, options, value, defaultValu
           {placeholder}
         </option>
         {options.map((option) => (
-          <option key={option} value={option} className="text-brand">
+          <option key={option} value={option} disabled={disabledOptions?.includes(option)} className="text-brand">
             {option}
           </option>
         ))}
