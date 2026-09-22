@@ -166,6 +166,8 @@ public class UserControllerTest {
                 .andExpect(status().isOk());
     }
 
+
+
     // 동행 매니저 프로필 생성
     private void createEscortProfile(Cookie escortToken) throws Exception {
         mvc.perform(post("/api/v1/users/profile/escort")
@@ -1869,6 +1871,144 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.statusCode").value("401-1"))
                 .andExpect(jsonPath("$.msg").value("로그인 후 이용해주세요."));
     }
+
+    @Test
+    @DisplayName("[UserController] 의뢰인 자기 자신 프로필 수정 - 정상적으로 존재하는 자기 자신의 프로필 수정 시 200-7 반환")
+    void t47() throws Exception {
+        Cookie clientToken = signUp("client1");
+        Long clientId = findUserId("client1");
+        createClientProfile(clientToken);
+
+        ResultActions resultActions = mvc.perform(put("/api/v1/users/profile/client")
+                        .cookie(clientToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "emergencyContactName": "정상수",
+                                    "emergencyContactPhone": "010-9999-9999",
+                                    "careNote": "왤케 안끝나"
+                                }
+                                """))
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-7"))
+                .andExpect(jsonPath("$.msg").value("의뢰인 프로필 수정을 완료했습니다."))
+                .andExpect(jsonPath("$.data.userId").value(clientId))
+                .andExpect(jsonPath("$.data.emergencyContactName").value("정상수"))
+                .andExpect(jsonPath("$.data.emergencyContactPhone").value("010-9999-9999"))
+                .andExpect(jsonPath("$.data.careNote").value("왤케 안끝나"));
+    }
+
+    @Test
+    @DisplayName("[UserController] 의뢰인 자기 자신 프로필 수정 - 정상적으로 존재하는 자기 자신의 프로필 수정 && careNote가 null 200-7 반환")
+    void t48() throws Exception {
+        Cookie clientToken = signUp("client1");
+        Long clientId = findUserId("client1");
+        createClientProfile(clientToken);
+
+        ResultActions resultActions = mvc.perform(put("/api/v1/users/profile/client")
+                        .cookie(clientToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "emergencyContactName": "정상수",
+                                    "emergencyContactPhone": "010-9999-9999",
+                                    "careNote": null
+                                }
+                                """))
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-7"))
+                .andExpect(jsonPath("$.msg").value("의뢰인 프로필 수정을 완료했습니다."))
+                .andExpect(jsonPath("$.data.userId").value(clientId))
+                .andExpect(jsonPath("$.data.emergencyContactName").value("정상수"))
+                .andExpect(jsonPath("$.data.emergencyContactPhone").value("010-9999-9999"))
+                .andExpect(jsonPath("$.data.careNote").value("특이사항 없음"));
+    }
+
+    @Test
+    @DisplayName("[UserController] 의뢰인 자기 자신 프로필 수정 - 정상적으로 존재하는 자기 자신의 프로필 수정 && careNote가 공백 200-7 반환")
+    void t49() throws Exception {
+        Cookie clientToken = signUp("client1");
+        Long clientId = findUserId("client1");
+        createClientProfile(clientToken);
+
+        ResultActions resultActions = mvc.perform(put("/api/v1/users/profile/client")
+                        .cookie(clientToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "emergencyContactName": "정상수",
+                                    "emergencyContactPhone": "010-9999-9999",
+                                    "careNote": ""
+                                }
+                                """))
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-7"))
+                .andExpect(jsonPath("$.msg").value("의뢰인 프로필 수정을 완료했습니다."))
+                .andExpect(jsonPath("$.data.userId").value(clientId))
+                .andExpect(jsonPath("$.data.emergencyContactName").value("정상수"))
+                .andExpect(jsonPath("$.data.emergencyContactPhone").value("010-9999-9999"))
+                .andExpect(jsonPath("$.data.careNote").value("특이사항 없음"));
+    }
+
+    @Test
+    @DisplayName("[UserController] 의뢰인 자기 자신 프로필 수정 - 프로필을 생성하지 않은 유저의 프로필 수정 요청 시 404 반환")
+    void t50() throws Exception {
+        Cookie clientToken = signUp("client1");
+        Long clientId = findUserId("client1");
+
+
+        ResultActions resultActions = mvc.perform(put("/api/v1/users/profile/client")
+                        .cookie(clientToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "emergencyContactName": "정상수",
+                                    "emergencyContactPhone": "010-9999-9999",
+                                    "careNote": ""
+                                }
+                                """))
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.statusCode").value("404"))
+                .andExpect(jsonPath("$.msg").value("의뢰인 프로필이 존재하지 않습니다."));
+    }
+
+    @Test
+    @DisplayName("[UserController] 의뢰인 자기 자신 프로필 수정 - 로그인 없이 수정 시도 시 401-1 반환")
+    void t51() throws Exception {
+        Cookie clientToken = signUp("client1");
+
+        createClientProfile(clientToken);
+
+        ResultActions resultActions = mvc.perform(put("/api/v1/users/profile/client")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "emergencyContactName": "정상수",
+                                    "emergencyContactPhone": "010-9999-9999",
+                                    "careNote": ""
+                                }
+                                """))
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.statusCode").value("401-1"))
+                .andExpect(jsonPath("$.msg").value("로그인 후 이용해주세요."));
+    }
+
+
 
     @Test
     @DisplayName("[UserController] 동행 매니저 프로필 생성 -  정상 생성")
