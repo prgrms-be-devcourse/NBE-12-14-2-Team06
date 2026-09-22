@@ -5,6 +5,7 @@ import com.back.nbe12142team06.domain.auth.entity.RefreshToken;
 import com.back.nbe12142team06.domain.auth.repository.RefreshTokenRepository;
 import com.back.nbe12142team06.domain.user.dto.admin.AdminUserProfileUpdateRequest;
 import com.back.nbe12142team06.domain.user.dto.login.UserLoginRequest;
+import com.back.nbe12142team06.domain.user.dto.profile.ClientProfileModifyRequest;
 import com.back.nbe12142team06.domain.user.dto.profile.ClientProfileRequest;
 import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpRequest;
 import com.back.nbe12142team06.domain.user.dto.profile.EscortProfileRequest;
@@ -35,6 +36,8 @@ public class UserService {
     private static final int DUPLICATED_USERNAME = 1;
     private static final int DUPLICATED_EMAIL = 2;
     private static final int DUPLICATED_PHONE_NUM = 3;
+
+    private static final String DEFAULT_CLIENT_PROFILE_CARE_NOTE = "특이사항 없음";
 
     private final UserRepository userRepository;
     private final AuthTokenService authTokenService;
@@ -201,7 +204,7 @@ public class UserService {
             throw new DuplicatedException(4, "이미 의뢰인 프로필이 존재합니다.");
         }
 
-        String careNote = (request.careNote() == null || request.careNote().isBlank()) ? "특이사항 없음" : request.careNote();
+        String careNote = (request.careNote() == null || request.careNote().isBlank()) ? DEFAULT_CLIENT_PROFILE_CARE_NOTE : request.careNote();
 
         ClientProfile profile = new ClientProfile(user, request.emergencyContactName(), request.emergencyContactPhone(), careNote);
 
@@ -215,6 +218,22 @@ public class UserService {
         return this.clientProfileRepository.findById(clientId)
                 .orElseThrow(() -> new NotFoundException("의뢰인 프로필이 존재하지 않습니다."));
     }
+
+    // 의뢰인 자기 자신 프로필 수정
+    @Transactional
+    public ClientProfile updateClientProfile(Long id, ClientProfileModifyRequest request) {
+
+        ClientProfile clientProfile = this.clientProfileRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("의뢰인 프로필이 존재하지 않습니다."));
+
+        String careNote = (request.careNote() == null || request.careNote().isBlank()) ? DEFAULT_CLIENT_PROFILE_CARE_NOTE : request.careNote();
+
+        clientProfile.updateProfile(request.emergencyContactName(), request.emergencyContactPhone(), careNote);
+
+        return this.clientProfileRepository.save(clientProfile);
+    }
+
+
 
     // 관리자, 매칭이 완료된 동행인의 의뢰인 프로필 조회
     // [관리자, 매칭된 동행 매니저] 의뢰인 프로필 조회
