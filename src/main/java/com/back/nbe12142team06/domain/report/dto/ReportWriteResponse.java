@@ -8,7 +8,10 @@ public record ReportWriteResponse(
         Long id,
         Long applicationId,
         String title,
+        String department,
+        String purpose,
         String originContent,
+        String notes,
         String aiSummary,
         LocalDateTime summarizedAt,
         LocalDateTime createdAt
@@ -18,8 +21,11 @@ public record ReportWriteResponse(
                 report.getId(),
                 report.getApplication().getId(),
                 report.getTitle(),
+                report.getDepartment().getDescription(),
+                report.getPurpose(),
                 report.getOriginContent(),
-                report.getAiSummary(),      // AI 요약 전이므로 현재는 null
+                report.getNotes(),
+                report.getAiSummary(),      // 요약 실패 시 null 로 남는다
                 report.getSummarizedAt(),   // 동일
                 report.getCreatedAt()
         );
