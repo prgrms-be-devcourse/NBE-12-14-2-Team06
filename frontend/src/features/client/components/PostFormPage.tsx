@@ -15,7 +15,10 @@ import {
   SAMPLE_FORM,
   TIME_OPTIONS,
   TRANSPORT_OPTIONS,
+  combineDateTime,
   diffMinutes,
+  disabledTimesAtOrAfter,
+  disabledTimesAtOrBefore,
   estimateAmount,
   formatMinutes,
   minSelectableTime,
@@ -185,21 +188,102 @@ function PostFormFields({ postId, initial, sample }: FormFieldsProps) {
   const handleDateChange = (value: string) => {
     setDate(value);
     const bound = minSelectableTime(value);
-    if (bound && startTime && startTime <= bound) setStartTime('');
+    const effectiveStartTime = bound && startTime && startTime <= bound ? '' : startTime;
+    if (effectiveStartTime !== startTime) setStartTime('');
     if (bound && endTime && endTime <= bound) setEndTime('');
+
+    // 모집 일정은 항상 동행 시작보다 이전이어야 합니다. 동행 날짜가 당겨져 더 이상 안 맞으면 초기화합니다.
+    const escortStartAt = combineDateTime(value, effectiveStartTime);
+    if (escortStartAt && combineDateTime(recruitEndDate, recruitEndTime) >= escortStartAt) {
+      setRecruitEndDate('');
+      setRecruitEndTime('');
+    }
+    if (escortStartAt && combineDateTime(recruitStartDate, recruitStartTime) >= escortStartAt) {
+      setRecruitStartDate('');
+      setRecruitStartTime('');
+      setRecruitEndDate('');
+      setRecruitEndTime('');
+    }
   };
 
   const handleStartTimeChange = (value: string) => {
     setStartTime(value);
     if (endTime && endTime <= value) setEndTime('');
+
+    const escortStartAt = combineDateTime(date, value);
+    if (escortStartAt && combineDateTime(recruitEndDate, recruitEndTime) >= escortStartAt) {
+      setRecruitEndTime('');
+    }
+    if (escortStartAt && combineDateTime(recruitStartDate, recruitStartTime) >= escortStartAt) {
+      setRecruitStartTime('');
+      setRecruitEndTime('');
+    }
+  };
+
+  // 모집 시작: 오늘 이전 날짜·시간은 선택 못하게(백엔드: 모집 시작은 현재 시간보다 이후), 동행 시작보다는 항상 빨라야 합니다.
+  const recruitStartTimeBound = minSelectableTime(recruitStartDate);
+  const recruitStartDisabled = Array.from(
+    new Set([
+      ...(recruitStartTimeBound ? TIME_OPTIONS.filter((option) => option <= recruitStartTimeBound) : []),
+      ...disabledTimesAtOrAfter(recruitStartDate, date, startTime),
+    ]),
+  );
+
+  const handleRecruitStartDateChange = (value: string) => {
+    setRecruitStartDate(value);
+    const bound = minSelectableTime(value);
+    const effectiveRecruitStartTime = bound && recruitStartTime && recruitStartTime <= bound ? '' : recruitStartTime;
+    if (effectiveRecruitStartTime !== recruitStartTime) setRecruitStartTime('');
+
+    const recruitStartAt = combineDateTime(value, effectiveRecruitStartTime);
+    if (recruitStartAt && combineDateTime(recruitEndDate, recruitEndTime) <= recruitStartAt) {
+      setRecruitEndDate('');
+      setRecruitEndTime('');
+    }
+  };
+
+  const handleRecruitStartTimeChange = (value: string) => {
+    setRecruitStartTime(value);
+    const recruitStartAt = combineDateTime(recruitStartDate, value);
+    if (recruitStartAt && combineDateTime(recruitEndDate, recruitEndTime) <= recruitStartAt) {
+      setRecruitEndTime('');
+    }
+  };
+
+  // 모집 마감: 모집 시작보다 늦어야 하고, 동행 시작보다는 빨라야 합니다(백엔드: 모집 마감 < 동행 시작).
+  const recruitEndDisabled = Array.from(
+    new Set([...disabledTimesAtOrBefore(recruitEndDate, recruitStartDate, recruitStartTime), ...disabledTimesAtOrAfter(recruitEndDate, date, startTime)]),
+  );
+
+  const handleRecruitEndDateChange = (value: string) => {
+    setRecruitEndDate(value);
+    if (recruitEndTime) {
+      const invalid =
+        disabledTimesAtOrBefore(value, recruitStartDate, recruitStartTime).includes(recruitEndTime) ||
+        disabledTimesAtOrAfter(value, date, startTime).includes(recruitEndTime);
+      if (invalid) setRecruitEndTime('');
+    }
   };
 
   let recruitError = '';
-  if (recruitStartDate && recruitEndDate) {
+  if (recruitStartDate && recruitStartTime) {
+    const bound = minSelectableTime(recruitStartDate);
+    if (bound && recruitStartTime <= bound) {
+      recruitError = '모집 시작 시간은 현재 시간보다 이후여야 합니다.';
+    }
+  }
+  if (!recruitError && recruitStartDate && recruitEndDate) {
     if (recruitEndDate < recruitStartDate) {
       recruitError = '모집 종료일은 시작일보다 빠를 수 없습니다.';
     } else if (recruitEndDate === recruitStartDate && recruitStartTime && recruitEndTime && recruitEndTime <= recruitStartTime) {
       recruitError = '모집 종료는 모집 시작보다 늦어야 합니다.';
+    }
+  }
+  if (!recruitError && date && recruitEndDate) {
+    if (recruitEndDate > date) {
+      recruitError = '모집 마감일은 동행 날짜보다 늦을 수 없습니다.';
+    } else if (recruitEndDate === date && startTime && recruitEndTime && recruitEndTime >= startTime) {
+      recruitError = '모집 마감 시간은 동행 시작 시간보다 빨라야 합니다.';
     }
   }
 
@@ -437,7 +521,17 @@ function PostFormFields({ postId, initial, sample }: FormFieldsProps) {
               <FormSection title="모집 일정">
                 <div className="grid gap-[5px] sm:grid-cols-2 sm:gap-x-[11px]">
                   <FormRow label="시작 날짜*" htmlFor="recruit-start-date">
-                    <input id="recruit-start-date" name="recruitStartDate" type="date" required value={recruitStartDate} onChange={(event) => setRecruitStartDate(event.target.value)} className={FIELD} />
+                    <input
+                      id="recruit-start-date"
+                      name="recruitStartDate"
+                      type="date"
+                      required
+                      min={todayDateString()}
+                      max={date || undefined}
+                      value={recruitStartDate}
+                      onChange={(event) => handleRecruitStartDateChange(event.target.value)}
+                      className={FIELD}
+                    />
                   </FormRow>
                   <FormRow label="종료 날짜*" htmlFor="recruit-end-date">
                     <input
@@ -445,17 +539,37 @@ function PostFormFields({ postId, initial, sample }: FormFieldsProps) {
                       name="recruitEndDate"
                       type="date"
                       required
+                      min={recruitStartDate || todayDateString()}
+                      max={date || undefined}
                       value={recruitEndDate}
-                      onChange={(event) => setRecruitEndDate(event.target.value)}
+                      onChange={(event) => handleRecruitEndDateChange(event.target.value)}
                       ref={(element) => element?.setCustomValidity(recruitError)}
                       className={FIELD}
                     />
                   </FormRow>
                   <FormRow label="시작 시간*" htmlFor="recruit-start-time">
-                    <SelectField id="recruit-start-time" name="recruitStartTime" placeholder="시간 선택" options={TIME_OPTIONS} value={recruitStartTime} onChange={setRecruitStartTime} required />
+                    <SelectField
+                      id="recruit-start-time"
+                      name="recruitStartTime"
+                      placeholder="시간 선택"
+                      options={TIME_OPTIONS}
+                      value={recruitStartTime}
+                      onChange={handleRecruitStartTimeChange}
+                      disabledOptions={recruitStartDisabled}
+                      required
+                    />
                   </FormRow>
                   <FormRow label="종료 시간*" htmlFor="recruit-end-time">
-                    <SelectField id="recruit-end-time" name="recruitEndTime" placeholder="시간 선택" options={TIME_OPTIONS} value={recruitEndTime} onChange={setRecruitEndTime} required />
+                    <SelectField
+                      id="recruit-end-time"
+                      name="recruitEndTime"
+                      placeholder="시간 선택"
+                      options={TIME_OPTIONS}
+                      value={recruitEndTime}
+                      onChange={setRecruitEndTime}
+                      disabledOptions={recruitEndDisabled}
+                      required
+                    />
                   </FormRow>
                 </div>
                 {recruitError && (

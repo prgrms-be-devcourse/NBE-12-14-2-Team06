@@ -103,6 +103,28 @@ export function minSelectableTime(date: string): string {
   return flooredNowTime();
 }
 
+/** "2026-09-20" + "10:00" → "2026-09-20T10:00" (비교용 문자열. 날짜·시간 중 하나라도 없으면 빈 문자열) */
+export function combineDateTime(date: string, time: string): string {
+  return date && time ? `${date}T${time}` : '';
+}
+
+/**
+ * date 가 boundDate 와 같은 날일 때, boundTime 이하(<=)인 TIME_OPTIONS 를 막습니다 (= boundTime 이후만 선택 가능).
+ * 날짜가 다르거나 기준값이 없으면 그 시간만으로는 제한이 없어 빈 배열을 돌려줍니다.
+ */
+export function disabledTimesAtOrBefore(date: string, boundDate: string, boundTime: string): string[] {
+  if (!date || !boundDate || !boundTime || date !== boundDate) return [];
+  return TIME_OPTIONS.filter((option) => option <= boundTime);
+}
+
+/**
+ * date 가 boundDate 와 같은 날일 때, boundTime 이상(>=)인 TIME_OPTIONS 를 막습니다 (= boundTime 이전만 선택 가능).
+ */
+export function disabledTimesAtOrAfter(date: string, boundDate: string, boundTime: string): string[] {
+  if (!date || !boundDate || !boundTime || date !== boundDate) return [];
+  return TIME_OPTIONS.filter((option) => option >= boundTime);
+}
+
 /**
  * 카카오맵이 돌려준 주소("서울 강남구 역삼동 736-1")에서 시/도 · 구/군을 뽑습니다.
  * 카카오 주소는 백엔드가 실제로 쓰는 짧은 표기("서울" · "경기" 등)와 형식이 같습니다.
