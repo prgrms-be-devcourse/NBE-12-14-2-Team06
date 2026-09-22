@@ -3,7 +3,7 @@ package com.back.nbe12142team06.domain.user.dto.profile;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-public record EscortProfileRequest(
+public record EscortProfileModifyRequest(
         @NotBlank(message = "자기소개는 필수 항목입니다.")
         @Size(max = 500, message = "자기소개는 500자 이하여야 합니다.")
         String intro,
@@ -19,6 +19,5 @@ public record EscortProfileRequest(
         @NotBlank(message = "계좌 번호는 필수 항목입니다.")
         @Size(max = 30, message = "계좌 번호는 30자 이하여야 합니다.")
         String accountNumber
-
 ) {
 }

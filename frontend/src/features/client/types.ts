@@ -24,14 +24,17 @@ export type ClientPost = {
   applicationId?: number;
 };
 
-/** 동행 매니저 프로필 (지원자 카드 · 동행 정보 카드 공용) */
+/**
+ * 동행 매니저 프로필 (지원자 카드 · 동행 정보 카드 공용).
+ * ⚠️ 지역(region)·태그(tags)는 백엔드 지원자 프로필 API(escort-profile)에 없어서, 실제 데이터로 채울 땐 빠집니다.
+ */
 export type Manager = {
   name: string;
   rating: number;
   completedCount: number;
-  /** "서울 강남구" */
-  region: string;
-  tags: string[];
+  /** "서울 강남구". 값이 없으면 화면에서 이 줄을 생략합니다. */
+  region?: string;
+  tags?: string[];
   intro: string[];
 };
 
@@ -84,9 +87,18 @@ export type ClientEscortCase = {
 export type PostFormValues = {
   title: string;
   hospitalName: string;
+  /** 카카오맵 검색으로 채워지는 병원 주소 (도로명 우선) */
+  hospitalAddress: string;
+  hospitalLat: number | null;
+  hospitalLng: number | null;
+  /** 병원 주소에서 뽑은 시/도 (백엔드가 쓰는 짧은 표기: "서울" · "경기" 등) */
   region: string;
+  /** 병원 주소에서 뽑은 구/군 */
   district: string;
+  /** 출발지(픽업 주소). 카카오맵 검색으로 채워집니다. */
   departure: string;
+  pickupLat: number | null;
+  pickupLng: number | null;
   date: string;
   startTime: string;
   endTime: string;

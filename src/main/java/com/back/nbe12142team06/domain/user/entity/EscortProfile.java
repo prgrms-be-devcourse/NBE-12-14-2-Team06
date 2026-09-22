@@ -70,12 +70,12 @@ public class EscortProfile extends BaseTimeEntity {
         this.accountNumber = accountNumber;
     }
 
-    // 계좌 정보 업데이트
-    public EscortProfile updateAccount(String bankName, String accountHolder, String accountNumber) {
+    // 프로필 업데이트
+    public void updateProfile(String intro, String bankName, String accountHolder, String accountNumber){
+        this.intro = intro;
         this.bankName = bankName;
         this.accountHolder = accountHolder;
         this.accountNumber = accountNumber;
-        return this;
     }
 
     // 평균 평점 (소수점 첫째 자리, 평가 없으면 null)

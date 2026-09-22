@@ -1,5 +1,5 @@
-import { daysUntil, formatAgo, formatTime, parseDateTime } from '../lib/date';
-import type { PostBadge, PostDto, PostSummary } from '../types';
+import { daysUntil, formatAgo, formatDateTime, formatMonthDayTime, formatTime, parseDateTime } from '../lib/date';
+import type { PostBadge, PostDetail, PostDto, PostSummary } from '../types';
 
 /** 백엔드 PostStatus.OPEN 의 설명 문구 (PostDto.postStatus 는 한글 문구로 내려옵니다.) */
 const OPEN_STATUS = '모집 중';
@@ -31,5 +31,21 @@ export function toPostSummary(dto: PostDto): PostSummary {
     hourlyPay: dto.hourlyPay,
     description: dto.content.split('\n').filter((line) => line.trim() !== ''),
     badge: toBadge(dto),
+  };
+}
+
+/** 백엔드 PostDto → 상세 화면용 PostDetail */
+export function toPostDetail(dto: PostDto): PostDetail {
+  return {
+    ...toPostSummary(dto),
+    clientId: dto.client_id,
+    postStatus: dto.postStatus,
+    postedAt: formatDateTime(dto.createdAt),
+    hospitalAddress: dto.hospitalAddress,
+    pickupAddress: dto.pickupAddress,
+    details: dto.content.split('\n').filter((line) => line.trim() !== ''),
+    patientNote: dto.patientNote ? dto.patientNote.split('\n').filter((line) => line.trim() !== '') : [],
+    reportRequired: dto.reportRequired,
+    recruitPeriod: `${formatMonthDayTime(dto.recruitStartAt)} ~ ${formatMonthDayTime(dto.recruitEndAt)}`,
   };
 }
