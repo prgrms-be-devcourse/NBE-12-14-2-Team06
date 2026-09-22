@@ -33,7 +33,7 @@ public class SecurityConfig {
                     .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                     .requestMatchers("/api/v1/users/*/profile/client").hasAnyRole("ADMIN", "ESCORT")    // 의뢰인 프로필 타인 조회, 수정
                     .requestMatchers("/api/v1/users/profile/client").hasRole("CLIENT") // 의뢰인 프로필 생성, 조회, 수정
-                    .requestMatchers("/api/v1/users/*/profile/escort").hasAnyRole("ADMIN", "CLIENT")    // 동행인 프로필 타인 조회, 수정
+                    .requestMatchers("/api/v1/users/*/profile/escort").hasAnyRole("CLIENT")    // 동행인 프로필 타인 조회
                     .requestMatchers("/api/v1/users/profile/escort").hasRole("ESCORT") // 동행인 프로필 생성, 조회, 수정
                     .requestMatchers("/api/**").authenticated()
                     .anyRequest().permitAll()

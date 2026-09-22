@@ -100,6 +100,50 @@ public class AdminUserControllerTest {
         return login(ADMIN_USERNAME, ADMIN_PASSWORD);
     }
 
+    // 역할 지정 회원가입 후 accessToken 쿠키 반환
+    private Cookie signUp(String username, String role) throws Exception {
+        String signUpBody = """
+                {
+                    "username": "%s",
+                    "password": "testPassword",
+                    "email": "%s@user.user",
+                    "name": "김춘식",
+                    "role": "%s",
+                    "gender": "MALE",
+                    "birthDate": "1990-05-20",
+                    "phoneNum": "%s010-8080-0000",
+                    "region": "서울시"
+                }
+                """.formatted(username, username, role, username);
+
+        Cookie accessToken = mvc.perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(signUpBody))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getCookie("accessToken");
+
+        assertThat(accessToken).isNotNull();
+        return accessToken;
+    }
+
+    // 동행 매니저 프로필 생성
+    private void createEscortProfile(Cookie escortToken) throws Exception {
+        mvc.perform(post("/api/v1/users/profile/escort")
+                        .cookie(escortToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "intro": "동행 매니저입니다.",
+                                    "bankName": "오픈은행",
+                                    "accountHolder": "김춘식",
+                                    "accountNumber": "123-0000000-123"
+                                }
+                                """))
+                .andExpect(status().isOk());
+    }
+
     // 일반 회원 가입 후 accessToken 쿠키 반환 (가입 시 토큰이 발급됨)
     private Cookie signUp(String username) throws Exception {
         String signUpBody = """
@@ -504,7 +548,7 @@ public class AdminUserControllerTest {
 
 
     @Test
-    @DisplayName("[AdminUserController] 회원 정보 탈퇴 - 관리자의 정상 탈퇴 요청 시 200-3 반환")
+    @DisplayName("[AdminUserController] 회원 정보 탈퇴 - 관리자의 정상 탈퇴 요청 시 200-4 반환")
     void t14() throws Exception {
         createTestAdmin();
         Cookie adminToken = loginAsAdmin();
@@ -521,7 +565,7 @@ public class AdminUserControllerTest {
 
         resultActions
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value("200-3"))
+                .andExpect(jsonPath("$.statusCode").value("200-4"))
                 .andExpect(jsonPath("$.msg").value("회원 탈퇴가 완료되었습니다."));
 
         em.flush();
@@ -603,7 +647,7 @@ public class AdminUserControllerTest {
 
         resultActions
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value("200-3"))
+                .andExpect(jsonPath("$.statusCode").value("200-4"))
                 .andExpect(jsonPath("$.msg").value("회원 탈퇴가 완료되었습니다."));
 
         // 또또 탈퇴 요청
@@ -617,5 +661,40 @@ public class AdminUserControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value("400-4"))
                 .andExpect(jsonPath("$.msg").value("이미 탈퇴한 회원입니다."));
+    }
+
+    @Test
+    @DisplayName("[AdminUserController] 동행 매니저 프로필 타인 조회 - 관리자 조회 시 계좌 정보까지 200-9 반환")
+    void t18() throws Exception {
+        Cookie escortToken = signUp("escort1", "ESCORT");
+        Long escortId = findUserId("escort1");
+        createEscortProfile(escortToken);
+
+        createTestAdmin();
+        Cookie adminToken = loginAsAdmin();
+
+        em.flush();
+        em.clear();
+
+        ResultActions resultActions = mvc.perform(
+                        get("/api/v1/admin/users/{userId}/profile/escort", escortId)
+                                .cookie(adminToken))
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-9"))
+                .andExpect(jsonPath("$.msg").value("동행 매니저 프로필 조회를 완료했습니다."))
+                .andExpect(jsonPath("$.data.userId").value(escortId))
+                .andExpect(jsonPath("$.data.name").value("김춘식"))
+                .andExpect(jsonPath("$.data.region").value("서울시"))
+                .andExpect(jsonPath("$.data.intro").value("동행 매니저입니다."))
+                .andExpect(jsonPath("$.data.averageRating").value(nullValue()))
+                .andExpect(jsonPath("$.data.completedCount").value(0))
+                .andExpect(jsonPath("$.data.verified").value(false))
+                // 계좌 정보 포함
+                .andExpect(jsonPath("$.data.bankName").value("오픈은행"))
+                .andExpect(jsonPath("$.data.accountHolder").value("김춘식"))
+                .andExpect(jsonPath("$.data.accountNumber").value("123-0000000-123"));
     }
 }

@@ -313,28 +313,27 @@ public class UserService {
         withdraw(user);
     }
 
+    // 동행인 프로필 생성
     @Transactional
     public EscortProfile createEscortProfile(Long userId, EscortProfileRequest request) {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("회원 정보를 찾을 수 없습니다."));
 
-        if (escortProfileRepository.existsEscortProfileByUser(user)) {
-            throw new DuplicatedException("이미 존재하는 동행 매니저 프로필입니다.");
+        if (escortProfileRepository.existsById(userId)) {
+            throw new DuplicatedException(5, "이미 존재하는 동행 매니저 프로필입니다.");
         }
 
         // 프로필 생성 및 회원 연결
-        EscortProfile escortProfile = new EscortProfile(user);
-
-        // 계좌 등록
-        escortProfile.updateAccount(request.bankName(), request.accountHolder(), request.accountNumber());
+        EscortProfile escortProfile = new EscortProfile(user, request.intro(), request.bankName(), request.accountHolder(), request.accountNumber());
 
         return this.escortProfileRepository.save(escortProfile);
     }
 
+    // 동행인 프로필 조회
     @Transactional(readOnly = true)
     public EscortProfile getEscortProfile(Long escortId) {
-        return this.escortProfileRepository.findByUserId(escortId)
+        return this.escortProfileRepository.findById(escortId)
                 .orElseThrow(() -> new NotFoundException("동행 매니저 프로필이 존재하지 않습니다."));
     }
 
