@@ -72,7 +72,14 @@ export default function SuccessPage() {
   return (
     <>
       <div className="box_section" style={{ width: '600px' }}>
-        <img width="100px" src="https://static.toss.im/illusts/check-blue-spot-ending-frame.png" alt="" />
+        {/* Tailwind preflight 가 img 를 display:block 으로 만들어서, box_section 의 text-align 으로는
+            가운데로 오지 않습니다. 좌우 여백을 auto 로 두어 직접 가운데 정렬합니다. */}
+        <img
+          width="100px"
+          src="https://static.toss.im/illusts/check-blue-spot-ending-frame.png"
+          alt=""
+          className="mx-auto"
+        />
         <h2>{confirmed ? '결제를 완료했어요' : '결제를 확인하고 있어요'}</h2>
 
         <div className="p-grid typography--p" style={{ marginTop: '50px' }}>

@@ -37,8 +37,9 @@ export default function SignupCompletePage() {
             <SignupStepper current={4} />
           </div>
 
+          {/* 결제 성공 화면(토스)의 파란 체크와 같은 색(#3182F6) 입니다. */}
           <Image
-            src="/icons/complete-check.svg"
+            src="/icons/complete-check-blue.svg"
             alt=""
             width={126}
             height={126}
