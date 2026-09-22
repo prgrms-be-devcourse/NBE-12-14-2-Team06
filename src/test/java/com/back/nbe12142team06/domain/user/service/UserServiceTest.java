@@ -257,7 +257,7 @@ public class UserServiceTest {
         em.flush();
         em.clear();
 
-        EscortProfile profileCheck = this.escortProfileRepository.findByUserId(saved.getId()).get();
+        EscortProfile profileCheck = this.escortProfileRepository.findById(saved.getId()).get();
 
         assertThat(profileCheck.getBankName()).isEqualTo("오픈은행");
         assertThat(profileCheck.getAccountNumber()).isEqualTo("123-000000-123");

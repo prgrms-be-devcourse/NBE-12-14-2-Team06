@@ -161,12 +161,12 @@ public class UserController {
         );
     }
 
-
-
     // 동행 매니저 프로필 생성
     @PostMapping("/profile/escort")
-    public RsData<EscortProfileResponse> createProfileEscort(@AuthenticationPrincipal SecurityUser me,
-                                                             @RequestBody @Valid EscortProfileRequest request) {
+    public RsData<EscortProfileResponse> createProfileEscort(
+            @AuthenticationPrincipal SecurityUser me,
+            @RequestBody @Valid EscortProfileRequest request
+    ) {
 
         EscortProfile escort = this.userService.createEscortProfile(me.getId(), request);
 
@@ -177,7 +177,7 @@ public class UserController {
         );
     }
 
-    // 동행 매니저 프로필 조회
+    // 동행 매니저 자기 자신 프로필 조회 (계좌 정보 포함)
     @GetMapping("/profile/escort")
     public RsData<EscortProfileResponse> getProfileEscort(
             @AuthenticationPrincipal SecurityUser me
@@ -190,4 +190,18 @@ public class UserController {
                 new EscortProfileResponse(escortProfile)
         );
     }
+
+    // 의뢰인의 동행 매니저 프로필 조회 (계좌 정보 미포함)
+    @GetMapping("/{userId}/profile/escort")
+    public RsData<EscortProfileForClientResponse> getProfileEscortByClient(@PathVariable Long userId){
+        EscortProfile escortProfile = this.userService.getEscortProfile(userId);
+
+        return new RsData<>(
+                "200-9",
+                "동행 매니저 프로필 조회를 완료했습니다.",
+                new EscortProfileForClientResponse(escortProfile)
+        );
+    }
+
+
 }

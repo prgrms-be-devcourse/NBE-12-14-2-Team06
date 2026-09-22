@@ -47,6 +47,24 @@ public class UserService {
     private final ClientProfileRepository clientProfileRepository;
     private final ApplicationRepository applicationRepository;
 
+    // 프로필 삭제, 리프레시 토큰 폐기, 회원 정보 삭제
+    private void withdraw(User user) {
+        Long userId = user.getId();
+
+        switch (user.getRole()) {
+            case CLIENT -> this.clientProfileRepository.deleteByUserId(userId);
+            case ESCORT -> this.escortProfileRepository.deleteByUserId(userId);
+        }
+
+        List<RefreshToken> refreshTokens = this.refreshTokenRepository.findAllByUserIdAndRevokedAtIsNull(userId);
+        for (RefreshToken refreshToken : refreshTokens) {
+            refreshToken.revoke();
+        }
+
+        user.deleteUser();
+        this.userRepository.save(user);
+    }
+
     // 회원가입
     @Transactional
     public User signUp(UserSignUpRequest request) {
@@ -233,9 +251,6 @@ public class UserService {
         return this.clientProfileRepository.save(clientProfile);
     }
 
-
-
-    // 관리자, 매칭이 완료된 동행인의 의뢰인 프로필 조회
     // [관리자, 매칭된 동행 매니저] 의뢰인 프로필 조회
     @Transactional(readOnly = true)
     public ClientProfile getClientProfile(Long requesterId, Long clientId) {
@@ -298,46 +313,29 @@ public class UserService {
         withdraw(user);
     }
 
-    // 프로필 삭제, 리프레시 토큰 폐기, 회원 정보 삭제
-    private void withdraw(User user) {
-        Long userId = user.getId();
-
-        switch (user.getRole()) {
-            case CLIENT -> this.clientProfileRepository.deleteByUserId(userId);
-            case ESCORT -> this.escortProfileRepository.deleteByUserId(userId);
-        }
-
-        List<RefreshToken> refreshTokens = this.refreshTokenRepository.findAllByUserIdAndRevokedAtIsNull(userId);
-        for (RefreshToken refreshToken : refreshTokens) {
-            refreshToken.revoke();
-        }
-
-        user.deleteUser();
-        this.userRepository.save(user);
-    }
-
+    // 동행인 프로필 생성
     @Transactional
     public EscortProfile createEscortProfile(Long userId, EscortProfileRequest request) {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("회원 정보를 찾을 수 없습니다."));
 
-        if (escortProfileRepository.existsEscortProfileByUser(user)) {
-            throw new DuplicatedException("이미 존재하는 동행 매니저 프로필입니다.");
+        if (escortProfileRepository.existsById(userId)) {
+            throw new DuplicatedException(5, "이미 존재하는 동행 매니저 프로필입니다.");
         }
 
         // 프로필 생성 및 회원 연결
-        EscortProfile escortProfile = new EscortProfile(user);
-
-        // 계좌 등록
-        escortProfile.updateAccount(request.bankName(), request.accountHolder(), request.accountNumber());
+        EscortProfile escortProfile = new EscortProfile(user, request.intro(), request.bankName(), request.accountHolder(), request.accountNumber());
 
         return this.escortProfileRepository.save(escortProfile);
     }
 
+    // 동행인 프로필 조회
     @Transactional(readOnly = true)
     public EscortProfile getEscortProfile(Long escortId) {
-        return this.escortProfileRepository.findByUserId(escortId)
+        return this.escortProfileRepository.findById(escortId)
                 .orElseThrow(() -> new NotFoundException("동행 매니저 프로필이 존재하지 않습니다."));
     }
+
+
 }
