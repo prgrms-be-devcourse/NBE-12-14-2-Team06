@@ -1,4 +1,6 @@
 import type { TimelineStep } from '@/features/escort';
+import type { PostDto } from '@/features/post';
+import { formatDotDateTime, formatScheduleLabel } from '../lib/date';
 import type { ClientEscortCase, ClientEscortStage, Manager } from '../types';
 
 /*
@@ -96,6 +98,45 @@ export const CLIENT_ESCORT_CASES: ClientEscortCase[] = [
 
 export function getClientEscortCase(applicationId: number): ClientEscortCase | undefined {
   return CLIENT_ESCORT_CASES.find((item) => item.applicationId === applicationId);
+}
+
+/** 타임라인 6단계 중 3단계(ready/ongoing/done)마다 몇 번째까지 완료로 볼지 */
+const STAGE_DONE_COUNT: Record<'ready' | 'ongoing' | 'done', number> = { ready: 1, ongoing: 3, done: 6 };
+
+/**
+ * 백엔드 PostDto.postStatus(한글) → 진행 단계 3종.
+ * ⚠️ 동행 진행 단계(EscortProgress)를 "읽는" API 가 없어서(쓰기 PATCH만 있음) 공고 상태로 대신합니다.
+ */
+function toClientEscortStage(postStatus: string): 'ready' | 'ongoing' | 'done' {
+  if (postStatus === '동행 진행 중') return 'ongoing';
+  if (postStatus === '동행 완료') return 'done';
+  return 'ready'; // '매칭 완료' 및 그 외 상태의 기본값
+}
+
+/**
+ * 실제 API 로 만든 의뢰인 동행 현황.
+ * ⚠️ 타임라인 단계별 "시각"과 지도의 실시간 위치는 API 가 없어 모의 값을 그대로 씁니다.
+ */
+export function toClientEscortCase(post: PostDto, applicationId: number, manager: Manager, transport: string): ClientEscortCase {
+  const stage = toClientEscortStage(post.postStatus);
+  return {
+    applicationId,
+    postId: post.id,
+    stage,
+    title: post.title,
+    hospitalName: post.hospitalName,
+    region: post.region,
+    scheduleLabel: formatScheduleLabel(post.escortStartAt),
+    durationLabel: `약 ${post.escortHours}시간`,
+    payLabel: `시급 ${post.hourlyPay.toLocaleString()}원`,
+    startAt: formatDotDateTime(post.escortStartAt),
+    endAt: formatDotDateTime(post.escortEndAt),
+    transport,
+    meetingPlace: post.pickupAddress,
+    updatedAt: TIMES[STAGE_DONE_COUNT[stage] - 1] || '9:00',
+    manager,
+    timeline: timeline(STAGE_DONE_COUNT[stage], TIMES),
+  };
 }
 
 /** 진행 요약 카드의 단계별 문구 (Figma "진행 요약") */

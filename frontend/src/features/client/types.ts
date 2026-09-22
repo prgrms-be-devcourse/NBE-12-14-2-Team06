@@ -1,7 +1,10 @@
 import type { TimelineStep } from '@/features/escort';
 
-/** 내가 작성한 공고의 진행 상태 (백엔드 PostStatus: OPEN → MATCHED → IN_PROGRESS → COMPLETED) */
-export type ClientPostStatus = 'open' | 'matched' | 'inProgress' | 'completed';
+/**
+ * 내가 작성한 공고의 진행 상태 (백엔드 PostStatus: OPEN → MATCHED → IN_PROGRESS → COMPLETED).
+ * canceled·expired(취소됨·마감 기한 초과)는 상태 탭이 따로 없어 "전체" 탭에서만 보입니다.
+ */
+export type ClientPostStatus = 'open' | 'matched' | 'inProgress' | 'completed' | 'canceled' | 'expired';
 
 /** "내가 작성한 공고" 카드 한 장 (모의 데이터용 모양) */
 export type ClientPost = {

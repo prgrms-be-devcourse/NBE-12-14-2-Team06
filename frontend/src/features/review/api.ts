@@ -16,3 +16,8 @@ export async function writeReview(applicationId: number, payload: WriteReviewPay
     body: JSON.stringify(payload),
   });
 }
+
+/** 특정 동행인이 받은 리뷰 목록 조회(로그인 쿠키 필요) — GET /api/v1/users/{escortId}/reviews */
+export function fetchUserReviews(escortId: number): Promise<ReviewDto[]> {
+  return api<ReviewDto[]>(`/api/v1/users/${escortId}/reviews`);
+}
