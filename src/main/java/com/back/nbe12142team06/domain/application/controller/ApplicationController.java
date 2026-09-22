@@ -127,7 +127,7 @@ public class ApplicationController {
 
         return new RsData<>(
                 "200-2",
-                "동행자 프로필 조회가 완료되었습니다.",
+                "지원자 프로필 조회가 완료되었습니다.",
                 response
         );
     }
