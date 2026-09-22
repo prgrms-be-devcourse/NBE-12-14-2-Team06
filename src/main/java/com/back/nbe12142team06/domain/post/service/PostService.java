@@ -13,8 +13,10 @@ import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.entity.PostStatus;
 import com.back.nbe12142team06.domain.post.repository.PostRepository;
 import com.back.nbe12142team06.domain.ride.service.RideService;
+import com.back.nbe12142team06.domain.user.entity.EscortProfile;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Role;
+import com.back.nbe12142team06.domain.user.repository.EscortProfileRepository;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
 import com.back.nbe12142team06.global.exception.InvalidException;
 import com.back.nbe12142team06.global.exception.NotFoundException;
@@ -37,6 +39,7 @@ public class PostService {
     private final UserRepository userRepository;
     private final EscortProgressLogRepository escortProgressLogRepository;
     private final ApplicationRepository applicationRepository;
+    private final EscortProfileRepository escortProfileRepository;
     private final PaymentService paymentService;
     private final RideService rideService;
 
@@ -238,6 +241,11 @@ public class PostService {
 
         post.startProgress(departedAt);   // escortStartAt 실제값 반영
         post.complete(arrivedAt);       // escortEndAt 실제값 반영 + 상태 COMPLETED
+
+        // 동행인 프로필의 동행 완료 건수 증가
+        EscortProfile escortProfile = this.escortProfileRepository.findById(application.getEscort().getId())
+                .orElseThrow(() -> new NotFoundException(20, "동행 매니저 프로필이 존재하지 않습니다."));
+        escortProfile.increaseCompletedCount();
 
         // 재결제 로직
         paymentService.validPayment(userId, post, application, post.getEscortEndAt().plusDays(1).toLocalDate());

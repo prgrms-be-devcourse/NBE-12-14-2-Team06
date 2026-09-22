@@ -3,10 +3,13 @@ package com.back.nbe12142team06.domain.review.service;
 import com.back.nbe12142team06.domain.application.entity.Application;
 import com.back.nbe12142team06.domain.application.enums.ApplicationStatus;
 import com.back.nbe12142team06.domain.application.repository.ApplicationRepository;
+import com.back.nbe12142team06.domain.post.entity.PostStatus;
 import com.back.nbe12142team06.domain.review.dto.ReviewWriteRequest;
 import com.back.nbe12142team06.domain.review.entity.Review;
 import com.back.nbe12142team06.domain.review.entity.ReviewTag;
 import com.back.nbe12142team06.domain.review.repository.ReviewRepository;
+import com.back.nbe12142team06.domain.user.entity.EscortProfile;
+import com.back.nbe12142team06.domain.user.repository.EscortProfileRepository;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
 import com.back.nbe12142team06.global.exception.DuplicatedException;
 import com.back.nbe12142team06.global.exception.ForbiddenException;
@@ -28,6 +31,7 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final ApplicationRepository applicationRepository;
     private final UserRepository userRepository;
+    private final EscortProfileRepository escortProfileRepository;
 
     @Transactional // 쓰기 작업을 수행하는 메서드에는 readOnly 해제
     public Review write(Long applicationId, Long actorId, ReviewWriteRequest request) {
@@ -41,7 +45,7 @@ public class ReviewService {
         }
 
         // 매칭이 확정된 동행 건에만 리뷰 작성 가능
-        if (application.getStatus() != ApplicationStatus.ACCEPTED) {
+        if (application.getStatus() != ApplicationStatus.ACCEPTED || application.getPost().getPostStatus() != PostStatus.COMPLETED) {
             throw new InvalidException(1, "매칭이 확정된 동행 건에만 리뷰를 작성할 수 있습니다.");
         }
 
@@ -52,7 +56,7 @@ public class ReviewService {
         // 태그 미선택 시 null 이 들어오므로 빈 컬렉션으로 대체
         Set<ReviewTag> tags = request.tags() == null ? new HashSet<>() : request.tags();
 
-        return reviewRepository.save(
+        Review review = reviewRepository.save(
                 Review.builder()
                         .application(application)
                         .rating(request.rating())
@@ -60,6 +64,13 @@ public class ReviewService {
                         .content(request.content())
                         .build()
         );
+
+        // 동행 매니저 프로필 평점 반영
+        EscortProfile escortProfile = this.escortProfileRepository.findById(application.getEscort().getId())
+                .orElseThrow(() -> new NotFoundException(3, "동행 매니저 프로필이 존재하지 않습니다."));
+        escortProfile.addRating(request.rating());
+
+        return review;
     }
 
     // 특정 동행인이 받은 리뷰 목록 조회 (클래스의 readOnly 적용)
