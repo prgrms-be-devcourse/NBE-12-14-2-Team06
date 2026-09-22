@@ -18,6 +18,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -50,13 +52,19 @@ public class BaseInitData {
     private final PostRepository postRepository;
     private final PaymentRepository paymentRepository;
     private final PasswordEncoder passwordEncoder;
+    private final PlatformTransactionManager transactionManager;
 
     @PersistenceContext
     private EntityManager em;
 
     @Bean
     ApplicationRunner baseInitDataApplicationRunner() {
-        return args -> initPosts();
+        return args -> {
+            TransactionTemplate transactionTemplate =
+                    new TransactionTemplate(transactionManager);
+
+            transactionTemplate.executeWithoutResult(status -> initPosts());
+        };
     }
 
     void initPosts() {
