@@ -8,10 +8,11 @@ import { AppShell } from '@/components/layout';
 import { Container, InfoRow, SectionHeading } from '@/components/ui';
 import { cn } from '@/lib/cn';
 import { MOCK_USER } from '@/lib/mockSession';
+import { writeReport } from '@/features/report';
 import { getEscortCase } from '../model/cases';
+import { DEPARTMENTS } from '../model/departments';
 
 const MAX_PHOTOS = 4;
-const DEPARTMENTS = ['내과', '외과', '정형외과', '영상의학과', '치과', '안과', '피부과', '기타'];
 const GUIDES = [
   '실제 동행한 내용을 바탕으로 작성해주세요.',
   '진료 내용은 구체적으로 작성할수록 좋아요.',
@@ -22,6 +23,7 @@ const GUIDES = [
 
 const FIELD =
   'w-full rounded-[20px] border border-line-soft bg-white px-4 text-base leading-5 text-brand shadow-card placeholder:text-brand-muted';
+const ERROR_TEXT = 'px-4 text-sm leading-5 font-medium text-[#b91d1d]';
 
 /** "라벨 + 입력" 한 줄 (라벨 100px) */
 function FieldRow({ label, htmlFor, children }: { label: string; htmlFor: string; children: ReactNode }) {
@@ -43,7 +45,7 @@ function SectionTitle({ children }: { children: ReactNode }) {
  * 동행 보고서 작성 — Figma 동행 매니저_보고서 작성 화면 61:1269
  *
  * 형식 검사는 브라우저 기본 검사(required)를 씁니다.
- * ⚠️ 제출해도 서버로 보내지 않고 "제출 완료" 화면으로만 이동합니다. (보고서 API 연결 전)
+ * 첨부 사진은 서버에 업로드 API 가 없어 미리보기만 보여주고 전송하지 않습니다.
  */
 export default function ReportWritePage() {
   const params = useParams<{ applicationId: string }>();
@@ -51,6 +53,8 @@ export default function ReportWritePage() {
   const escort = getEscortCase(Number(params.applicationId));
 
   const [photos, setPhotos] = useState<{ name: string; url: string }[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   // 미리보기 주소는 화면을 떠날 때 정리합니다.
   useEffect(() => () => photos.forEach((photo) => URL.revokeObjectURL(photo.url)), [photos]);
@@ -69,10 +73,26 @@ export default function ReportWritePage() {
     event.target.value = '';
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    // TODO: 보고서 등록 API 연결 (사진은 파일 업로드 방식 확인 필요)
-    router.push(`/escort/${escort.applicationId}/report/done`);
+    setSubmitError('');
+
+    const form = new FormData(event.currentTarget);
+    const value = (name: string) => String(form.get(name) ?? '').trim();
+
+    setSubmitting(true);
+    try {
+      await writeReport(escort.applicationId, {
+        department: value('department'),
+        purpose: value('purpose'),
+        originContent: value('summary'),
+        notes: value('notes'),
+      });
+      router.push(`/escort/${escort.applicationId}/report/done`);
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : '보고서 제출에 실패했습니다.');
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -119,7 +139,7 @@ export default function ReportWritePage() {
                       <select id="report-department" name="department" required defaultValue="" className={cn(FIELD, 'h-[61px] appearance-none pr-12 invalid:text-brand-muted')}>
                         <option value="" disabled hidden>선택해주세요</option>
                         {DEPARTMENTS.map((department) => (
-                          <option key={department} value={department} className="text-brand">{department}</option>
+                          <option key={department.value} value={department.value} className="text-brand">{department.label}</option>
                         ))}
                       </select>
                       <Image src="/icons/escort/report-select.svg" alt="" width={15.5} height={8.5} className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2" />
@@ -153,6 +173,7 @@ export default function ReportWritePage() {
 
               <div>
                 <SectionTitle>첨부 사진</SectionTitle>
+                <p className="mb-2 px-2 text-sm leading-5 font-medium text-brand-muted">사진 첨부는 추후 지원 예정입니다. 지금 선택한 사진은 서버로 전송되지 않습니다.</p>
                 <div className="flex flex-wrap items-center gap-2">
                   <label className="flex h-[120px] w-full cursor-pointer flex-col items-center justify-center gap-2.5 rounded-[20px] border border-line-soft bg-line-soft px-4 text-center text-base leading-5 text-brand-muted shadow-card sm:w-[calc(100%-320px)] sm:min-w-[220px] lg:w-[378px]">
                     <Image src="/icons/escort/camera.svg" alt="" width={31.65} height={27.65} />
@@ -182,12 +203,22 @@ export default function ReportWritePage() {
                 </div>
               </div>
 
+              {submitError && (
+                <p role="alert" className={ERROR_TEXT}>
+                  {submitError}
+                </p>
+              )}
+
               <div className="flex gap-[15px]">
                 <Link href={`/escort/${escort.applicationId}`} className="flex h-[55px] flex-1 items-center justify-center rounded-[25px] border border-line bg-white text-base leading-[18px] font-semibold text-brand transition-colors hover:bg-line-soft">
                   취소
                 </Link>
-                <button type="submit" className="flex h-[55px] flex-1 items-center justify-center rounded-[25px] bg-brand text-base leading-[18px] font-semibold text-white transition-colors hover:bg-brand-hover">
-                  제출하기
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex h-[55px] flex-1 items-center justify-center rounded-[25px] bg-brand text-base leading-[18px] font-semibold text-white transition-colors hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {submitting ? '제출 중...' : '제출하기'}
                 </button>
               </div>
             </form>

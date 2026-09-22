@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { AppShell } from '@/components/layout';
 import { Container, SectionHeading } from '@/components/ui';
+import { MAX_TAGS, REVIEW_TAG_ROWS, writeReview } from '@/features/review';
 import { cn } from '@/lib/cn';
 import { MOCK_CLIENT } from '@/lib/mockSession';
 import { STAGE_VIEW, getClientEscortCase } from '../model/escort';
@@ -13,11 +14,6 @@ import ManagerInfoCard from './ManagerInfoCard';
 import TripSummary from './TripSummary';
 
 const RATINGS = [1, 2, 3, 4, 5];
-const KEYWORDS = [
-  ['친절해요', '시간을 잘 지켜요', '보고서가 꼼꼼해요', '소통이 잘 돼요'],
-  ['어르신을 세심하게 챙겨요', '시간 약속이 아쉬워요', '소통이 잘 안 됐어요'],
-  ['응대가 아쉬웠어요', '보고서 내용이 부족해요'],
-];
 const GUIDES = [
   ['실제 이용 경험을 바탕으로 작성해주세요.'],
   ['다른 이용자에게 도움이 되는 소중한 평가입니다.'],
@@ -28,6 +24,8 @@ const GUIDES = [
 const CARD = 'rounded-[30px] border border-line bg-white px-6 py-8 shadow-card lg:px-[35px]';
 const TITLE = 'text-2xl leading-6 font-semibold text-brand';
 const HINT = 'text-sm leading-5 font-medium text-brand';
+const ERROR_TEXT = 'text-sm font-medium text-[#b91d1d]';
+const MAX_COMMENT_LENGTH = 500;
 
 /** 별 한 개 (Figma 50×50 Icon). 선택되면 파란색으로 채웁니다. */
 function Star({ filled }: { filled: boolean }) {
@@ -48,7 +46,7 @@ function Star({ filled }: { filled: boolean }) {
 /**
  * 동행 매니저 리뷰 작성 — Figma 의뢰인_리뷰 작성 459:3023
  *
- * ⚠️ 제출해도 서버로 보내지 않고 동행 현황 화면으로 돌아갑니다. (리뷰 API 연결 전)
+ * 리뷰는 POST /api/v1/applications/{applicationId}/reviews 로 등록합니다.
  */
 export default function ClientReviewPage() {
   const { applicationId } = useParams<{ applicationId: string }>();
@@ -56,8 +54,10 @@ export default function ClientReviewPage() {
   const escort = getClientEscortCase(Number(applicationId));
 
   const [rating, setRating] = useState(0);
-  const [keywords, setKeywords] = useState<string[]>([]);
+  const [tags, setTags] = useState<string[]>([]);
   const [showError, setShowError] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   if (!escort) {
     return (
@@ -67,17 +67,30 @@ export default function ClientReviewPage() {
     );
   }
 
-  const toggleKeyword = (keyword: string) =>
-    setKeywords((prev) => (prev.includes(keyword) ? prev.filter((item) => item !== keyword) : [...prev, keyword]));
+  const tagsMaxed = tags.length >= MAX_TAGS;
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const toggleTag = (value: string) =>
+    setTags((prev) => (prev.includes(value) ? prev.filter((item) => item !== value) : prev.length >= MAX_TAGS ? prev : [...prev, value]));
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (rating === 0) {
       setShowError(true);
       return;
     }
-    // TODO: 리뷰 등록 API 연결 (평점 rating · 세부 평가 keywords · 추가 의견 comment)
-    router.push(`/client/escort/${escort.applicationId}`);
+    setSubmitError('');
+
+    const form = new FormData(event.currentTarget);
+    const content = String(form.get('comment') ?? '').trim();
+
+    setSubmitting(true);
+    try {
+      await writeReview(escort.applicationId, { rating, tags, content });
+      router.push(`/client/escort/${escort.applicationId}`);
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : '리뷰 제출에 실패했습니다.');
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -134,19 +147,22 @@ export default function ClientReviewPage() {
                 </h2>
                 <p className={HINT}>매니저의 어떤 점이 좋았나요? 해당하는 항목을 선택해주세요.</p>
                 <div className="mt-5 flex flex-col gap-2.5">
-                  {KEYWORDS.map((row) => (
-                    <div key={row.join()} className="flex flex-wrap justify-center gap-[15px]">
-                      {row.map((keyword) => {
-                        const selected = keywords.includes(keyword);
+                  {REVIEW_TAG_ROWS.map((row) => (
+                    <div key={row.map((tag) => tag.value).join()} className="flex flex-wrap justify-center gap-[15px]">
+                      {row.map((tag) => {
+                        const selected = tags.includes(tag.value);
+                        const disabled = !selected && tagsMaxed;
                         return (
                           <button
-                            key={keyword}
+                            key={tag.value}
                             type="button"
                             aria-pressed={selected}
-                            onClick={() => toggleKeyword(keyword)}
+                            disabled={disabled}
+                            onClick={() => toggleTag(tag.value)}
                             className={cn(
                               'flex h-[46px] items-center justify-center gap-2.5 rounded-[25px] border px-5 text-base leading-[13px] font-semibold whitespace-nowrap transition-colors',
                               selected ? 'border-brand bg-brand text-white' : 'border-line bg-white text-brand hover:bg-line-soft',
+                              disabled && 'cursor-not-allowed opacity-50 hover:bg-white',
                             )}
                           >
                             <Image
@@ -156,13 +172,18 @@ export default function ClientReviewPage() {
                               height={10}
                               className={cn('size-2.5 transition-transform', selected && 'rotate-45 brightness-0 invert')}
                             />
-                            {keyword}
+                            {tag.label}
                           </button>
                         );
                       })}
                     </div>
                   ))}
                 </div>
+                {tagsMaxed && (
+                  <p role="alert" className={cn(ERROR_TEXT, 'mt-2.5 text-center')}>
+                    최대 {MAX_TAGS}개까지 선택할 수 있어요
+                  </p>
+                )}
               </section>
 
               <section className={CARD}>
@@ -175,10 +196,17 @@ export default function ClientReviewPage() {
                 <textarea
                   id="review-comment"
                   name="comment"
+                  maxLength={MAX_COMMENT_LENGTH}
                   placeholder="예) 특히 도움이 되었던 점이나 개선되었으면 하는 점이 있다면 알려주세요."
                   className="mt-[11px] h-[99px] w-full resize-none rounded-[30px] border border-line bg-white p-5 text-sm leading-5 text-brand placeholder:text-brand-muted"
                 />
               </section>
+
+              {submitError && (
+                <p role="alert" className={cn(ERROR_TEXT, 'text-center')}>
+                  {submitError}
+                </p>
+              )}
 
               <div className="flex gap-[15px]">
                 <Link
@@ -187,8 +215,12 @@ export default function ClientReviewPage() {
                 >
                   취소
                 </Link>
-                <button type="submit" className="flex h-14 flex-1 items-center justify-center rounded-[25px] bg-brand text-xl leading-[18px] font-semibold text-white transition-colors hover:bg-brand-hover">
-                  리뷰 제출하기
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex h-14 flex-1 items-center justify-center rounded-[25px] bg-brand text-xl leading-[18px] font-semibold text-white transition-colors hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {submitting ? '제출 중...' : '리뷰 제출하기'}
                 </button>
               </div>
             </form>

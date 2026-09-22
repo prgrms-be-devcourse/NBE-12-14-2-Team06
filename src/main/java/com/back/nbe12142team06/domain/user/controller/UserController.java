@@ -243,5 +243,20 @@ public class UserController {
         );
     }
 
+    // 동행인 프로필 수정
+    @PutMapping("/profile/escort")
+    public RsData<EscortProfileModifyResponse> updateProfileEscort(
+        @AuthenticationPrincipal SecurityUser me,
+        @RequestBody @Valid EscortProfileModifyRequest request
+    ){
+
+        EscortProfile escortProfile = this.userService.updateEscortProfile(me.getId(), request);
+
+        return new RsData<>(
+                "200-10",
+                "동행 매니저 프로필 수정을 완료했습니다.",
+                new EscortProfileModifyResponse(escortProfile)
+        );
+    }
 
 }

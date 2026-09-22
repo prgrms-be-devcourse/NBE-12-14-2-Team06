@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { Container, SectionHeading } from '@/components/ui';
+import { applyToPost } from '@/features/application';
 import { cn } from '@/lib/cn';
 import { fetchPosts, type PostPage } from '../api';
 import { DEFAULT_FILTERS, PAY_OPTIONS, PERIOD_OPTIONS, optionLabel } from '../model';
@@ -45,6 +46,8 @@ export default function PostListPage({
   const [filters, setFilters] = useState<PostFilters>(DEFAULT_FILTERS);
   const [keywordInput, setKeywordInput] = useState('');
   const [page, setPage] = useState(0);
+  // 카드마다 다른 지원 상태를 기억합니다. (postId -> 'applying' | 'applied')
+  const [applyStatus, setApplyStatus] = useState<Record<number, 'applying' | 'applied'>>({});
 
   // 조건(필터·페이지)이 바뀔 때마다 서버에서 다시 가져옵니다.
   // result.key 로 "어떤 조건의 결과인지" 기억해 두면, 조건이 바뀐 직후에는 loading 으로 판단할 수 있습니다.
@@ -76,6 +79,22 @@ export default function PostListPage({
     setFilters(DEFAULT_FILTERS);
     setKeywordInput('');
     setPage(0);
+  };
+
+  // TODO: 지원 API(POST /api/v1/applications/{postId})는 동행 매니저(ESCORT) 로그인 쿠키가 있어야 합니다.
+  const handleApply = async (postId: number) => {
+    setApplyStatus((prev) => ({ ...prev, [postId]: 'applying' }));
+    try {
+      await applyToPost(postId);
+      setApplyStatus((prev) => ({ ...prev, [postId]: 'applied' }));
+    } catch (error) {
+      setApplyStatus((prev) => {
+        const next = { ...prev };
+        delete next[postId];
+        return next;
+      });
+      window.alert(error instanceof Error ? error.message : '지원에 실패했습니다.');
+    }
   };
 
   // 기본값과 다른 조건은 "선택된 필터" 칩으로 보여줍니다.
@@ -183,11 +202,14 @@ export default function PostListPage({
                       <CardButton href={`${detailBasePath}/${post.id}`}>
                         상세보기
                       </CardButton>
-                      {/* TODO: 지원 API(POST /api/v1/applications/{postId}) 연결 */}
                       {post.badge === 'closed' ? (
                         <CardButton variant="disabled">지원 불가</CardButton>
+                      ) : applyStatus[post.id] === 'applied' ? (
+                        <CardButton variant="disabled">지원 완료</CardButton>
                       ) : (
-                        <CardButton variant="solid">지원하기</CardButton>
+                        <CardButton variant="solid" onClick={() => handleApply(post.id)}>
+                          {applyStatus[post.id] === 'applying' ? '지원 중…' : '지원하기'}
+                        </CardButton>
                       )}
                     </PostCard>
                   </li>
