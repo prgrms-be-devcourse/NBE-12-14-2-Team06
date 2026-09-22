@@ -40,6 +40,10 @@ export default function PaymentPage() {
   const postId = searchParams.get('postId') ?? '1';
   const paymentId = searchParams.get('paymentId') ?? '';
   const pay = searchParams.get('pay') ?? '0';
+  // flow=extra : 동행 완료 후 차액을 내는 추가 결제 (공고 상세에서 들어옵니다).
+  // 없으면 공고 등록 직후의 최초 결제입니다. 승인 후 어디로 돌아갈지가 달라집니다.
+  const flow = searchParams.get('flow') ?? '';
+  const isExtra = flow === 'extra';
   const [amount, setAmount] = useState<Amount>({
     currency: "KRW",
     value: Number(searchParams.get('amount') ?? 49000),
@@ -147,34 +151,36 @@ export default function PaymentPage() {
         <div id="payment-method" />
         {/* 이용약관 UI */}
         <div id="agreement" />
-        {/* 쿠폰 체크박스 */}
-        <div style={{ paddingLeft: "24px" }}>
-          <div className="checkable typography--p">
-            <label
-              htmlFor="coupon-box"
-              className="checkable__label typography--regular"
-            >
-              <input
-                id="coupon-box"
-                className="checkable__input"
-                type="checkbox"
-                aria-checked="true"
-                disabled={!ready}
-                // ------  주문서의 결제 금액이 변경되었을 경우 결제 금액 업데이트 ------
-                // @docs https://docs.tosspayments.com/sdk/v2/js#widgetssetamount
-                onChange={async (event) => {
-                  await updateAmount({
-                    currency: amount.currency,
-                    value: event.target.checked
-                      ? amount.value - 5000
-                      : amount.value + 5000,
-                  });
-                }}
-              />
-              <span className="checkable__label-text">5,000원 쿠폰 적용</span>
-            </label>
+        {/* 쿠폰 체크박스 — 추가 결제는 백엔드가 계산한 차액을 그대로 내야 해서 금액을 바꿀 수 없게 숨깁니다. */}
+        {!isExtra && (
+          <div style={{ paddingLeft: "24px" }}>
+            <div className="checkable typography--p">
+              <label
+                htmlFor="coupon-box"
+                className="checkable__label typography--regular"
+              >
+                <input
+                  id="coupon-box"
+                  className="checkable__input"
+                  type="checkbox"
+                  aria-checked="true"
+                  disabled={!ready}
+                  // ------  주문서의 결제 금액이 변경되었을 경우 결제 금액 업데이트 ------
+                  // @docs https://docs.tosspayments.com/sdk/v2/js#widgetssetamount
+                  onChange={async (event) => {
+                    await updateAmount({
+                      currency: amount.currency,
+                      value: event.target.checked
+                        ? amount.value - 5000
+                        : amount.value + 5000,
+                    });
+                  }}
+                />
+                <span className="checkable__label-text">5,000원 쿠폰 적용</span>
+              </label>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* 결제하기 버튼 */}
         <button
@@ -199,11 +205,11 @@ export default function PaymentPage() {
 
               // 토스는 successUrl/failUrl 의 쿼리스트링을 그대로 보존해서 리다이렉트합니다.
               // 리다이렉트 이후 승인(paymentId)과 완료 화면(postId·pay)에 필요한 값을 여기 실어 보냅니다.
-              const redirect = new URLSearchParams({ postId, paymentId, pay });
+              const redirect = new URLSearchParams({ postId, paymentId, pay, flow });
 
               await widgets.requestPayment({
                 orderId: orderId,
-                orderName: "동행 공고 결제",
+                orderName: isExtra ? "동행 추가 결제" : "동행 공고 결제",
                 successUrl: `${window.location.origin}/client/posts/new/payment/success?${redirect}`,
                 failUrl: `${window.location.origin}/client/posts/new/payment/fail?${redirect}`,
                 customerEmail: user.email,

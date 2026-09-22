@@ -10,6 +10,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -51,8 +53,7 @@ public class PaymentPersistenceService {
     }
 
     @Transactional(readOnly = true)
-    public Payment findByPostId(Long postId) {
-        return paymentRepository.findByPostId(postId)
-                .orElseThrow(() -> new NotFoundException(20, "존재하지 않는 결제 내역입니다."));
+    public List<Payment> findByPostId(Long postId) {
+        return paymentRepository.findByPostId(postId);
     }
 }
