@@ -60,3 +60,16 @@ export function toDateTimeParam(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 }
+
+/** "2026.09.12   18:12" (등록일 표시용) */
+export function formatDateTime(value: string): string {
+  const date = parseDateTime(value);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}.${pad(date.getMonth() + 1)}.${pad(date.getDate())}   ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+/** "10월 2일(금) 오전 9:00" */
+export function formatMonthDayTime(value: string): string {
+  const date = parseDateTime(value);
+  return `${formatMonthDay(date)} ${formatTime(value)}`;
+}
