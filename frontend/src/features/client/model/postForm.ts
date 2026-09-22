@@ -55,6 +55,48 @@ export function estimateAmount(hourlyPay: string, minutes: number): number {
   return Math.round((pay * minutes) / 60);
 }
 
+/** 숫자만 남겨서 정수로 바꿉니다. "14,000" → 14000 */
+export function parsePay(hourlyPay: string): number {
+  return Number(hourlyPay.replace(/[^0-9]/g, '')) || 0;
+}
+
+/** "2026-09-20" + "10:00" → "2026-09-20T10:00:00" (백엔드 LocalDateTime 포맷) */
+export function toIsoDateTime(date: string, time: string): string {
+  return `${date}T${time}:00`;
+}
+
+/**
+ * 지역(시/도)별 대략적인 중심 좌표.
+ * ⚠️ 병원명·출발지 입력칸(SearchField)이 아직 주소 검색/지도 연동 전이라 위도·경도를 직접 못 받아옵니다.
+ *    실제 주소 검색이 붙기 전까지, 선택한 지역의 중심 좌표로 대체합니다.
+ */
+export const REGION_CENTER: Record<string, { lat: number; lng: number }> = {
+  서울: { lat: 37.5665, lng: 126.978 },
+  부산: { lat: 35.1796, lng: 129.0756 },
+  대구: { lat: 35.8714, lng: 128.6014 },
+  인천: { lat: 37.4563, lng: 126.7052 },
+  광주: { lat: 35.1595, lng: 126.8526 },
+  대전: { lat: 36.3504, lng: 127.3845 },
+  울산: { lat: 35.5384, lng: 129.3114 },
+  세종: { lat: 36.4801, lng: 127.289 },
+  경기: { lat: 37.4138, lng: 127.5183 },
+  강원도: { lat: 37.8228, lng: 128.1555 },
+  충청북도: { lat: 36.6357, lng: 127.4913 },
+  충청남도: { lat: 36.5184, lng: 126.8 },
+  전북특별자치도: { lat: 35.7175, lng: 127.153 },
+  전라남도: { lat: 34.8161, lng: 126.463 },
+  경상북도: { lat: 36.4919, lng: 128.8889 },
+  경상남도: { lat: 35.4606, lng: 128.2132 },
+  제주도: { lat: 33.4996, lng: 126.5312 },
+};
+
+const DEFAULT_CENTER = { lat: 36.5, lng: 127.8 }; // 대한민국 중앙 (지역을 못 찾았을 때 대비)
+
+export function regionCenter(region: string): { lat: number; lng: number } {
+  return REGION_CENTER[region] ?? DEFAULT_CENTER;
+}
+
+
 /** 수정 화면 확인용 예시 값 (Figma 공고 작성 입력 예시 506:2944) */
 export const SAMPLE_FORM: PostFormValues = {
   title: '서울 아산 병원 동행 요청드립니다.',

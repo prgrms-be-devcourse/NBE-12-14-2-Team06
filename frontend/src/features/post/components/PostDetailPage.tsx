@@ -17,6 +17,7 @@ const BADGE: Record<PostBadge, { text: string; tone: LabelTone }> = {
   new: { text: '신규', tone: 'green' },
   closing: { text: '오늘 마감', tone: 'red' },
   open: { text: '모집 중', tone: 'blue' },
+  closed: { text: '마감', tone: 'gray' },
 };
 
 const CARD = 'rounded-[30px] border border-line bg-white shadow-card';

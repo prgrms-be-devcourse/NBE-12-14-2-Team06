@@ -30,6 +30,8 @@ export default function PaymentPage() {
   const searchParams = useSearchParams();
   const amount = Number(searchParams.get('amount') ?? 49000);
   const pay = Number(searchParams.get('pay') ?? 14000);
+  // 공고 작성 화면에서 실제로 등록한 공고 id (없으면 이전처럼 1번으로 대체)
+  const postId = searchParams.get('postId') ?? '1';
 
   const [method, setMethod] = useState('quick');
   const [agreed, setAgreed] = useState(true);
@@ -39,8 +41,8 @@ export default function PaymentPage() {
   const total = Math.max(0, amount - (coupon ? COUPON : 0));
 
   const handlePay = () => {
-    // TODO: 결제 요청 → 승인 후 공고 번호를 받아 이동. 지금은 1번 공고로 가정합니다.
-    const query = new URLSearchParams({ postId: '1', pay: String(pay), amount: String(total) });
+    // TODO: 토스페이먼츠 결제 위젯 SDK 로 교체하고, 결제 성공 후 서버에서 결제(Payment) 승인 처리
+    const query = new URLSearchParams({ postId, pay: String(pay), amount: String(total) });
     router.push(`/client/posts/complete?${query.toString()}`);
   };
 

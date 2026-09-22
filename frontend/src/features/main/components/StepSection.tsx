@@ -29,15 +29,17 @@ function Cta({
   title,
   sub,
   variant,
+  href,
 }: {
   title: string;
   sub: string;
   variant: 'solid' | 'ghost';
+  href: string;
 }) {
   const solid = variant === 'solid';
   return (
     <a
-      href="#"
+      href={href}
       className={cn(
         'flex min-h-[112px] min-w-0 flex-1 items-center justify-between gap-6 rounded-card px-10 py-8 shadow-card transition-transform hover:-translate-y-0.5',
         solid ? 'bg-brand text-white' : 'border border-line-soft bg-white text-brand',
@@ -73,8 +75,8 @@ export default function StepSection() {
         </div>
 
         <div className="flex flex-col gap-5 lg:flex-row">
-          <Cta variant="solid" title="병원 동행이 필요하신가요?" sub="동행 요청하기" />
-          <Cta variant="ghost" title="고소득꿀알바 하고 싶으신가요?" sub="공고 찾아보기" />
+          <Cta variant="solid" title="병원 동행이 필요하신가요?" sub="동행 요청하기" href="/client/posts/new" />
+          <Cta variant="ghost" title="고소득꿀알바 하고 싶으신가요?" sub="공고 찾아보기" href="/posts" />
         </div>
       </Container>
     </section>
