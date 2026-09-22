@@ -39,6 +39,7 @@ export function toPostDetail(dto: PostDto): PostDetail {
   return {
     ...toPostSummary(dto),
     clientId: dto.client_id,
+    postStatus: dto.postStatus,
     postedAt: formatDateTime(dto.createdAt),
     hospitalAddress: dto.hospitalAddress,
     pickupAddress: dto.pickupAddress,

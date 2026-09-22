@@ -81,18 +81,22 @@ export default function ManagerProfile({ manager, size, className }: { manager: 
             <span>
               완료 동행 <strong className="font-semibold">{manager.completedCount}회</strong>
             </span>
-            <span className="flex items-center gap-1.5">
-              <Image src="/icons/pin.svg" alt="" width={s.icon} height={s.icon} />
-              {manager.region}
-            </span>
+            {manager.region && (
+              <span className="flex items-center gap-1.5">
+                <Image src="/icons/pin.svg" alt="" width={s.icon} height={s.icon} />
+                {manager.region}
+              </span>
+            )}
           </p>
-          <ul className="flex flex-wrap gap-[5px]">
-            {manager.tags.map((tag) => (
-              <li key={tag} className={cn(CHIP, s.tag)}>
-                {tag}
-              </li>
-            ))}
-          </ul>
+          {manager.tags && manager.tags.length > 0 && (
+            <ul className="flex flex-wrap gap-[5px]">
+              {manager.tags.map((tag) => (
+                <li key={tag} className={cn(CHIP, s.tag)}>
+                  {tag}
+                </li>
+              ))}
+            </ul>
+          )}
           {!s.introBelow && intro}
         </div>
       </div>
