@@ -41,7 +41,9 @@ public class PostController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dateTo,
             @RequestParam(required = false) Integer minPay,
             @RequestParam(required = false) Integer maxPay,
-            @RequestParam(defaultValue = "latest") String sort) {
+            @RequestParam(defaultValue = "latest") String sort,
+            // 모집중 탭(기본값) / 마감 탭 — 신규·모집중 공고가 마감 공고에 밀리지 않도록 목록 자체를 분리
+            @RequestParam(defaultValue = "true") boolean openOnly) {
 
         Sort sortOption = switch (sort) {
             case "payHigh" -> Sort.by(Sort.Direction.DESC, "hourlyPay");
@@ -50,7 +52,7 @@ public class PostController {
         };
 
         PostSearchConditionDto condition = new PostSearchConditionDto(
-                keyword, region, dateFrom, dateTo, minPay, maxPay);
+                keyword, region, dateFrom, dateTo, minPay, maxPay, openOnly);
 
         Page<PostDto> postDtoPage = postService.search(condition, PageRequest.of(page, size, sortOption))
                 .map(PostDto::new);

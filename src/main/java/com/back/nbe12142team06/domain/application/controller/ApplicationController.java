@@ -1,9 +1,6 @@
 package com.back.nbe12142team06.domain.application.controller;
 
-import com.back.nbe12142team06.domain.application.dto.ApplicationAcceptResponse;
-import com.back.nbe12142team06.domain.application.dto.ApplicationApplyResponse;
-import com.back.nbe12142team06.domain.application.dto.ApplicationListResponse;
-import com.back.nbe12142team06.domain.application.dto.EscortProgressRequest;
+import com.back.nbe12142team06.domain.application.dto.*;
 import com.back.nbe12142team06.domain.application.service.ApplicationService;
 import com.back.nbe12142team06.global.response.RsData;
 import com.back.nbe12142team06.global.security.SecurityUser;
@@ -23,7 +20,7 @@ public class ApplicationController {
     @PostMapping("/{postId}")
     public RsData<ApplicationApplyResponse> apply(
             @PathVariable Long postId,
-             @AuthenticationPrincipal SecurityUser actor) {
+            @AuthenticationPrincipal SecurityUser actor) {
 
         ApplicationApplyResponse response = applicationService.apply(postId, actor.getId());
 
@@ -108,6 +105,21 @@ public class ApplicationController {
                 null
         );
 
+    }
+
+    @GetMapping("/{applicationId}/escort-profile")
+    public RsData<ApplicationEscortProfileResponse> profile(
+            @PathVariable Long applicationId,
+            @AuthenticationPrincipal SecurityUser actor
+    ) {
+        ApplicationEscortProfileResponse response =
+                applicationService.getEscortProfile(applicationId, actor.getId());
+
+        return new RsData<>(
+                "200-2",
+                "지원자 프로필 조회가 완료되었습니다.",
+                response
+        );
     }
 
 }

@@ -6,8 +6,8 @@ import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpRequest;
 import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpResponse;
 import com.back.nbe12142team06.domain.user.dto.user.UserProfileUpdateRequest;
 import com.back.nbe12142team06.domain.user.dto.user.UserResponse;
-import com.back.nbe12142team06.domain.user.entity.EscortProfile;
 import com.back.nbe12142team06.domain.user.entity.ClientProfile;
+import com.back.nbe12142team06.domain.user.entity.EscortProfile;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.service.UserService;
 import com.back.nbe12142team06.global.response.RsData;
@@ -17,9 +17,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
-import java.security.Security;
-import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -148,6 +145,23 @@ public class UserController {
                 new ClientProfileResponse(clientProfile)
         );
     }
+
+    // 의뢰인 자기 자신 프로필 수정
+    @PutMapping("/profile/client")
+    public RsData<ClientProfileModifyResponse> updateProfileClient(
+            @AuthenticationPrincipal SecurityUser me,
+            @RequestBody @Valid ClientProfileModifyRequest request
+    ){
+        ClientProfile clientProfile = this.userService.updateClientProfile(me.getId(), request);
+
+        return new RsData<>(
+                "200-7",
+                "의뢰인 프로필 수정을 완료했습니다.",
+                new ClientProfileModifyResponse(clientProfile)
+        );
+    }
+
+
 
     // 동행 매니저 프로필 생성
     @PostMapping("/profile/escort")

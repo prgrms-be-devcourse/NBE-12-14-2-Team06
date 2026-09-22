@@ -7,6 +7,7 @@ import { useState, type FormEvent } from 'react';
 import { AppShell } from '@/components/layout';
 import { Container, SectionHeading } from '@/components/ui';
 import { getPostDetail } from '@/features/post';
+import { api } from '@/lib/api';
 import { cn } from '@/lib/cn';
 import { MOCK_CLIENT } from '@/lib/mockSession';
 import { REGIONS } from '@/lib/regions';
@@ -21,6 +22,9 @@ import {
   diffMinutes,
   estimateAmount,
   formatMinutes,
+  parsePay,
+  regionCenter,
+  toIsoDateTime,
 } from '../model/postForm';
 import type { PostFormValues } from '../types';
 import { CheckField, FIELD, FormRow, FormSection, SearchField, SelectField } from './form/fields';
@@ -74,7 +78,10 @@ function formatPay(value: string): string {
  * 공고 작성 / 수정 — Figma 의뢰인_공고 작성 61:1273 · 입력 예시 506:2944
  *
  * 형식 검사는 브라우저 기본 검사(required)를 씁니다.
- * ⚠️ 등록해도 서버로 보내지 않고 결제 화면으로만 이동합니다. (공고 등록 API 연결 전)
+ * 등록(POST /api/v1/posts)은 실제 백엔드에 연결되어 있습니다. 로그인(JWT 쿠키)이 아직 없어서
+ * 지금은 401("로그인 후 이용해주세요.")이 정상입니다 — 로그인이 붙으면 그대로 동작합니다.
+ * ⚠️ 병원명/출발지 입력칸이 아직 주소 검색 연동 전이라 위도·경도는 선택 지역의 중심 좌표로 대체합니다.
+ * ⚠️ 수정(PATCH)은 아직 미연결이라 그대로 상세 화면으로만 이동합니다.
  */
 export default function PostFormPage() {
   const params = useParams<{ postId?: string }>();
@@ -92,6 +99,8 @@ export default function PostFormPage() {
   const [recruitStartTime, setRecruitStartTime] = useState(initial.recruitStartTime);
   const [recruitEndDate, setRecruitEndDate] = useState(initial.recruitEndDate);
   const [recruitEndTime, setRecruitEndTime] = useState(initial.recruitEndTime);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   const minutes = diffMinutes(startTime, endTime);
   const amount = estimateAmount(hourlyPay, minutes);
@@ -106,16 +115,61 @@ export default function PostFormPage() {
     }
   }
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (editing) {
       // TODO: 공고 수정 API(PATCH /api/v1/posts/{postId}) 연결
       router.push(`/client/posts/${postId}`);
       return;
     }
-    // TODO: 공고 등록 API(POST /api/v1/posts) 연결. 등록하면 결제(Payment)가 함께 만들어집니다.
-    const query = new URLSearchParams({ amount: String(amount), pay: String(estimateAmount(hourlyPay, 60)) });
-    router.push(`/client/posts/new/payment?${query.toString()}`);
+
+    setSubmitError('');
+
+    // 폼에 이름(name)이 붙은 입력값을 전부 가져옵니다 (state로 관리하지 않는 필드 포함).
+    const form = new FormData(event.currentTarget);
+    const value = (name: string) => String(form.get(name) ?? '').trim();
+
+    const center = regionCenter(region);
+    const hospitalAddress = [region, district].filter(Boolean).join(' ') || value('hospitalName');
+    const pickupAddress = value('departure');
+
+    const payload = {
+      title: value('title'),
+      content: value('description'),
+      region,
+      hospitalName: value('hospitalName'),
+      hospitalAddress,
+      hospitalLat: center.lat,
+      hospitalLng: center.lng,
+      pickupAddress,
+      pickupLat: center.lat,
+      pickupLng: center.lng,
+      hourlyPay: parsePay(hourlyPay),
+      recruitStartAt: toIsoDateTime(recruitStartDate, recruitStartTime),
+      recruitEndAt: toIsoDateTime(recruitEndDate, recruitEndTime),
+      escortStartAt: toIsoDateTime(value('date'), startTime),
+      escortEndAt: toIsoDateTime(value('date'), endTime),
+      patientNote: value('note') || null,
+      reportRequired: form.get('reportRequested') === 'on',
+    };
+
+    setSubmitting(true);
+    try {
+      const created = await api<{ id: number }>('/api/v1/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const query = new URLSearchParams({
+        postId: String(created.id),
+        amount: String(amount),
+        pay: String(estimateAmount(hourlyPay, 60)),
+      });
+      router.push(`/client/posts/new/payment?${query.toString()}`);
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : '공고 등록에 실패했습니다.');
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -288,6 +342,12 @@ export default function PostFormPage() {
                 )}
               </FormSection>
 
+              {submitError && (
+                <p role="alert" className={ERROR_TEXT}>
+                  {submitError}
+                </p>
+              )}
+
               <div className="flex gap-2.5">
                 <Link
                   href={editing ? `/client/posts/${postId}` : '/client/posts'}
@@ -295,8 +355,12 @@ export default function PostFormPage() {
                 >
                   취소
                 </Link>
-                <button type="submit" className="flex h-[55px] flex-1 items-center justify-center rounded-[25px] bg-brand text-base leading-[18px] font-semibold text-white transition-colors hover:bg-brand-hover">
-                  {editing ? '수정하기' : '등록하기'}
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex h-[55px] flex-1 items-center justify-center rounded-[25px] bg-brand text-base leading-[18px] font-semibold text-white transition-colors hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {submitting ? '등록 중...' : editing ? '수정하기' : '등록하기'}
                 </button>
               </div>
             </form>
