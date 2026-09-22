@@ -5,6 +5,8 @@
 export { default as ClientPostsPage } from './components/ClientPostsPage';
 export { default as PostFormPage } from './components/PostFormPage';
 export { default as PaymentPage } from './components/PaymentPage';
+export { default as PaymentSuccessPage } from './components/SuccessPage';
+export { default as PaymentFailPage } from './components/FailPage';
 export { default as PostCompletePage } from './components/PostCompletePage';
 export { default as ApplicantsPage } from './components/ApplicantsPage';
 export { default as ClientTrackingPage } from './components/ClientTrackingPage';

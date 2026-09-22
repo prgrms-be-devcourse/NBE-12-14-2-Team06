@@ -161,13 +161,13 @@ public class PaymentService {
         // 사용자에게 결제 요청
     }
 
-    public void createPayment(Post post) {
+    public Payment createPayment(Post post) {
         Payment payment = Payment.builder()
                 .post(post)
                 .hourlyPaySnapshot(post.getHourlyPay())
                 .hours(post.getEscortHours())
                 .amount(post.getTotalPay().intValue())
                 .build();
-        paymentPersistenceService.createPayment(payment);
+        return paymentPersistenceService.createPayment(payment);
     }
 }
