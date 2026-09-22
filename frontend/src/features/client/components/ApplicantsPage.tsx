@@ -15,7 +15,6 @@ import {
 } from '@/features/application';
 import { fetchPost, type PostDetail } from '@/features/post';
 import { cn } from '@/lib/cn';
-import { MOCK_CLIENT } from '@/lib/mockSession';
 import ManagerProfile from './ManagerProfile';
 
 const BUTTON = 'flex h-[35px] flex-1 items-center justify-center rounded-[17px] text-[13px] leading-3 font-semibold transition-colors disabled:cursor-not-allowed';
@@ -104,7 +103,7 @@ export default function ApplicantsPage() {
 
   if (!post || !applicants) {
     return (
-      <AppShell user={MOCK_CLIENT}>
+      <AppShell>
         <section className="bg-white py-[100px] text-center">
           <p className="text-xl font-semibold text-brand">{loadError ? `불러오지 못했습니다. (${loadError})` : '불러오는 중입니다.'}</p>
           <Link href="/client/posts" className="mx-auto mt-8 flex h-14 w-60 items-center justify-center rounded-[25px] border border-line text-xl font-semibold text-brand">
@@ -119,7 +118,7 @@ export default function ApplicantsPage() {
   const acceptedId = applicants.find((item) => item.status === 'ACCEPTED')?.applicationId;
 
   return (
-    <AppShell user={MOCK_CLIENT}>
+    <AppShell>
       <section className="bg-white px-4 py-[50px]">
         <div className="mx-auto flex w-full max-w-[1122px] flex-col gap-[30px]">
           <SectionHeading title="지원자 확인" description="지원한 동행 매니저를 확인하고 승인 또는 거절할 수 있어요." className="-mb-1.5" />

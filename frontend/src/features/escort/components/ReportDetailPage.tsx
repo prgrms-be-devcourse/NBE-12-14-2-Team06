@@ -74,7 +74,7 @@ export default function ReportDetailPage() {
 
   if (!escort) {
     return (
-      <AppShell user={MOCK_USER}>
+      <AppShell>
         <section className="bg-white py-[100px] text-center">
           <p className="text-xl font-semibold text-brand">동행 정보를 찾을 수 없습니다.</p>
           <Link href="/mypage/applications" className={cn(MENU_BUTTON, 'mx-auto mt-8 h-14 w-60')}>신청 목록으로</Link>
@@ -85,7 +85,7 @@ export default function ReportDetailPage() {
 
   if (!state) {
     return (
-      <AppShell user={MOCK_USER}>
+      <AppShell>
         <section className="bg-white py-[100px] text-center">
           <p className="text-xl font-semibold text-brand">보고서를 불러오는 중입니다.</p>
         </section>
@@ -95,7 +95,7 @@ export default function ReportDetailPage() {
 
   if (state.status === 'notFound') {
     return (
-      <AppShell user={MOCK_USER}>
+      <AppShell>
         <section className="bg-white py-[100px] text-center">
           <p className="text-xl font-semibold text-brand">아직 보고서가 작성되지 않았습니다.</p>
           <Link href={`/escort/${escort.applicationId}`} className={cn(MENU_BUTTON, 'mx-auto mt-8 h-14 w-60')}>동행 내역으로 돌아가기</Link>
@@ -106,7 +106,7 @@ export default function ReportDetailPage() {
 
   if (state.status === 'error') {
     return (
-      <AppShell user={MOCK_USER}>
+      <AppShell>
         <section className="bg-white py-[100px] text-center">
           <p role="alert" className="text-xl font-semibold text-brand">{state.message}</p>
           <Link href={`/escort/${escort.applicationId}`} className={cn(MENU_BUTTON, 'mx-auto mt-8 h-14 w-60')}>동행 내역으로 돌아가기</Link>
@@ -120,7 +120,7 @@ export default function ReportDetailPage() {
   const summaryItems = aiSummary ? aiSummaryItems(aiSummary) : [];
 
   return (
-    <AppShell user={MOCK_USER}>
+    <AppShell>
       <section className="bg-white py-[50px]">
         <Container width="wide">
           <SectionHeading title="동행 보고서 상세" description="작성한 동행 보고서의 내용을 확인할 수 있습니다." className="mb-6" />

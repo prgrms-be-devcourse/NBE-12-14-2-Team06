@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { AppShell } from '@/components/layout';
 import { cn } from '@/lib/cn';
-import { MOCK_ADMIN } from '@/lib/mockSession';
 
 const MENU = [
   { label: '회원 관리', href: '/admin/members' },
@@ -18,7 +17,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   return (
-    <AppShell user={MOCK_ADMIN}>
+    <AppShell>
       <div className="flex flex-col bg-white lg:flex-row">
         <nav
           aria-label="관리자 메뉴"

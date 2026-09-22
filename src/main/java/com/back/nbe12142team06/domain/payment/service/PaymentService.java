@@ -11,7 +11,6 @@ import com.back.nbe12142team06.domain.payment.entity.PaymentStatus;
 import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.settlement.service.SettlementService;
-import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.global.exception.InternalServerErrorException;
 import com.back.nbe12142team06.global.exception.InvalidException;
 import com.back.nbe12142team06.global.exception.NotFoundException;
@@ -21,8 +20,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.time.Duration;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -129,8 +126,14 @@ public class PaymentService {
 
     // userId 삭제 예정
     public void validPayment(Long userId, Post post, Application application, LocalDate settledDate) {
-        Payment payment = paymentPersistenceService.findByPostId(post.getId());
-        int balanceAmount = payment.getAmount() - post.getTotalPay().intValue();
+        List<Payment> payments = paymentPersistenceService.findByPostId(post.getId());
+
+        int balanceAmount = 0;
+        for (Payment payment : payments) {
+            balanceAmount += payment.getAmount();
+        }
+
+        balanceAmount -= post.getTotalPay().intValue();
         int payoutAmount = post.getTotalPay().intValue();
 
         // 추가 결제 플로우
@@ -149,8 +152,8 @@ public class PaymentService {
         else if (balanceAmount > 0) {
             // 취소 로직 결제 데이터 생성 없애기
             cancel(
-                    payment,
-                    new PaymentCancelRequest("결제 금액: %s, 이용 금액: %s".formatted(payment.getAmount(), post.getTotalPay().intValue())),
+                    payments.getFirst(),
+                    new PaymentCancelRequest("결제 금액: %s, 이용 금액: %s".formatted(balanceAmount + payoutAmount, payoutAmount)),
                     balanceAmount
             );
         }
@@ -169,5 +172,9 @@ public class PaymentService {
                 .amount(post.getTotalPay().intValue())
                 .build();
         return paymentPersistenceService.createPayment(payment);
+    }
+
+    public Payment findByPostIdAndReady(Long postId, Long userId) {
+        return paymentRepository.findByPostIdAndUserId(postId, userId).orElse(null);
     }
 }

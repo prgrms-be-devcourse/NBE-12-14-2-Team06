@@ -113,4 +113,19 @@ public class PaymentController {
 
         return new RsData<>("201-n", "결제 취소 성공했습니다.");
     }
+
+    @Operation(
+            summary = "공고별 결제 조회",
+            description = "현재 로그인한 사용자의 공고별 결제 정보를 조회합니다."
+    )
+    @GetMapping("/posts/{postId}")
+    public RsData<?> getPaymentByPost(@AuthenticationPrincipal SecurityUser actor,
+                                      @PathVariable Long postId) {
+        Long userId = actor.getId();
+
+        Payment payment = paymentService.findByPostIdAndReady(postId, userId);
+
+        return new RsData<>("200-n", "결제 정보를 불러왔습니다.",
+                payment == null ? null : new PaymentResponse(payment));
+    }
 }

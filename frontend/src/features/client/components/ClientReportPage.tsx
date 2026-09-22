@@ -8,7 +8,6 @@ import { AppShell } from '@/components/layout';
 import { Container, InfoRow, SectionHeading } from '@/components/ui';
 import { aiSummaryItems, fetchReport, isReportNotFoundError, parseAiSummary, type ReportDto } from '@/features/report';
 import { cn } from '@/lib/cn';
-import { MOCK_CLIENT } from '@/lib/mockSession';
 import { STAGE_VIEW, getClientEscortCase } from '../model/escort';
 import ManagerInfoCard from './ManagerInfoCard';
 import TripSummary from './TripSummary';
@@ -67,7 +66,7 @@ export default function ClientReportPage() {
 
   if (!escort) {
     return (
-      <AppShell user={MOCK_CLIENT}>
+      <AppShell>
         <section className="bg-white py-[100px] text-center">
           <p className="text-xl font-semibold text-brand">동행 정보를 찾을 수 없습니다.</p>
           <Link href="/client/posts" className={cn(MENU_BUTTON, 'mx-auto mt-8 h-14 w-60')}>
@@ -80,7 +79,7 @@ export default function ClientReportPage() {
 
   if (!state) {
     return (
-      <AppShell user={MOCK_CLIENT}>
+      <AppShell>
         <section className="bg-white py-[100px] text-center">
           <p className="text-xl font-semibold text-brand">보고서를 불러오는 중입니다.</p>
         </section>
@@ -90,7 +89,7 @@ export default function ClientReportPage() {
 
   if (state.status === 'notFound') {
     return (
-      <AppShell user={MOCK_CLIENT}>
+      <AppShell>
         <section className="bg-white py-[100px] text-center">
           <p className="text-xl font-semibold text-brand">아직 보고서가 작성되지 않았습니다.</p>
           <Link href={`/client/escort/${escort.applicationId}`} className={cn(MENU_BUTTON, 'mx-auto mt-8 h-14 w-60')}>
@@ -103,7 +102,7 @@ export default function ClientReportPage() {
 
   if (state.status === 'error') {
     return (
-      <AppShell user={MOCK_CLIENT}>
+      <AppShell>
         <section className="bg-white py-[100px] text-center">
           <p role="alert" className="text-xl font-semibold text-brand">{state.message}</p>
           <Link href={`/client/escort/${escort.applicationId}`} className={cn(MENU_BUTTON, 'mx-auto mt-8 h-14 w-60')}>
@@ -119,7 +118,7 @@ export default function ClientReportPage() {
   const summaryItems = aiSummary ? aiSummaryItems(aiSummary) : [];
 
   return (
-    <AppShell user={MOCK_CLIENT}>
+    <AppShell>
       <section className="bg-white py-[50px]">
         <Container width="wide">
           <SectionHeading title="진료 보고서" description="동행이 완료된 후 작성된 진료 내용을 확인할 수 있어요." className="mb-6" />

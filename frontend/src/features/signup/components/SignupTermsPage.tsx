@@ -4,6 +4,7 @@ import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/layout';
 import { Container, SectionHeading } from '@/components/ui';
+import { useAuth } from '@/features/auth';
 import { signUpWithProfile } from '../api';
 import { useSignupRole } from '../hooks/useSignupRole';
 import { AGREEMENT_GROUPS } from '../model';
@@ -23,6 +24,7 @@ const ERROR_TEXT = 'px-4 text-sm leading-5 font-medium text-[#b91d1d]';
  */
 export default function SignupTermsPage() {
   const router = useRouter();
+  const { reload } = useAuth();
   const role = useSignupRole();
   const { values, setValues } = useSignup();
   const group = AGREEMENT_GROUPS[role];
@@ -52,6 +54,7 @@ export default function SignupTermsPage() {
     try {
       // 가입(POST /api/v1/users) 후, 거기서 받은 로그인 쿠키로 역할별 프로필까지 만듭니다.
       await signUpWithProfile(values, role);
+      await reload(); // 가입하면 바로 로그인 상태라서, 헤더가 이름을 보여주도록 세션을 다시 읽습니다.
       setValues((prev) => ({ ...prev, password: '', passwordConfirm: '' })); // 비밀번호는 더 들고 있지 않습니다.
       router.push(`/signup/complete?role=${role}`);
     } catch (error) {

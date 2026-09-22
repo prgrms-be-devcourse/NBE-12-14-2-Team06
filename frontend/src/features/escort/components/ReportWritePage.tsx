@@ -7,7 +7,6 @@ import { useEffect, useState, type ChangeEvent, type FormEvent, type ReactNode }
 import { AppShell } from '@/components/layout';
 import { Container, InfoRow, SectionHeading } from '@/components/ui';
 import { cn } from '@/lib/cn';
-import { MOCK_USER } from '@/lib/mockSession';
 import { writeReport } from '@/features/report';
 import { getEscortCase } from '../model/cases';
 import { DEPARTMENTS } from '../model/departments';
@@ -61,7 +60,7 @@ export default function ReportWritePage() {
 
   if (!escort) {
     return (
-      <AppShell user={MOCK_USER}>
+      <AppShell>
         <section className="bg-white py-[100px] text-center text-xl font-semibold text-brand">동행 정보를 찾을 수 없습니다.</section>
       </AppShell>
     );
@@ -96,7 +95,7 @@ export default function ReportWritePage() {
   };
 
   return (
-    <AppShell user={MOCK_USER}>
+    <AppShell>
       <section className="bg-white py-[50px]">
         <Container width="wide">
           <SectionHeading

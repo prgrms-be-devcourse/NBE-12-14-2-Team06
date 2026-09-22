@@ -19,13 +19,23 @@ export default function FailPage() {
   const paymentId = searchParams.get('paymentId') ?? '';
   const pay = searchParams.get('pay') ?? '0';
   const amount = searchParams.get('amount') ?? '0';
+  // flow=extra : 동행 완료 후 차액을 내는 추가 결제. 재시도해도 같은 흐름을 이어가야 합니다.
+  const flow = searchParams.get('flow') ?? '';
+  const isExtra = flow === 'extra';
 
   // 실패했으니 결제 화면으로 되돌아가 같은 공고를 다시 결제할 수 있게 합니다.
-  const retryHref = `/client/posts/new/payment?${new URLSearchParams({ postId, paymentId, pay, amount })}`;
+  const retryHref = `/client/posts/new/payment?${new URLSearchParams({ postId, paymentId, pay, amount, flow })}`;
 
   return (
     <div id="info" className="box_section" style={{ width: '600px' }}>
-      <img width="100px" src="https://static.toss.im/lotties/error-spot-no-loop-space-apng.png" alt="에러 이미지" />
+      {/* Tailwind preflight 가 img 를 display:block 으로 만들어서, box_section 의 text-align 으로는
+          가운데로 오지 않습니다. 좌우 여백을 auto 로 두어 직접 가운데 정렬합니다. */}
+      <img
+        width="100px"
+        src="https://static.toss.im/lotties/error-spot-no-loop-space-apng.png"
+        alt="에러 이미지"
+        className="mx-auto"
+      />
       <h2>결제를 실패했어요</h2>
 
       <div className="p-grid typography--p" style={{ marginTop: '50px' }}>
@@ -51,9 +61,9 @@ export default function FailPage() {
             다시 결제하기
           </button>
         </Link>
-        <Link href="/client/posts">
+        <Link href={isExtra ? `/client/posts/${postId}` : '/client/posts'}>
           <button type="button" className="button p-grid-col5" style={{ backgroundColor: '#e8f3ff', color: '#1b64da' }}>
-            내 공고 목록으로
+            {isExtra ? '공고 상세로' : '내 공고 목록으로'}
           </button>
         </Link>
       </div>

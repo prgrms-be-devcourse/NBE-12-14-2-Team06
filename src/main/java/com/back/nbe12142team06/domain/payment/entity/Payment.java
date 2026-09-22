@@ -119,6 +119,7 @@ public class Payment extends BaseSoftDeleteTimeEntity {
     public Payment cancelPartialPayment(String cancelReason, int cancelAmount) {
         this.cancelReason = cancelReason;
         this.amount -= cancelAmount;
+        this.balanceAmount -= cancelAmount;
         this.statusUpdate(PaymentStatus.PARTIAL_CANCELED);
         return this;
     }

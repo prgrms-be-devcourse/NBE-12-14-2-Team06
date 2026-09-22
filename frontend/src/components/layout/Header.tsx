@@ -1,8 +1,8 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import Container from '@/components/ui/Container';
+import UserMenu, { type UserMenuItem } from './UserMenu';
 
 const MENU = [
   { label: '서비스 소개', href: '/#about' },
@@ -16,11 +16,18 @@ const BUTTON_BASE =
   'inline-flex items-center justify-center rounded-[30px] px-6 py-[18px] text-base leading-[18px] font-semibold whitespace-nowrap transition-colors';
 
 type Props = {
-  /** 로그인한 사용자. 있으면 "로그인 / 회원가입" 대신 "이름 ⌄ / 로그아웃"을 보여줍니다. href 는 이름을 눌렀을 때 이동할 마이페이지 (기본 /mypage) */
-  user?: { name: string; href?: string };
+  /**
+   * 로그인한 사용자. 있으면 "로그인 / 회원가입" 대신 "이름 ⌄ / 로그아웃"을 보여줍니다.
+   * href 는 이름을 눌렀을 때 이동할 마이페이지(기본 /mypage), menu 는 화살표를 눌렀을 때 펼쳐지는 목록입니다.
+   */
+  user?: { name: string; href?: string; menu?: UserMenuItem[] };
+  /** 세션을 확인하는 중. 로그인 상태가 정해질 때까지 버튼 자리를 비워 둡니다(깜빡임 방지). */
+  pending?: boolean;
+  /** 로그아웃 버튼을 눌렀을 때 */
+  onLogout?: () => void;
 };
 
-export default function Header({ user }: Props) {
+export default function Header({ user, pending, onLogout }: Props) {
   return (
     <header className="flex items-center bg-white py-4 lg:h-[118px] lg:py-0">
       <Container className="flex flex-wrap items-center justify-between gap-6">
@@ -47,18 +54,15 @@ export default function Header({ user }: Props) {
           })}
         </nav>
 
-        {user ? (
+        {pending ? (
+          // 로그인 여부가 정해지기 전에는 버튼 자리만 잡아 둡니다 (54px = 버튼 높이).
+          <div aria-hidden="true" className="h-[54px] min-w-[104px]" />
+        ) : user ? (
           <div className="flex items-center gap-[25px]">
-            <Link
-              href={user.href ?? '/mypage'}
-              className="flex items-center gap-2.5 text-lg leading-[18px] font-semibold text-brand transition-colors hover:text-brand-hover"
-            >
-              {user.name}
-              <Image src="/icons/nav-chevron.svg" alt="" width={13.0667} height={7.23333} />
-            </Link>
-            {/* TODO: 로그아웃 API(DELETE /api/v1/auth/logout) 연결 */}
+            <UserMenu name={user.name} href={user.href ?? '/mypage'} items={user.menu} />
             <button
               type="button"
+              onClick={onLogout}
               className={`${BUTTON_BASE} min-w-[104px] border border-line bg-white text-brand hover:bg-line-soft`}
             >
               로그아웃
