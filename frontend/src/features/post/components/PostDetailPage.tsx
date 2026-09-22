@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
 import { AppShell } from '@/components/layout';
 import { Container, InfoRow } from '@/components/ui';
+import { applyToPost } from '@/features/application';
 import { cn } from '@/lib/cn';
 import { MOCK_CLIENT, MOCK_USER } from '@/lib/mockSession';
 import { deletePost, fetchPost } from '../api';
@@ -52,9 +53,8 @@ type Props = {
 /**
  * 공고 상세 — Figma 동행 매니저_공고 상세 225:1146 · 의뢰인_공고 상세 521:2254
  *
- * 상세 API(GET /api/v1/posts/{postId})로 조회합니다. 삭제도 여기서 연결합니다(DELETE).
+ * 상세 API(GET /api/v1/posts/{postId})로 조회합니다. 삭제·지원하기도 여기서 연결합니다.
  * ⚠️ 백엔드에 없는 항목(진료과 · 이동수단 · 의뢰인 유형/보호자 동행 여부/성별 선호/소개)은 화면에서 뺐습니다.
- * TODO: 지원하기 버튼은 지원 API(POST /api/v1/applications/{postId}) 연결 예정입니다.
  */
 export default function PostDetailPage({ viewer = 'common' }: Props) {
   const params = useParams<{ postId: string }>();
@@ -65,6 +65,8 @@ export default function PostDetailPage({ viewer = 'common' }: Props) {
   const [result, setResult] = useState<{ postId: number; data?: PostDetail; error?: string }>();
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string>();
+  const [applyState, setApplyState] = useState<'idle' | 'applying' | 'applied'>('idle');
+  const [applyError, setApplyError] = useState<string>();
 
   useEffect(() => {
     let ignore = false;
@@ -110,6 +112,19 @@ export default function PostDetailPage({ viewer = 'common' }: Props) {
     }
   };
 
+  const handleApply = async () => {
+    // TODO: 지원 API(POST /api/v1/applications/{postId})는 동행 매니저(ESCORT) 로그인 쿠키가 있어야 합니다.
+    setApplyState('applying');
+    setApplyError(undefined);
+    try {
+      await applyToPost(postId);
+      setApplyState('applied');
+    } catch (error) {
+      setApplyState('idle');
+      setApplyError(error instanceof Error ? error.message : '지원에 실패했습니다.');
+    }
+  };
+
   if (!post) {
     return (
       <AppShell user={user}>
@@ -129,6 +144,8 @@ export default function PostDetailPage({ viewer = 'common' }: Props) {
   const pay = `시급 ${post.hourlyPay.toLocaleString()}원`;
   const location = `${post.region} ${post.district}`;
   const applyClosed = post.badge === 'closed';
+  const applyLabel = applyState === 'applied' ? '지원 완료' : applyState === 'applying' ? '지원 중…' : applyClosed ? '지원 불가' : '지원하기';
+  const applyDisabled = applyClosed || applyState !== 'idle';
 
   const editHref = `/client/posts/${post.id}/edit`;
 
@@ -226,9 +243,9 @@ export default function PostDetailPage({ viewer = 'common' }: Props) {
               </div>
             </section>
 
-            {deleteError && (
+            {(deleteError || applyError) && (
               <p role="alert" className="px-2 text-sm font-medium text-[#b91d1d]">
-                {deleteError}
+                {deleteError || applyError}
               </p>
             )}
             <div className="flex gap-[15px]">
@@ -250,9 +267,8 @@ export default function PostDetailPage({ viewer = 'common' }: Props) {
                   </Link>
                 </>
               ) : (
-                // TODO: 지원 API(POST /api/v1/applications/{postId}) 연결
-                <button type="button" disabled={applyClosed} className={cn(BUTTON, 'h-14 flex-1 bg-brand text-xl text-white hover:bg-brand-hover')}>
-                  {applyClosed ? '지원 불가' : '지원하기'}
+                <button type="button" onClick={handleApply} disabled={applyDisabled} className={cn(BUTTON, 'h-14 flex-1 bg-brand text-xl text-white hover:bg-brand-hover')}>
+                  {applyLabel}
                 </button>
               )}
             </div>
@@ -284,9 +300,8 @@ export default function PostDetailPage({ viewer = 'common' }: Props) {
                   </button>
                 </>
               ) : (
-                // TODO: 지원 API 연결
-                <button type="button" disabled={applyClosed} className={cn(BUTTON, 'h-11 bg-brand text-base text-white hover:bg-brand-hover')}>
-                  {applyClosed ? '지원 불가' : '지원하기'}
+                <button type="button" onClick={handleApply} disabled={applyDisabled} className={cn(BUTTON, 'h-11 bg-brand text-base text-white hover:bg-brand-hover')}>
+                  {applyLabel}
                 </button>
               )}
               <Link href={listHref} className={cn(BUTTON, 'h-11 border border-line bg-white text-base text-brand hover:bg-line-soft')}>
