@@ -74,25 +74,18 @@ export function getPostDetail(id: number): PostDetail | undefined {
 
   return {
     ...summary,
+    clientId: 'client01',
     postedAt: '2026.09.12   18:12',
-    department: '영상의학과(MRI)',
-    transport: '택시(우버)',
+    hospitalAddress: `${summary.region} ${summary.district}`,
+    pickupAddress: `${summary.region} ${summary.district}`,
     details: [
       '허리 통증으로 강남세브란스병원에서 MRI 검사를 받을 예정입니다.',
       '접수부터 검사 후 결과 안내까지 전반적인 일정에 함께 동행해주실 분을 찾습니다.',
       '병원 내 이동이 많지 않고, 대기 시간이 있을 수 있습니다.',
       '편안하고 책임감 있게 도와주실 분의 지원을 기다립니다.',
     ],
-    requests: [
-      '접수 및 수납 동행',
-      '병원 내 이동 보조 (검사실, 대기실 등)',
-      '검사 전후 안내 및 진료 결과 확인 시 함께 이동',
-      '휠체어 이용 없음',
-      '기타 특이사항 없음',
-    ],
-    clientType: '개인 (환자 본인)',
-    withGuardian: '아니요(본인만)',
-    genderPreference: '선호 없음',
-    clientIntro: ['허리 통증으로 거동이 불편하여', '병원 일정에 도움을 주실 분을', '찾고 있습니다.'],
+    patientNote: ['휠체어 이용 없음', '기타 특이사항 없음'],
+    reportRequired: true,
+    recruitPeriod: '10월 2일(금) 오전 9:00 ~ 10월 5일(월) 오후 6:00',
   };
 }
