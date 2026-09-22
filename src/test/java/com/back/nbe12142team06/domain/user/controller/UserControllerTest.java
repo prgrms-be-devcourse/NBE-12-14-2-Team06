@@ -2208,8 +2208,6 @@ public class UserControllerTest {
     @DisplayName("[UserController] 동행 매니저 프로필 수정 - 존재하지 않는 프로필에 대해 수정 요청 시 404 반환")
     void t58() throws Exception {
         Cookie escortToken = signUp("escort1", "ESCORT");
-        Long escortId = findUserId("escort1");
-
 
         String updateBody = """
                 {
@@ -2230,5 +2228,31 @@ public class UserControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.statusCode").value("404"))
                 .andExpect(jsonPath("$.msg").value("동행 매니저 프로필이 존재하지 않습니다."));
+    }
+
+
+    @Test
+    @DisplayName("[UserController] 동행 매니저 프로필 수정 - 로그인 없이 수정 요청 시 401-1 반환")
+    void t59() throws Exception {
+        Cookie escortToken = signUp("escort1", "ESCORT");
+
+        String updateBody = """
+                {
+                "intro": "수정한 자기소개입니다.",
+                "bankName": "수정은행",
+                "accountHolder": "김수정",
+                "accountNumber": "123-0012300-123"
+                }
+                """;
+        ResultActions resultActions = mvc.perform(
+                put("/api/v1/users/profile/escort")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(updateBody)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.statusCode").value("401-1"))
+                .andExpect(jsonPath("$.msg").value("로그인 후 이용해주세요."));
     }
 }
