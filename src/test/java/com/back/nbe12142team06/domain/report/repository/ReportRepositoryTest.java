@@ -2,6 +2,7 @@ package com.back.nbe12142team06.domain.report.repository;
 
 import com.back.nbe12142team06.domain.application.entity.Application;
 import com.back.nbe12142team06.domain.post.entity.Post;
+import com.back.nbe12142team06.domain.report.entity.Department;
 import com.back.nbe12142team06.domain.report.entity.Report;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Gender;
@@ -78,14 +79,35 @@ class ReportRepositoryTest {
         Report report = Report.builder()
                 .application(application)
                 .title("진료 결과")
+                .department(Department.ORTHOPEDICS)
+                .purpose("무릎 통증 검사")
                 .originContent("정형외과 진료 후 물리치료 처방을 받으셨습니다.")
+                .notes("대기 시간이 길어 잠시 앉아 쉬셨습니다.")
                 .build();
 
         Report saved = reportRepository.save(report);
 
         assertThat(saved.getId()).isNotNull();
         assertThat(saved.getCreatedAt()).isNotNull();
+        assertThat(saved.getDepartment()).isEqualTo(Department.ORTHOPEDICS);
         assertThat(saved.getAiSummary()).isNull();  // 요약 전이므로 null
+    }
+
+    @Test
+    @DisplayName("특이사항 없이도 보고서를 저장할 수 있다")
+    void 보고서_저장_특이사항_없음() {
+        Report report = Report.builder()
+                .application(application)
+                .title("진료 결과")
+                .department(Department.INTERNAL_MEDICINE)
+                .purpose("정기 검진")
+                .originContent("혈압과 혈당 수치를 확인했습니다.")
+                .build();
+
+        Report saved = reportRepository.save(report);
+
+        assertThat(saved.getId()).isNotNull();
+        assertThat(saved.getNotes()).isNull();  // 특이사항은 선택 입력
     }
 
     @Test
@@ -94,6 +116,8 @@ class ReportRepositoryTest {
         reportRepository.save(Report.builder()
                 .application(application)
                 .title("첫 번째")
+                .department(Department.ORTHOPEDICS)
+                .purpose("무릎 통증 검사")
                 .originContent("내용")
                 .build());
         em.flush();
@@ -101,6 +125,8 @@ class ReportRepositoryTest {
         Report duplicate = Report.builder()
                 .application(application)
                 .title("두 번째")
+                .department(Department.ORTHOPEDICS)
+                .purpose("무릎 통증 검사")
                 .originContent("내용")
                 .build();
 
