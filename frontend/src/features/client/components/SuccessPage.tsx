@@ -28,8 +28,14 @@ export default function SuccessPage() {
   const paymentId = Number(searchParams.get('paymentId'));
   const postId = searchParams.get('postId') ?? '1';
   const pay = searchParams.get('pay') ?? '0';
+  // flow=extra : 동행 완료 후 차액을 낸 추가 결제. 공고 등록 완료 화면이 아니라 공고 상세로 돌아갑니다.
+  const flow = searchParams.get('flow') ?? '';
+  const isExtra = flow === 'extra';
 
-  const completeHref = `/client/posts/complete?${new URLSearchParams({ postId, pay, amount })}`;
+  const nextHref = isExtra
+    ? `/client/posts/${postId}`
+    : `/client/posts/complete?${new URLSearchParams({ postId, pay, amount })}`;
+  const nextLabel = isExtra ? '공고 상세로 이동' : '공고 등록 완료로 이동';
 
   // 개발 모드(StrictMode)에서 effect 가 두 번 돌아 승인 API 가 중복 호출되는 것을 막습니다.
   const requestedRef = useRef(false);
@@ -47,7 +53,7 @@ export default function SuccessPage() {
       confirm
         .then((data) => {
           setConfirmed(data);
-          timerRef.current = setTimeout(() => router.replace(completeHref), REDIRECT_DELAY_MS);
+          timerRef.current = setTimeout(() => router.replace(nextHref), REDIRECT_DELAY_MS);
         })
         .catch((error: unknown) => {
           const code = error instanceof ApiError ? error.statusCode : 'UNKNOWN';
@@ -59,6 +65,7 @@ export default function SuccessPage() {
             paymentId: searchParams.get('paymentId') ?? '',
             pay,
             amount,
+            flow,
           });
           router.replace(`/client/posts/new/payment/fail?${query}`);
         });
@@ -67,7 +74,7 @@ export default function SuccessPage() {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [orderId, paymentKey, amount, paymentId, postId, pay, completeHref, searchParams, router]);
+  }, [orderId, paymentKey, amount, paymentId, postId, pay, flow, nextHref, searchParams, router]);
 
   return (
     <>
@@ -80,7 +87,7 @@ export default function SuccessPage() {
           alt=""
           className="mx-auto"
         />
-        <h2>{confirmed ? '결제를 완료했어요' : '결제를 확인하고 있어요'}</h2>
+        <h2>{confirmed ? (isExtra ? '추가 결제를 완료했어요' : '결제를 완료했어요') : '결제를 확인하고 있어요'}</h2>
 
         <div className="p-grid typography--p" style={{ marginTop: '50px' }}>
           <div className="p-grid-col text--left">
@@ -109,15 +116,17 @@ export default function SuccessPage() {
 
         <div className="p-grid-col">
           <p className="typography--p" style={{ marginTop: '30px', color: '#4e5968' }}>
-            {confirmed ? '잠시 후 공고 등록 완료 화면으로 이동합니다.' : '승인 결과를 기다리는 중입니다.'}
+            {confirmed
+              ? `잠시 후 ${isExtra ? '공고 상세' : '공고 등록 완료'} 화면으로 이동합니다.`
+              : '승인 결과를 기다리는 중입니다.'}
           </p>
           <button
             type="button"
             className="button"
             disabled={!confirmed}
-            onClick={() => router.replace(completeHref)}
+            onClick={() => router.replace(nextHref)}
           >
-            공고 등록 완료로 이동
+            {nextLabel}
           </button>
         </div>
       </div>

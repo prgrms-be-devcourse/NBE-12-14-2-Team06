@@ -7,6 +7,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { AppShell } from '@/components/layout';
 import { Container, InfoRow } from '@/components/ui';
 import { applyToPost } from '@/features/application';
+import { fetchPendingPayment, type PaymentDto } from '@/features/payment';
 import { cn } from '@/lib/cn';
 import { deletePost, fetchPost } from '../api';
 import { daysFromNow, formatFullDate } from '../lib/date';
@@ -19,6 +20,9 @@ const BADGE: Record<PostBadge, { text: string; tone: LabelTone }> = {
   open: { text: '모집 중', tone: 'blue' },
   closed: { text: '마감', tone: 'gray' },
 };
+
+/** 백엔드 PostStatus.COMPLETED 의 설명 문구. 이 상태여야 남은 결제를 "추가 결제"로 볼 수 있습니다. */
+const COMPLETED_STATUS = '동행 완료';
 
 const CARD = 'rounded-[30px] border border-line bg-white shadow-card';
 const CARD_TITLE = 'text-2xl leading-6 font-semibold text-brand';
@@ -66,6 +70,8 @@ export default function PostDetailPage({ viewer = 'common' }: Props) {
   const [deleteError, setDeleteError] = useState<string>();
   const [applyState, setApplyState] = useState<'idle' | 'applying' | 'applied'>('idle');
   const [applyError, setApplyError] = useState<string>();
+  // 동행이 끝난 뒤 남아 있는 미결제(추가 결제) 건. 공고 조회와 같은 방식으로 postId 를 같이 들고 있습니다.
+  const [paymentResult, setPaymentResult] = useState<{ postId: number; data: PaymentDto | null }>();
 
   useEffect(() => {
     let ignore = false;
@@ -89,6 +95,26 @@ export default function PostDetailPage({ viewer = 'common' }: Props) {
       : viewer === 'escort'
         ? '/escort/posts'
         : '/posts';
+
+  // 동행이 끝난 내 공고일 때만 남은 결제를 확인합니다.
+  // 결제 조회는 로그인(의뢰인 본인)이 필요하고, 동행 완료 전에 남아 있는 READY 결제는
+  // "추가 결제"가 아니라 아직 안 낸 최초 결제라서 여기서 물어보면 안 됩니다.
+  const canHaveExtraPayment = isClient && post?.postStatus === COMPLETED_STATUS;
+
+  useEffect(() => {
+    if (!canHaveExtraPayment) return;
+    let ignore = false;
+    fetchPendingPayment(postId)
+      .then((payment) => !ignore && setPaymentResult({ postId, data: payment }))
+      // 조회에 실패해도 공고 상세 자체는 보여 줍니다. (추가 결제 안내만 뜨지 않습니다)
+      .catch(() => !ignore && setPaymentResult({ postId, data: null }));
+    return () => {
+      ignore = true;
+    };
+  }, [canHaveExtraPayment, postId]);
+
+  // 다른 공고로 이동한 직후에는 이전 공고의 결제 정보를 쓰지 않습니다.
+  const pendingPayment = canHaveExtraPayment && paymentResult?.postId === postId ? paymentResult.data : null;
 
   const handleDelete = async () => {
     if (!window.confirm('이 공고를 삭제할까요? 되돌릴 수 없습니다.')) return;
@@ -140,6 +166,25 @@ export default function PostDetailPage({ viewer = 'common' }: Props) {
   const applyDisabled = applyClosed || applyState !== 'idle';
 
   const editHref = `/client/posts/${post.id}/edit`;
+
+  // 추가 결제도 공고 등록 때와 같은 결제 화면(토스 위젯)을 씁니다.
+  // flow=extra 는 결제 후 공고 등록 완료 화면이 아니라 이 공고 상세로 돌아오기 위한 표시입니다.
+  const extraPaymentHref = pendingPayment
+    ? `/client/posts/new/payment?${new URLSearchParams({
+        postId: String(post.id),
+        paymentId: String(pendingPayment.id),
+        amount: String(pendingPayment.amount),
+        pay: String(post.hourlyPay),
+        flow: 'extra',
+      })}`
+    : '';
+
+  // 추가 결제가 남아 있으면 그게 이 화면의 유일한 주 동작입니다.
+  // 수정하기를 보조 버튼으로 낮춰 똑같은 파란 버튼이 나란히 붙지 않게 합니다.
+  // (동행이 끝난 공고라 수정은 어차피 서버가 거부합니다 — 모집 시작 전까지만 가능)
+  const editStyle = pendingPayment
+    ? 'border border-line bg-white text-brand hover:bg-line-soft'
+    : 'bg-brand text-white hover:bg-brand-hover';
 
   return (
     <AppShell>
@@ -235,6 +280,25 @@ export default function PostDetailPage({ viewer = 'common' }: Props) {
               </div>
             </section>
 
+            {/* 추가 결제 안내 — 실제 동행 시간이 예상보다 길어져 차액이 남았을 때만 */}
+            {pendingPayment && (
+              <section className={cn(CARD, 'border-brand px-6 pt-7 pb-6 lg:px-[35px]')}>
+                <h2 className={cn(CARD_TITLE, 'mb-5')}>추가 결제 안내</h2>
+                <p className="mb-5 text-base leading-6 font-medium text-brand">
+                  실제 동행 시간이 예상보다 길어져 차액이 발생했습니다.
+                  아래 금액을 결제하시면 동행 건이 최종 정산됩니다.
+                </p>
+                <dl className="mb-5 flex flex-col gap-[3px]">
+                  <InfoRow label="추가 결제 금액" labelWidth={140}>{`${pendingPayment.amount.toLocaleString()}원`}</InfoRow>
+                  <InfoRow label="실제 동행 시간" labelWidth={140}>{`약 ${pendingPayment.hours}시간`}</InfoRow>
+                  <InfoRow label="적용 시급" labelWidth={140}>{`${pendingPayment.hourlyPaySnapshot.toLocaleString()}원`}</InfoRow>
+                </dl>
+                <Link href={extraPaymentHref} className={cn(BUTTON, 'h-14 w-full bg-brand text-xl text-white hover:bg-brand-hover')}>
+                  {`${pendingPayment.amount.toLocaleString()}원 추가 결제하기`}
+                </Link>
+              </section>
+            )}
+
             {(deleteError || applyError) && (
               <p role="alert" className="px-2 text-sm font-medium text-[#b91d1d]">
                 {deleteError || applyError}
@@ -254,7 +318,7 @@ export default function PostDetailPage({ viewer = 'common' }: Props) {
                   >
                     {deleting ? '삭제 중…' : '삭제하기'}
                   </button>
-                  <Link href={editHref} className={cn(BUTTON, 'h-14 flex-1 bg-brand text-xl text-white hover:bg-brand-hover')}>
+                  <Link href={editHref} className={cn(BUTTON, 'h-14 flex-1 text-xl', editStyle)}>
                     수정하기
                   </Link>
                 </>
@@ -277,9 +341,14 @@ export default function PostDetailPage({ viewer = 'common' }: Props) {
               <InfoRow label="지역" labelWidth={94}>{location}</InfoRow>
             </dl>
             <div className="mt-3.5 flex flex-col gap-[5px]">
+              {pendingPayment && (
+                <Link href={extraPaymentHref} className={cn(BUTTON, 'h-11 bg-brand text-base text-white hover:bg-brand-hover')}>
+                  {`${pendingPayment.amount.toLocaleString()}원 추가 결제`}
+                </Link>
+              )}
               {isClient ? (
                 <>
-                  <Link href={editHref} className={cn(BUTTON, 'h-11 bg-brand text-base text-white hover:bg-brand-hover')}>
+                  <Link href={editHref} className={cn(BUTTON, 'h-11 text-base', editStyle)}>
                     수정하기
                   </Link>
                   <button

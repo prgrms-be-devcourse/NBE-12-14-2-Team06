@@ -19,9 +19,12 @@ export default function FailPage() {
   const paymentId = searchParams.get('paymentId') ?? '';
   const pay = searchParams.get('pay') ?? '0';
   const amount = searchParams.get('amount') ?? '0';
+  // flow=extra : 동행 완료 후 차액을 내는 추가 결제. 재시도해도 같은 흐름을 이어가야 합니다.
+  const flow = searchParams.get('flow') ?? '';
+  const isExtra = flow === 'extra';
 
   // 실패했으니 결제 화면으로 되돌아가 같은 공고를 다시 결제할 수 있게 합니다.
-  const retryHref = `/client/posts/new/payment?${new URLSearchParams({ postId, paymentId, pay, amount })}`;
+  const retryHref = `/client/posts/new/payment?${new URLSearchParams({ postId, paymentId, pay, amount, flow })}`;
 
   return (
     <div id="info" className="box_section" style={{ width: '600px' }}>
@@ -58,9 +61,9 @@ export default function FailPage() {
             다시 결제하기
           </button>
         </Link>
-        <Link href="/client/posts">
+        <Link href={isExtra ? `/client/posts/${postId}` : '/client/posts'}>
           <button type="button" className="button p-grid-col5" style={{ backgroundColor: '#e8f3ff', color: '#1b64da' }}>
-            내 공고 목록으로
+            {isExtra ? '공고 상세로' : '내 공고 목록으로'}
           </button>
         </Link>
       </div>

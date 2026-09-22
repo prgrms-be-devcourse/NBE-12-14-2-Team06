@@ -28,8 +28,9 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     @Query("select pay " +
             "from Payment pay " +
             "join Post post on pay.post=post " +
-            "where post.id=:postId")
-    Optional<Payment> findByPostId(@Param("postId") Long postId);
+            "where post.id=:postId and pay.paymentStatus in ('DONE', 'PARTIAL_CANCELED') " +
+            "order by pay.balanceAmount desc")
+    List<Payment> findByPostId(@Param("postId") Long postId);
 
     @Query("select pay " +
             "from Payment pay " +
