@@ -7,10 +7,13 @@ import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.service.UserService;
 import com.back.nbe12142team06.global.response.RsData;
 import com.back.nbe12142team06.global.rq.Rq;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+@Tag(name = "인증", description = "로그인, 로그아웃 및 토큰 재발급 관련 API")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/auth")
@@ -20,7 +23,7 @@ public class AuthController {
     private final RefreshTokenService refreshTokenService;
     private final UserService userService;
 
-
+    @Operation(summary = "Access Token 재발급", description = "Refresh Token을 이용해 새로운 Access Token을 발급합니다.")
     @PostMapping("/refresh")
     public RsData<Void> refresh(){
         String rawRefreshToken = this.rq.getRefreshToken();
@@ -35,6 +38,7 @@ public class AuthController {
     }
 
     // 로그인
+    @Operation(summary = "로그인", description = "사용자 정보를 확인한 후 Access Token과 Refresh Token을 발급합니다.")
     @PostMapping("/login")
     public RsData<UserLoginResponse> login(@RequestBody @Valid UserLoginRequest request) {
         User user = this.userService.login(request);
@@ -53,6 +57,7 @@ public class AuthController {
     }
 
     // 로그아웃
+    @Operation(summary = "로그아웃", description = "Refresh Token을 폐기하고 인증 토큰 쿠키를 삭제합니다.")
     @DeleteMapping("/logout")
     public RsData<Void> logout() {
 
