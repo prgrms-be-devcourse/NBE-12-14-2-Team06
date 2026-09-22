@@ -166,20 +166,6 @@ public class UserControllerTest {
                 .andExpect(status().isOk());
     }
 
-    // 의뢰인 프로필 수정
-    private void modifyClientProfile(Cookie clientToken) throws Exception {
-        mvc.perform(put("/api/v1/users/profile/client")
-                        .cookie(clientToken)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                    "emergencyContactName": "정상수",
-                                    "emergencyContactPhone": "010-9999-9999",
-                                    "careNote": "왤케 안끝나"
-                                }
-                                """))
-                .andExpect(status().isOk());
-    }
 
 
     // 동행 매니저 프로필 생성
@@ -1971,6 +1957,31 @@ public class UserControllerTest {
                 .andExpect(jsonPath("$.data.emergencyContactName").value("정상수"))
                 .andExpect(jsonPath("$.data.emergencyContactPhone").value("010-9999-9999"))
                 .andExpect(jsonPath("$.data.careNote").value("특이사항 없음"));
+    }
+
+    @Test
+    @DisplayName("[UserController] 의뢰인 자기 자신 프로필 수정 - 프로필을 생성하지 않은 유저의 프로필 수정 요청 시 404 반환")
+    void t50() throws Exception {
+        Cookie clientToken = signUp("client1");
+        Long clientId = findUserId("client1");
+
+
+        ResultActions resultActions = mvc.perform(put("/api/v1/users/profile/client")
+                        .cookie(clientToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "emergencyContactName": "정상수",
+                                    "emergencyContactPhone": "010-9999-9999",
+                                    "careNote": ""
+                                }
+                                """))
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.statusCode").value("404"))
+                .andExpect(jsonPath("$.msg").value("의뢰인 프로필이 존재하지 않습니다."));
     }
 
     @Test

@@ -224,7 +224,7 @@ public class UserService {
     public ClientProfile updateClientProfile(Long id, ClientProfileModifyRequest request) {
 
         ClientProfile clientProfile = this.clientProfileRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("수정할 의뢰인 프로필이 존재하지 않습니다."));
+                .orElseThrow(() -> new NotFoundException("의뢰인 프로필이 존재하지 않습니다."));
 
         String careNote = (request.careNote() == null || request.careNote().isBlank()) ? DEFAULT_CLIENT_PROFILE_CARE_NOTE : request.careNote();
 
