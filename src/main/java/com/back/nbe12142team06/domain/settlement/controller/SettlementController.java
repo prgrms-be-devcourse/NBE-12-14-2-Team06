@@ -5,6 +5,8 @@ import com.back.nbe12142team06.domain.settlement.entity.Settlement;
 import com.back.nbe12142team06.domain.settlement.service.SettlementService;
 import com.back.nbe12142team06.global.response.RsData;
 import com.back.nbe12142team06.global.security.SecurityUser;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -12,10 +14,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
 
+@Tag(name = "정산", description = "동행 정산 요청 및 조회 관련 API")
 @RestController
 @RequestMapping("/api/v1/settlements")
 @RequiredArgsConstructor
@@ -23,7 +24,10 @@ public class SettlementController {
 
     private final SettlementService settlementService;
 
-    // 정산 요청 기능
+    @Operation(
+            summary = "정산 요청",
+            description = "특정 정산 건에 대해 정산을 요청합니다."
+    )
     @PostMapping("/{settlementId}")
     public RsData<?> settlementRequest(@AuthenticationPrincipal SecurityUser actor,
                                        @PathVariable Long settlementId) {
@@ -34,7 +38,10 @@ public class SettlementController {
         return new RsData<>("200-30", "정산에 성공했습니다.");
     }
 
-    // 정산 목록 조회 기능
+    @Operation(
+            summary = "정산 목록 조회",
+            description = "기간, 페이지 및 정렬 조건을 적용하여 현재 사용자의 정산 목록을 조회합니다."
+    )
     @GetMapping
     public RsData<Page<SettlementResponse>> settlementList(@AuthenticationPrincipal SecurityUser actor,
                                                            @RequestParam(required = false) LocalDateTime startDate,
@@ -54,7 +61,10 @@ public class SettlementController {
                 settlements.map(SettlementResponse::new));
     }
 
-    // 정산 조회 기능
+    @Operation(
+            summary = "정산 상세 조회",
+            description = "특정 정산 건의 상세 정보를 조회합니다."
+    )
     @GetMapping("/{settlementId}")
     public RsData<SettlementResponse> settlementDetail(@AuthenticationPrincipal SecurityUser actor,
                                                        @PathVariable Long settlementId) {

@@ -3,20 +3,19 @@ package com.back.nbe12142team06.domain.payment.controller;
 import com.back.nbe12142team06.domain.payment.dto.*;
 import com.back.nbe12142team06.domain.payment.entity.Payment;
 import com.back.nbe12142team06.domain.payment.service.PaymentService;
-import com.back.nbe12142team06.global.exception.InternalServerErrorException;
-import com.back.nbe12142team06.global.exception.InvalidException;
 import com.back.nbe12142team06.global.response.RsData;
 import com.back.nbe12142team06.global.security.SecurityUser;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.security.Principal;
 import java.util.List;
 
+@Tag(name = "결제", description = "결제 승인, 검증, 조회 및 취소 관련 API")
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/payments")
@@ -25,6 +24,10 @@ public class PaymentController {
 
     private final PaymentService paymentService;
 
+    @Operation(
+            summary = "결제 승인",
+            description = "결제 요청 정보를 확인하고 결제를 승인합니다."
+    )
     @PostMapping("/{paymentId}/confirm")
     public RsData<PaymentConfirmResponse> requestConfirm(@AuthenticationPrincipal SecurityUser actor,
                                                          @RequestBody PaymentConfirmRequest request,
@@ -39,6 +42,10 @@ public class PaymentController {
                 new PaymentConfirmResponse(request));
     }
 
+    @Operation(
+            summary = "결제 정보 임시 저장",
+            description = "결제 진행에 필요한 주문 ID와 결제 금액을 세션에 임시 저장합니다."
+    )
     @PostMapping("/save-amount")
     public RsData<?> tempSave(HttpSession session, @RequestBody SaveAmountRequest request) {
         session.setAttribute("orderId", request.orderId());
@@ -49,6 +56,10 @@ public class PaymentController {
         return new RsData<>("201-n", "결제 정보 임시 저장에 성공했습니다.");
     }
 
+    @Operation(
+            summary = "결제 금액 검증",
+            description = "세션에 저장된 결제 금액과 요청 정보를 비교하여 결제 정보를 검증합니다."
+    )
     @PostMapping("/verify-amount")
     public RsData<?> verifyAmount(HttpSession session, @RequestBody SaveAmountRequest request) {
         String orderId = (String) session.getAttribute("orderId");
@@ -59,6 +70,10 @@ public class PaymentController {
         return new RsData<>("200-n", "결제 정보가 유효합니다.");
     }
 
+    @Operation(
+            summary = "결제 목록 조회",
+            description = "현재 로그인한 사용자의 결제 내역을 조회합니다."
+    )
     @GetMapping
     public RsData<?> paymentList(@AuthenticationPrincipal SecurityUser actor) {
         Long userId = actor.getId();
@@ -69,6 +84,10 @@ public class PaymentController {
                 payments.stream().map(PaymentResponse::new));
     }
 
+    @Operation(
+            summary = "결제 상세 조회",
+            description = "현재 로그인한 사용자의 특정 결제 정보를 조회합니다."
+    )
     @GetMapping("/{paymentId}")
     public RsData<?> getPayment(@AuthenticationPrincipal SecurityUser actor,
                                 @PathVariable Long paymentId) {
@@ -80,6 +99,10 @@ public class PaymentController {
                 new PaymentResponse(payment));
     }
 
+    @Operation(
+            summary = "결제 취소",
+            description = "현재 로그인한 사용자의 특정 결제를 취소합니다."
+    )
     @DeleteMapping("/{paymentId}")
     public RsData<?> cancelPayment(@AuthenticationPrincipal SecurityUser actor,
                                    @PathVariable Long paymentId,

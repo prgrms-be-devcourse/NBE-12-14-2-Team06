@@ -6,6 +6,8 @@ import com.back.nbe12142team06.domain.ride.entity.Ride;
 import com.back.nbe12142team06.domain.ride.service.RideService;
 import com.back.nbe12142team06.global.response.RsData;
 import com.back.nbe12142team06.global.security.SecurityUser;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -13,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Tag(name = "이동수단", description = "동행 이동수단 조회 및 변경 관련 API")
 @RestController
 @RequestMapping("/api/v1/rides")
 @RequiredArgsConstructor
@@ -20,7 +23,10 @@ public class RideController {
 
     private final RideService rideService;
 
-    // 이동 수단 변경
+    @Operation(
+            summary = "이동수단 변경",
+            description = "특정 이동수단 정보를 변경합니다."
+    )
     @PutMapping("/{rideId}")
     public RsData<RideResponse> updateRide(@AuthenticationPrincipal SecurityUser actor,
                                            @PathVariable Long rideId,
@@ -33,7 +39,10 @@ public class RideController {
                 new RideResponse(ride));
     }
 
-    // 공고 별 목록
+    @Operation(
+            summary = "공고별 이동수단 목록 조회",
+            description = "특정 공고에 등록된 이동수단 목록을 조회합니다."
+    )
     @GetMapping("/posts/{postId}")
     public RsData<List<RideResponse>> getListByPostId(@AuthenticationPrincipal SecurityUser actor,
                                                       @PathVariable Long postId) {
@@ -45,7 +54,10 @@ public class RideController {
                 rides.stream().map(RideResponse::new).toList());
     }
 
-    // 이동 상세 정보
+    @Operation(
+            summary = "이동수단 상세 조회",
+            description = "특정 이동수단의 상세 정보를 조회합니다."
+    )
     @GetMapping("/{rideId}")
     public RsData<RideResponse> getRide(@AuthenticationPrincipal SecurityUser actor,
                                         @PathVariable Long rideId) {

@@ -5,12 +5,12 @@ import com.back.nbe12142team06.domain.post.dto.PostSearchConditionDto;
 import com.back.nbe12142team06.domain.post.dto.PostWriteRequest;
 import com.back.nbe12142team06.domain.post.dto.PostWriteResponse;
 import com.back.nbe12142team06.domain.post.entity.Post;
-import com.back.nbe12142team06.domain.post.entity.PostStatus;
 import com.back.nbe12142team06.domain.post.service.PostService;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
-import com.back.nbe12142team06.global.exception.NotFoundException;
 import com.back.nbe12142team06.global.response.RsData;
 import com.back.nbe12142team06.global.security.SecurityUser;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 
+@Tag(name = "공고", description = "동행 공고 등록, 조회, 수정, 삭제 및 상태 변경 관련 API")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/posts")
@@ -30,7 +31,10 @@ public class PostController {
     private final PostService postService;
     private final UserRepository userRepository;
 
-    //공고목록조회
+    @Operation(
+            summary = "공고 목록 조회",
+            description = "검색 조건과 정렬 조건을 적용하여 공고 목록을 페이지 단위로 조회합니다."
+    )
     @GetMapping
     public RsData<Page<PostDto>> list(
             @RequestParam(defaultValue = "0") int page,
@@ -63,7 +67,10 @@ public class PostController {
         return new RsData<>("200-1", "목록 조회 성공", postDtoPage);
     }
 
-    //공고상세조회
+    @Operation(
+            summary = "공고 상세 조회",
+            description = "특정 공고의 상세 정보를 조회합니다."
+    )
     @GetMapping("/{postId}")
     public RsData<PostDto> detail(@PathVariable Long postId) {
         PostDto postDto = new PostDto(postService.findById(postId));
@@ -71,7 +78,10 @@ public class PostController {
         return new RsData<>("200-1", "상세 조회 성공", postDto);
     }
 
-    //공고등록
+    @Operation(
+            summary = "공고 등록",
+            description = "의뢰인 또는 관리자가 새로운 동행 공고를 등록합니다."
+    )
     @PostMapping
     public RsData<PostWriteResponse> write(
             @AuthenticationPrincipal SecurityUser actor,
@@ -85,7 +95,10 @@ public class PostController {
         );
     }
 
-    //공고수정 : 모집시작전까지 수정가능
+    @Operation(
+            summary = "공고 수정",
+            description = "의뢰인은 본인이 작성한 모집 중 공고를 모집 시작 전에 수정할 수 있으며, 관리자도 공고를 수정할 수 있습니다."
+    )
     @PutMapping("/{postId}")
     public RsData<PostDto> modify(
             @AuthenticationPrincipal SecurityUser actor,
@@ -99,7 +112,11 @@ public class PostController {
                 "%d번 게시물이 수정되었습니다.".formatted(postId)
         );
     }
-    //공고삭제
+
+    @Operation(
+            summary = "공고 삭제",
+            description = "의뢰인은 본인이 작성한 모집 중 또는 만료된 공고를 삭제할 수 있으며, 관리자도 공고를 삭제할 수 있습니다."
+    )
     @DeleteMapping("/{postId}")
     public RsData<PostDto> delete(
             @AuthenticationPrincipal SecurityUser actor,
@@ -112,7 +129,11 @@ public class PostController {
                 "%d번 게시물이 삭제되었습니다.".formatted(postId)
         );
     }
-    //매치된 공고 취소
+
+    @Operation(
+            summary = "매칭 취소",
+            description = "의뢰인은 본인의 매칭된 공고의 동행 매칭을 취소할 수 있으며, 관리자도 매칭을 취소할 수 있습니다."
+    )
     @PatchMapping("/{postId}/matchedCancel")
     public RsData<PostDto> matchedCancel(
             @AuthenticationPrincipal SecurityUser actor,
@@ -125,7 +146,11 @@ public class PostController {
                 "%d번 게시물의 매칭이 취소되었습니다.".formatted(postId)
         );
     }
-    //매칭된 공고 동행완료 처리
+
+    @Operation(
+            summary = "동행 완료 처리",
+            description = "진행 중인 동행을 완료 처리하고 실제 동행 시간을 반영합니다."
+    )
     @PatchMapping("/{postId}/escortComplete")
     public RsData<PostDto> escortComplete(
             @AuthenticationPrincipal SecurityUser actor,

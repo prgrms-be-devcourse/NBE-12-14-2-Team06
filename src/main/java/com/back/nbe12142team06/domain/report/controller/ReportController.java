@@ -8,11 +8,14 @@ import com.back.nbe12142team06.domain.report.service.ReportService;
 import com.back.nbe12142team06.domain.report.service.ReportSummaryService;
 import com.back.nbe12142team06.global.response.RsData;
 import com.back.nbe12142team06.global.security.SecurityUser;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+@Tag(name = "보고서", description = "동행 진료 보고서 작성 및 조회 관련 API")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/applications")
@@ -21,7 +24,10 @@ public class ReportController {
     private final ReportService reportService;
     private final ReportSummaryService reportSummaryService;
 
-    // 진료 보고서 작성
+    @Operation(
+            summary = "진료 보고서 작성",
+            description = "특정 동행 건의 진료 보고서를 작성하고 저장된 내용을 기반으로 AI 요약을 생성합니다."
+    )
     @PostMapping("/{applicationId}/report")
     public RsData<ReportWriteResponse> write(
             @PathVariable Long applicationId,
@@ -42,7 +48,10 @@ public class ReportController {
         );
     }
 
-    // 진료 보고서 조회
+    @Operation(
+            summary = "진료 보고서 조회",
+            description = "특정 동행 건의 진료 보고서를 조회합니다."
+    )
     @GetMapping("/{applicationId}/report")
     public RsData<ReportDto> detail(
             @PathVariable Long applicationId,

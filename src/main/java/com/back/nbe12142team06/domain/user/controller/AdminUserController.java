@@ -8,12 +8,15 @@ import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.service.UserService;
 import com.back.nbe12142team06.global.response.RsData;
 import com.back.nbe12142team06.global.security.SecurityUser;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+@Tag(name = "관리자 회원", description = "관리자 회원 조회, 수정, 탈퇴 및 프로필 조회 관련 API")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/admin")
@@ -21,7 +24,10 @@ public class AdminUserController {
 
     private final UserService  userService;
 
-    // [ADMIN] 회원 정보 단건 조회
+    @Operation(
+            summary = "회원 상세 조회",
+            description = "관리자가 특정 회원의 정보를 조회합니다. 탈퇴한 회원도 조회할 수 있습니다."
+    )
     @GetMapping("/users/{userId}")
     public RsData<AdminUserResponse> getUser(@PathVariable Long userId) {
 
@@ -36,7 +42,10 @@ public class AdminUserController {
     }
 
 
-    // [ADMIN] 회원 정보 다건 조회 (페이징처리까지)
+    @Operation(
+            summary = "회원 목록 조회",
+            description = "관리자가 탈퇴한 회원을 포함한 회원 목록을 페이지 단위로 조회합니다."
+    )
     @GetMapping("/users")
     public RsData<Page<AdminUserResponse>> getUsers(
             @RequestParam(defaultValue = "0") int page,
@@ -53,7 +62,10 @@ public class AdminUserController {
     }
 
 
-    // [ADMIN] 회원 정보 수정 username, password는 변경 불가
+    @Operation(
+            summary = "회원 정보 수정",
+            description = "관리자가 특정 회원의 정보를 수정합니다. 탈퇴한 회원은 수정할 수 없으며 아이디와 비밀번호는 변경되지 않습니다."
+    )
     @PatchMapping("/users/{userId}")
     public RsData<AdminUserResponse> updateUser(
             @PathVariable Long userId,
@@ -68,7 +80,10 @@ public class AdminUserController {
         );
     }
 
-    // [ADMIN] 회원 탈퇴 - 이미 탈퇴한 회원 불가, 자기 자신 탈퇴 불가 (관리자가 한명일 때 대비용)
+    @Operation(
+            summary = "회원 탈퇴 처리",
+            description = "관리자가 특정 회원을 탈퇴 처리합니다. 관리자 본인 또는 이미 탈퇴한 회원은 탈퇴 처리할 수 없습니다."
+    )
     @DeleteMapping("/users/{id}")
     public RsData<Void> deleteUser(
             @AuthenticationPrincipal SecurityUser admin,
@@ -83,7 +98,10 @@ public class AdminUserController {
         );
     }
 
-    // [ADMIN] 의뢰인의 동행 매니저 프로필 조회 (계좌 정보 포함)
+    @Operation(
+            summary = "동행자 프로필 조회",
+            description = "관리자가 특정 동행자의 프로필을 계좌 정보를 포함하여 조회합니다."
+    )
     @GetMapping("/users/{userId}/profile/escort")
     public RsData<EscortProfileResponse> getProfileEscortByAdmin(@PathVariable Long userId){
         EscortProfile escortProfile = this.userService.getEscortProfile(userId);

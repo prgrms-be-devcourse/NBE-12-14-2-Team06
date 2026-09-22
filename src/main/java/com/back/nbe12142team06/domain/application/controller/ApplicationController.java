@@ -4,6 +4,8 @@ import com.back.nbe12142team06.domain.application.dto.*;
 import com.back.nbe12142team06.domain.application.service.ApplicationService;
 import com.back.nbe12142team06.global.response.RsData;
 import com.back.nbe12142team06.global.security.SecurityUser;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -11,12 +13,14 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+@Tag(name = "지원", description = "동행 지원 관련 API")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/applications")
 public class ApplicationController {
     private final ApplicationService applicationService;
 
+    @Operation(summary = "동행 지원", description = "특정 공고에 동행 지원을 신청합니다.")
     @PostMapping("/{postId}")
     public RsData<ApplicationApplyResponse> apply(
             @PathVariable Long postId,
@@ -31,6 +35,7 @@ public class ApplicationController {
         );
     }
 
+    @Operation(summary = "지원 목록 조회", description = "특정 공고에 지원한 동행자 목록을 조회합니다.")
     @GetMapping("/posts/{postId}")
     public RsData<Page<ApplicationListResponse>> list(
             @PathVariable Long postId,
@@ -49,6 +54,7 @@ public class ApplicationController {
         );
     }
 
+    @Operation(summary = "지원 승인", description = "특정 동행자의 지원을 승인합니다.")
     @PatchMapping("/{applicationId}/accept")
     public RsData<ApplicationAcceptResponse> accept(
             @PathVariable Long applicationId,
@@ -63,6 +69,7 @@ public class ApplicationController {
         );
     }
 
+    @Operation(summary = "지원 거절", description = "특정 동행자의 지원을 거절합니다.")
     @PatchMapping("/{applicationId}/reject")
     public RsData<Void> reject(
             @PathVariable Long applicationId,
@@ -77,6 +84,7 @@ public class ApplicationController {
         );
     }
 
+    @Operation(summary = "지원 취소", description = "동행자 본인이 지원을 취소합니다.")
     @PatchMapping("/{applicationId}/cancel")
     public RsData<Void> cancel(
             @PathVariable Long applicationId,
@@ -91,6 +99,7 @@ public class ApplicationController {
         );
     }
 
+    @Operation(summary = "동행 진행 상태 변경", description = "승인된 동행의 진행 상태를 변경합니다.")
     @PatchMapping("/{applicationId}/progress")
     public RsData<Void> updateProgress(
             @PathVariable Long applicationId,
@@ -107,6 +116,7 @@ public class ApplicationController {
 
     }
 
+    @Operation(summary = "동행자 프로필 조회", description = "특정 지원의 동행자 프로필 정보를 조회합니다.")
     @GetMapping("/{applicationId}/escort-profile")
     public RsData<ApplicationEscortProfileResponse> profile(
             @PathVariable Long applicationId,
