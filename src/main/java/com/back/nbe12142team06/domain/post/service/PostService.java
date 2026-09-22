@@ -6,15 +6,19 @@ import com.back.nbe12142team06.domain.application.enums.ApplicationStatus;
 import com.back.nbe12142team06.domain.application.enums.EscortProgress;
 import com.back.nbe12142team06.domain.application.repository.ApplicationRepository;
 import com.back.nbe12142team06.domain.application.repository.EscortProgressLogRepository;
+import com.back.nbe12142team06.domain.payment.entity.Payment;
 import com.back.nbe12142team06.domain.payment.service.PaymentService;
 import com.back.nbe12142team06.domain.post.dto.PostSearchConditionDto;
 import com.back.nbe12142team06.domain.post.dto.PostWriteRequest;
+import com.back.nbe12142team06.domain.post.dto.PostWriteResponse;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.entity.PostStatus;
 import com.back.nbe12142team06.domain.post.repository.PostRepository;
 import com.back.nbe12142team06.domain.ride.service.RideService;
+import com.back.nbe12142team06.domain.user.entity.EscortProfile;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Role;
+import com.back.nbe12142team06.domain.user.repository.EscortProfileRepository;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
 import com.back.nbe12142team06.global.exception.InvalidException;
 import com.back.nbe12142team06.global.exception.NotFoundException;
@@ -37,6 +41,7 @@ public class PostService {
     private final UserRepository userRepository;
     private final EscortProgressLogRepository escortProgressLogRepository;
     private final ApplicationRepository applicationRepository;
+    private final EscortProfileRepository escortProfileRepository;
     private final PaymentService paymentService;
     private final RideService rideService;
 
@@ -70,7 +75,7 @@ public class PostService {
     }
 
     @Transactional
-    public Post write(Long userId, PostWriteRequest request) {
+    public PostWriteResponse write(Long userId, PostWriteRequest request) {
         User user = getUser(userId);
         if (user.getRole() != Role.CLIENT && user.getRole() != Role.ADMIN) {
             throw new UnauthorizedException(10, "공고 등록 권한이 없습니다. 의뢰인으로 로그인 해주세요.");
@@ -99,12 +104,14 @@ public class PostService {
                 .reportRequired(request.reportRequired())
                 .build();
 
-        // 결제 데이터 생성
-        paymentService.createPayment(post);
-        // 이동수단 데이터 생성
-        rideService.createRide(post);
+        Post savedPost = postRepository.save(post);
 
-        return postRepository.save(post);
+        // 결제 데이터 생성
+        Payment payment = paymentService.createPayment(savedPost);
+        // 이동수단 데이터 생성
+        rideService.createRide(savedPost);
+
+        return new PostWriteResponse(savedPost, payment.getId());
     }
 
     @Transactional
@@ -238,6 +245,11 @@ public class PostService {
 
         post.startProgress(departedAt);   // escortStartAt 실제값 반영
         post.complete(arrivedAt);       // escortEndAt 실제값 반영 + 상태 COMPLETED
+
+        // 동행인 프로필의 동행 완료 건수 증가
+        EscortProfile escortProfile = this.escortProfileRepository.findById(application.getEscort().getId())
+                .orElseThrow(() -> new NotFoundException(20, "동행 매니저 프로필이 존재하지 않습니다."));
+        escortProfile.increaseCompletedCount();
 
         // 재결제 로직
         paymentService.validPayment(userId, post, application, post.getEscortEndAt().plusDays(1).toLocalDate());

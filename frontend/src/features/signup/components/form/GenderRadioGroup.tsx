@@ -11,7 +11,7 @@ type Props = {
   labelId: string;
 };
 
-/** 성별 라디오 (Figma 564:17830 — 남성 / 여성 / 선택 안 함) */
+/** 성별 라디오 (Figma 564:17830 — 백엔드 Gender enum 에 맞춰 남성 / 여성만 둡니다) */
 export default function GenderRadioGroup({ value, onChange, labelId }: Props) {
   return (
     <div role="radiogroup" aria-labelledby={labelId} className="flex flex-wrap items-center gap-x-[26px] gap-y-2">

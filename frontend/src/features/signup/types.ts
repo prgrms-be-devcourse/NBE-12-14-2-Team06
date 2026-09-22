@@ -23,11 +23,8 @@ export type SignupStep = {
   title: string;
 };
 
-/**
- * 성별 선택값.
- * ⚠️ 디자인에 "선택 안 함"이 있지만 백엔드 Gender enum 은 MALE / FEMALE 뿐입니다.
- */
-export type SignupGender = 'MALE' | 'FEMALE' | 'NONE';
+/** 성별 선택값 (백엔드 Gender enum 과 같습니다) */
+export type SignupGender = 'MALE' | 'FEMALE';
 
 /** 2단계 — 정보 입력 폼 값 */
 export type SignupFormValues = {
@@ -38,7 +35,7 @@ export type SignupFormValues = {
   passwordConfirm: string;
   email: string;
   gender: SignupGender | '';
-  /** 화면 입력 형식 YYYY.MM.DD */
+  /** 달력(<input type="date">)에서 오는 값이라 YYYY-MM-DD 입니다. */
   birthDate: string;
   region: string;
   /** 의뢰인 추가 정보 */
@@ -66,4 +63,44 @@ export type AgreementGroup = {
   requiredTitle: string;
   required: Agreement[];
   optional: Agreement[];
+};
+
+/* ───────────── 서버로 보내는 요청 본문 (백엔드 DTO) ───────────── */
+
+/** POST /api/v1/users 요청 본문 (백엔드 UserSignUpRequest) */
+export type UserSignUpRequest = {
+  username: string;
+  password: string;
+  email: string;
+  name: string;
+  role: SignupRole;
+  gender: SignupGender;
+  /** yyyy-MM-dd */
+  birthDate: string;
+  /** 하이픈을 붙여서 보냅니다. (예: 010-1000-0001) */
+  phoneNum: string;
+  region: string;
+};
+
+/** POST /api/v1/users 응답 (백엔드 UserSignUpResponse) */
+export type UserSignUpResponse = {
+  id: number;
+  name: string;
+};
+
+/** POST /api/v1/users/profile/client 요청 본문 (백엔드 ClientProfileRequest) */
+export type ClientProfileRequest = {
+  emergencyContactName: string;
+  /** 하이픈을 붙여서 보냅니다. */
+  emergencyContactPhone: string;
+  /** 비워서 보내면 백엔드가 "특이사항 없음"으로 저장합니다. */
+  careNote: string;
+};
+
+/** POST /api/v1/users/profile/escort 요청 본문 (백엔드 EscortProfileRequest) */
+export type EscortProfileRequest = {
+  intro: string;
+  bankName: string;
+  accountHolder: string;
+  accountNumber: string;
 };

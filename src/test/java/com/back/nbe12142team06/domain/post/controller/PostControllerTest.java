@@ -7,19 +7,23 @@ import com.back.nbe12142team06.domain.application.repository.ApplicationReposito
 import com.back.nbe12142team06.domain.application.repository.EscortProgressLogRepository;
 import com.back.nbe12142team06.domain.payment.client.TossPaymentClient;
 import com.back.nbe12142team06.domain.payment.dto.TossConfirmResponse;
+import com.back.nbe12142team06.domain.payment.entity.Payment;
 import com.back.nbe12142team06.domain.payment.entity.PaymentStatus;
+import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
 import com.back.nbe12142team06.domain.post.entity.Post;
+import com.back.nbe12142team06.domain.post.entity.PostStatus;
 import com.back.nbe12142team06.domain.post.repository.PostRepository;
+import com.back.nbe12142team06.domain.post.service.PostService;
+import com.back.nbe12142team06.domain.user.entity.EscortProfile;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Gender;
 import com.back.nbe12142team06.domain.user.enums.Role;
+import com.back.nbe12142team06.domain.user.repository.EscortProfileRepository;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.BDDMockito;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -31,15 +35,14 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
-import com.back.nbe12142team06.domain.payment.entity.Payment;
-import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
+
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import com.back.nbe12142team06.domain.post.service.PostService;
-import com.back.nbe12142team06.domain.post.entity.PostStatus;
-import java.math.BigDecimal;
+
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.BDDMockito.*;
+import static org.mockito.BDDMockito.any;
+import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -60,6 +63,8 @@ public class PostControllerTest {
     private PaymentRepository paymentRepository;
     @Autowired
     private ApplicationRepository applicationRepository;
+    @Autowired
+    private EscortProfileRepository escortProfileRepository;
     @Autowired
     private EscortProgressLogRepository escortProgressLogRepository;
     @Autowired
@@ -153,6 +158,15 @@ public class PostControllerTest {
                 LocalDate.of(1990, 1, 1), "010-5555-" + suffix, "인천"
         );
         userRepository.save(escort);
+
+        // 동행 매니저 프로필 (매칭된 동행 매니저는 반드시 프로필이 있음)
+        this.escortProfileRepository.save(new EscortProfile(
+                escort,
+                "동행 매니저입니다.",
+                "오픈은행",
+                escort.getName(),
+                "123-0000000-000"
+        ));
 
         Application application = Application.builder()
                 .post(postRepository.findById(postId).orElseThrow())
@@ -794,6 +808,10 @@ public class PostControllerTest {
         assertThat(result.getEscortStartAt().getMinute()).isEqualTo(departedAt.getMinute());
         assertThat(result.getEscortEndAt().getHour()).isEqualTo(arrivedAt.getHour());
         assertThat(result.getEscortEndAt().getMinute()).isEqualTo(arrivedAt.getMinute());
+
+        Long escortId = this.applicationRepository.findById(applicationId).orElseThrow().getEscort().getId();
+        EscortProfile escortProfile = this.escortProfileRepository.findById(escortId).orElseThrow();
+        assertThat(escortProfile.getCompletedCount()).isEqualTo(1);
     }
     @Test
     @DisplayName("[PostController] 동행완료 처리 - 출발 기록 없으면 404")

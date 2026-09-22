@@ -8,14 +8,16 @@ public record PostWriteResponse(
         Long id,
         String title,
         String postStatus,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        Long paymentId
 ) {
-    public PostWriteResponse(Post post) {
+    public PostWriteResponse(Post post, Long paymentId) {
         this(
                 post.getId(),
                 post.getTitle(),
                 post.getPostStatus().getDescription(),
-                post.getCreatedAt()
+                post.getCreatedAt(),
+                paymentId
         );
     }
 }
