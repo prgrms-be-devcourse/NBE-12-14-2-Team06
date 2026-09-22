@@ -195,6 +195,7 @@ public class PostService {
                 condition.keyword(), condition.region(),
                 condition.dateFrom(), condition.dateTo(),
                 condition.minPay(), condition.maxPay(),
+                condition.openOnly(),
                 pageable
         );
     }

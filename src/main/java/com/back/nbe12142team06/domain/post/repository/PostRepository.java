@@ -23,6 +23,8 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             "AND (:dateTo IS NULL OR p.escortStartAt <= :dateTo) " +
             "AND (:minPay IS NULL OR p.hourlyPay >= :minPay) " +
             "AND (:maxPay IS NULL OR p.hourlyPay <= :maxPay) " +
+            "AND ((:openOnly = TRUE AND p.postStatus = com.back.nbe12142team06.domain.post.entity.PostStatus.OPEN) " +
+            "     OR (:openOnly = FALSE AND p.postStatus <> com.back.nbe12142team06.domain.post.entity.PostStatus.OPEN)) " +
             "AND EXISTS (" +
             "    SELECT 1 FROM Payment pay " +
             "    WHERE pay.post = p " +
@@ -35,6 +37,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
                       @Param("dateTo") LocalDateTime dateTo,
                       @Param("minPay") Integer minPay,
                       @Param("maxPay") Integer maxPay,
+                      @Param("openOnly") boolean openOnly,
                       Pageable pageable);
 
     @Query("SELECT p " +

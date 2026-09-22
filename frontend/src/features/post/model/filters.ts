@@ -7,6 +7,7 @@ export const DEFAULT_FILTERS: PostFilters = {
   period: 'all',
   pay: 'all',
   sort: 'latest',
+  openOnly: true,
 };
 
 type Option = { value: string; label: string };
@@ -25,8 +26,9 @@ export const PERIOD_OPTIONS: Option[] = [
 
 export const PAY_OPTIONS: Option[] = [
   { value: 'all', label: '전체 시급' },
-  { value: '15000', label: '15,000원 이상' },
-  { value: '16000', label: '16,000원 이상' },
+  { value: '10000', label: '10,000원 이상' },
+  { value: '12000', label: '12,000원 이상' },
+  { value: '14000', label: '14,000원 이상' },
 ];
 
 export const SORT_OPTIONS: Option[] = [
