@@ -5,6 +5,9 @@ export type RsData<T> = {
     data: T;
 };
 
+/** 실패 응답의 statusCode("404-2" 등)가 필요할 때 확인용으로 씁니다. */
+export type ApiError = Error & { statusCode: string };
+
 /**
  * 백엔드 API 호출 함수.
  * 성공하면 응답의 data 만 돌려주고, 실패하면 에러를 던집니다.
@@ -19,7 +22,10 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
 
     // 3. 실패(상태 코드가 200번대가 아님)면 에러를 던짐
     if (!res.ok) {
-        throw new Error(body.msg || `요청이 실패했습니다. (${res.status})`);
+        // 메시지는 dev 쪽(본문이 비었을 때의 기본 문구), statusCode 는 이 브랜치 쪽 — 둘 다 필요해서 합쳤습니다.
+        throw Object.assign(new Error(body.msg || `요청이 실패했습니다. (${res.status})`), {
+            statusCode: body.statusCode,
+        }) as ApiError;
     }
 
     // 4. 성공이면 껍질을 벗기고 data 만 돌려줌
