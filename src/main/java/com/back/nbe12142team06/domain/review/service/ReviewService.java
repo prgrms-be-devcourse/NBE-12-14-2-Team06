@@ -45,6 +45,7 @@ public class ReviewService {
         }
 
         // 매칭이 확정된 동행 건에만 리뷰 작성 가능
+        // || application.getPost().getPostStatus() != PostStatus.COMPLETED 의뢰인이 노쇼 후 리뷰 작성 방지용으로 제안드립니다.
         if (application.getStatus() != ApplicationStatus.ACCEPTED || application.getPost().getPostStatus() != PostStatus.COMPLETED) {
             throw new InvalidException(1, "매칭이 확정된 동행 건에만 리뷰를 작성할 수 있습니다.");
         }

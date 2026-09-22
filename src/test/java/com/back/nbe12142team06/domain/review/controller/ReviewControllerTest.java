@@ -8,10 +8,13 @@ import com.back.nbe12142team06.domain.post.repository.PostRepository;
 import com.back.nbe12142team06.domain.review.entity.Review;
 import com.back.nbe12142team06.domain.review.entity.ReviewTag;
 import com.back.nbe12142team06.domain.review.repository.ReviewRepository;
+import com.back.nbe12142team06.domain.user.entity.EscortProfile;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Gender;
 import com.back.nbe12142team06.domain.user.enums.Role;
+import com.back.nbe12142team06.domain.user.repository.EscortProfileRepository;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
+import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -31,11 +34,13 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Set;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -57,6 +62,12 @@ public class ReviewControllerTest {
 
     @Autowired
     private ReviewRepository reviewRepository;
+
+    @Autowired
+    private EscortProfileRepository escortProfileRepository;
+
+    @Autowired
+    private EntityManager em;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -85,6 +96,14 @@ public class ReviewControllerTest {
                 LocalDate.of(1995, 1, 1), "010-2222-2222", "수원"
         );
         userRepository.save(escort);
+
+        this.escortProfileRepository.save(new EscortProfile(
+                escort,
+                "동행 매니저입니다.",
+                "오픈은행",
+                escort.getName(),
+                "123-0000000-000"
+        ));
         escortId = escort.getId();
 
         User other = new User(
@@ -114,6 +133,10 @@ public class ReviewControllerTest {
                 .build();
         applicationRepository.save(pending);
         pendingApplicationId = pending.getId();
+
+        // 동행 완료 처리 (완료된 동행에만 리뷰 작성 가능)
+        post.match();
+        post.complete(LocalDateTime.now());
 
         clientCookie = login("client1");
         otherCookie = login("other1");
@@ -182,6 +205,15 @@ public class ReviewControllerTest {
                 .andExpect(jsonPath("$.data.rating").value(5))
                 .andExpect(jsonPath("$.data.tags", hasSize(2)))
                 .andExpect(jsonPath("$.data.applicationId").value(acceptedApplicationId));
+
+        em.flush();
+        em.clear();
+
+        // 동행 매니저 평점 반영 확인
+        Long escortId = applicationRepository.findById(acceptedApplicationId).orElseThrow().getEscort().getId();
+        EscortProfile escortProfile = escortProfileRepository.findById(escortId).orElseThrow();
+        assertThat(escortProfile.getRatingCount()).isEqualTo(1);
+        assertThat(escortProfile.getAverageRating()).isEqualTo(5.0);
     }
 
     @Test
