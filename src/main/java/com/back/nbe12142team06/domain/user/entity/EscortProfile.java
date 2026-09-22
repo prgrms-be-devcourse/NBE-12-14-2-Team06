@@ -78,12 +78,23 @@ public class EscortProfile extends BaseTimeEntity {
         this.accountNumber = accountNumber;
     }
 
+    // 리뷰 평점 반영
+    public void addRating(int rating) {
+        this.ratingSum += rating;
+        this.ratingCount++;
+    }
+
     // 평균 평점 (소수점 첫째 자리, 평가 없으면 null)
     public Double getAverageRating() {
         if (this.ratingCount == 0) {
             return null;
         }
         return Math.round(this.ratingSum * 10.0 / this.ratingCount) / 10.0;
+    }
+
+    // 동행 완료 건수 반영
+    public void increaseCompletedCount() {
+        this.completedCount++;
     }
 
     // 노쇼 횟수 증가

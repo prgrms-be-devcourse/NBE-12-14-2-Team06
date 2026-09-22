@@ -16,6 +16,10 @@ export type PostSummary = {
   region: string;
   /** 구/군 */
   district: string;
+  /** 작성자(의뢰인) 아이디 */
+  clientId: string;
+  /** 백엔드 postStatus 원문 ("모집 중" · "매칭 완료" · "동행 진행 중" · "동행 완료" · "취소됨" · "마감 기한 초과") */
+  postStatus: string;
   /** "2시간 전" */
   postedAgo: string;
   /** 동행 시작일이 오늘로부터 며칠 뒤인지 (0 = 오늘). 카드에서 날짜로 다시 계산해 보여줍니다. */
@@ -34,10 +38,6 @@ export type PostSummary = {
  *    이 화면에서 그 항목들은 빠졌습니다.
  */
 export type PostDetail = PostSummary & {
-  /** 작성자(의뢰인) 아이디 */
-  clientId: string;
-  /** 백엔드 postStatus 원문 ("모집 중" · "매칭 완료" · "동행 진행 중" · "동행 완료" · "취소됨" · "마감 기한 초과") */
-  postStatus: string;
   /** "2026.09.12   18:12" */
   postedAt: string;
   hospitalAddress: string;

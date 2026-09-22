@@ -74,10 +74,14 @@ export default function ManagerProfile({ manager, size, className }: { manager: 
             <span className={cn(CHIP, s.role)}>동행 매니저</span>
           </div>
           <p className={cn('flex flex-wrap items-center font-medium text-brand', s.stats)}>
-            <span className="flex items-center gap-1.5">
-              <Image src="/icons/client/star.svg" alt="별점" width={s.icon} height={s.icon} />
-              {manager.rating.toFixed(1)}
-            </span>
+            {manager.rating > 0 ? (
+              <span className="flex items-center gap-1.5">
+                <Image src="/icons/client/star.svg" alt="별점" width={s.icon} height={s.icon} />
+                {manager.rating.toFixed(1)}
+              </span>
+            ) : (
+              <span>평가 없음</span>
+            )}
             <span>
               완료 동행 <strong className="font-semibold">{manager.completedCount}회</strong>
             </span>

@@ -61,12 +61,14 @@ export default function ClientPostCard({ post }: { post: ClientPost }) {
 
       <div className="flex w-full max-w-[382px] items-center justify-center gap-[10.3px] self-center">
         <CardButton size="wide" href={`/client/posts/${post.id}`}>상세보기</CardButton>
-        {post.status === 'open' ? (
+        {post.applicationId === undefined ? (
           <CardButton size="wide" variant="solid" href={`/client/posts/${post.id}/applicants`}>
             지원자 확인
           </CardButton>
         ) : (
-          <CardButton size="wide" variant="solid" href={`/client/escort/${post.applicationId ?? 1}`}>
+          // 동행 현황 화면(/client/escort/[applicationId])이 postId 를 알 방법이 없어(백엔드에 신청 상세 조회 API가
+          // 없음) 쿼리로 함께 넘깁니다. 서버에 GET /api/v1/applications/{applicationId} 가 생기면 지울 수 있습니다.
+          <CardButton size="wide" variant="solid" href={`/client/escort/${post.applicationId}?postId=${post.id}`}>
             동행 현황
           </CardButton>
         )}

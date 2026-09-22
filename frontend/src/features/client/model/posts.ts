@@ -1,3 +1,5 @@
+import type { PostSummary } from '@/features/post';
+import { daysFromNow, formatMonthDay } from '../lib/date';
 import type { ClientPost, ClientPostStatus } from '../types';
 
 /*
@@ -53,13 +55,49 @@ export const STATUS_TABS: { value: 'all' | ClientPostStatus; label: string }[] =
   { value: 'completed', label: '완료' },
 ];
 
-/** 카드 라벨 (Figma 라벨: 모집 중=보라, 매칭 완료=초록, 진행 중=파랑) */
-export const STATUS_LABEL: Record<ClientPostStatus, { text: string; tone: 'purple' | 'green' | 'blue' | 'strong' }> = {
+/** 카드 라벨 (Figma 라벨: 모집 중=보라, 매칭 완료=초록, 진행 중=파랑). 취소됨·마감 기한 초과는 탭은 없지만 라벨은 보여줘야 해서 회색으로 추가했습니다. */
+export const STATUS_LABEL: Record<ClientPostStatus, { text: string; tone: 'purple' | 'green' | 'blue' | 'strong' | 'gray' }> = {
   open: { text: '모집 중', tone: 'purple' },
   matched: { text: '매칭 완료', tone: 'green' },
   inProgress: { text: '진행 중', tone: 'blue' },
   completed: { text: '완료', tone: 'strong' },
+  canceled: { text: '취소됨', tone: 'gray' },
+  expired: { text: '마감 기한 초과', tone: 'gray' },
 };
+
+/** 백엔드 PostDto.postStatus(한글 문구) → 화면 상태값 */
+export function toClientPostStatus(postStatus: string): ClientPostStatus {
+  switch (postStatus) {
+    case '모집 중': return 'open';
+    case '매칭 완료': return 'matched';
+    case '동행 진행 중': return 'inProgress';
+    case '동행 완료': return 'completed';
+    case '취소됨': return 'canceled';
+    case '마감 기한 초과': return 'expired';
+    default: return 'open';
+  }
+}
+
+/**
+ * 백엔드 PostSummary(내 공고 목록에서 걸러낸 것) → 카드용 ClientPost.
+ * accepted 는 매칭 완료 이후 상태에서만 넘어옵니다(모집 중인 공고는 지원자 조회를 하지 않으므로 undefined).
+ */
+export function toClientPost(summary: PostSummary, accepted?: { applicationId: number; escortName: string }): ClientPost {
+  return {
+    id: summary.id,
+    title: summary.title,
+    hospitalName: summary.hospitalName,
+    location: `${summary.region} ${summary.district}`,
+    dateLabel: formatMonthDay(daysFromNow(summary.startsInDays)),
+    timeLabel: summary.startTime,
+    durationLabel: `약 ${summary.hours}시간`,
+    payLabel: `시급 ${summary.hourlyPay.toLocaleString()}원`,
+    description: summary.description,
+    status: toClientPostStatus(summary.postStatus),
+    managerName: accepted?.escortName,
+    applicationId: accepted?.applicationId,
+  };
+}
 
 export const SORT_OPTIONS = [
   { value: 'latest', label: '최신 순' },

@@ -664,6 +664,15 @@ public class ApplicationControllerTest {
 
         userRepository.save(escort2);
 
+        // 동행 매니저 프로필 (프로필이 있어야 지원 가능)
+        escortProfileRepository.save(new EscortProfile(
+                escort2,
+                "동행인2입니다.",
+                "오픈은행",
+                "동행인2",
+                "123-0000000-222"
+        ));
+
         Cookie escort2AccessTokenCookie = mvc.perform(
                         post("/api/v1/auth/login")
                                 .contentType("application/json")

@@ -43,6 +43,7 @@ public class ApplicationService {
     @Transactional
     public ApplicationApplyResponse apply(Long postId, Long userId) {
 
+
         Post post = postRepository.findById(postId).orElseThrow(
                 () -> new NotFoundException("공고를 찾을 수 없습니다."));
 
@@ -57,6 +58,11 @@ public class ApplicationService {
         // 동행인만 지원 가능
         if (escort.getRole() != Role.ESCORT) {
             throw new InvalidException("동행인만 공고에 지원할 수 있습니다.");
+        }
+
+        // 프로필이 존재하는 동행인만 지원 가능
+        if (!escortProfileRepository.existsById(userId)) {
+            throw new InvalidException("동행 매니저 프로필을 등록한 후 지원할 수 있습니다.");
         }
 
         // 동일 공고 중복 지원 방지

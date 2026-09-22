@@ -4,6 +4,7 @@ import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/layout';
 import { Container, SectionHeading } from '@/components/ui';
+import { signUpWithProfile } from '../api';
 import { useSignupRole } from '../hooks/useSignupRole';
 import { AGREEMENT_GROUPS } from '../model';
 import { useSignup } from '../state/SignupContext';
@@ -12,6 +13,7 @@ import StepNavButton from './form/StepNavButton';
 import AgreementCard from './terms/AgreementCard';
 
 const SECTION_TITLE = 'flex h-[30px] items-center text-xl leading-6 font-semibold text-brand lg:text-2xl';
+const ERROR_TEXT = 'px-4 text-sm leading-5 font-medium text-[#b91d1d]';
 
 /**
  * 회원가입 3단계(약관 동의)
@@ -22,10 +24,12 @@ const SECTION_TITLE = 'flex h-[30px] items-center text-xl leading-6 font-semibol
 export default function SignupTermsPage() {
   const router = useRouter();
   const role = useSignupRole();
-  const { setValues } = useSignup();
+  const { values, setValues } = useSignup();
   const group = AGREEMENT_GROUPS[role];
 
   const [checked, setChecked] = useState<Record<string, boolean>>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
   const allRequiredChecked = group.required.every((item) => checked[item.id]);
 
   const handleToggle = (id: string) => (value: boolean) => {
@@ -40,12 +44,21 @@ export default function SignupTermsPage() {
     }));
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    // TODO: 여기서 가입 API(POST /api/v1/users)를 호출하세요. 성공하면 아래로 이동합니다.
-    //       성별 "선택 안 함"·보호자 정보는 백엔드가 아직 받지 않으니 PR 설명의 표를 확인하세요.
-    setValues((prev) => ({ ...prev, password: '', passwordConfirm: '' })); // 비밀번호는 더 들고 있지 않습니다.
-    router.push(`/signup/complete?role=${role}`);
+
+    setSubmitting(true);
+    setSubmitError('');
+    try {
+      // 가입(POST /api/v1/users) 후, 거기서 받은 로그인 쿠키로 역할별 프로필까지 만듭니다.
+      await signUpWithProfile(values, role);
+      setValues((prev) => ({ ...prev, password: '', passwordConfirm: '' })); // 비밀번호는 더 들고 있지 않습니다.
+      router.push(`/signup/complete?role=${role}`);
+    } catch (error) {
+      // 아이디·이메일·전화번호 중복(409-1·2·3) 등 실패 사유는 백엔드 문구를 그대로 보여 줍니다.
+      setSubmitError(error instanceof Error ? error.message : '회원가입에 실패했습니다.');
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -111,9 +124,17 @@ export default function SignupTermsPage() {
               ))}
             </section>
 
+            {submitError && (
+              <p role="alert" className={ERROR_TEXT}>
+                {submitError}
+              </p>
+            )}
+
             <div className="mt-5 flex w-full gap-2.5">
               <StepNavButton href={`/signup/info?role=${role}`}>이전</StepNavButton>
-              <StepNavButton variant="solid">가입하기</StepNavButton>
+              <StepNavButton variant="solid" disabled={submitting}>
+                {submitting ? '가입 중...' : '가입하기'}
+              </StepNavButton>
             </div>
           </form>
         </Container>
