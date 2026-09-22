@@ -1,6 +1,6 @@
 import { fetchApplicants } from '@/features/application';
+import { fetchMyProfile } from '@/features/auth';
 import { fetchPosts, type PostFilters } from '@/features/post';
-import { fetchProfile } from '@/features/user';
 import { api } from '@/lib/api';
 import { toClientPost } from './model/posts';
 import type { ClientPost } from './types';
@@ -55,7 +55,7 @@ const MATCHED_OR_LATER = new Set(['매칭 완료', '동행 진행 중', '동행 
  *    - 서버에 "내 공고 목록" API(예: GET /api/v1/posts/me)가 생기면 이 필터링은 지우고 그걸 쓰면 됩니다.
  */
 export async function fetchMyPosts(): Promise<ClientPost[]> {
-  const profile = await fetchProfile();
+  const profile = await fetchMyProfile();
 
   const [open, notOpen] = await Promise.all([
     fetchPosts({ ...NO_FILTER, openOnly: true }, 0, PAGE_SIZE),
