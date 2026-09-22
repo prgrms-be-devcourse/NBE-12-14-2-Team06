@@ -6,9 +6,11 @@ import com.back.nbe12142team06.domain.auth.entity.RefreshToken;
 import com.back.nbe12142team06.domain.auth.repository.RefreshTokenRepository;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.repository.PostRepository;
+import com.back.nbe12142team06.domain.user.entity.EscortProfile;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Gender;
 import com.back.nbe12142team06.domain.user.enums.Role;
+import com.back.nbe12142team06.domain.user.repository.EscortProfileRepository;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
 import com.back.nbe12142team06.global.security.JwtProvider;
 import jakarta.persistence.EntityManager;
@@ -68,6 +70,9 @@ public class UserControllerTest {
 
     @Autowired
     private ApplicationRepository applicationRepository;
+
+    @Autowired
+    private EscortProfileRepository  escortProfileRepository;
 
     @Value("${custom.jwt.secret-key}")
     private String secretKey;
@@ -2151,6 +2156,51 @@ public class UserControllerTest {
         resultActions
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.msg").value("동행 매니저 프로필이 존재하지 않습니다."));
+    }
+
+    @Test
+    @DisplayName("[UserController] 동행 매니저 프로필 수정 - 존재하는 프로필에 대해 정상 수정 요청 시 200-10 반환")
+    void t57() throws Exception {
+        Cookie escortToken = signUp("escort1", "ESCORT");
+        Long escortId = findUserId("escort1");
+        createEscortProfile(escortToken);
+
+        String updateBody = """
+                {
+                "intro": "수정한 자기소개입니다.",
+                "bankName": "수정은행",
+                "accountHolder": "김수정",
+                "accountNumber": "123-0012300-123"
+                }
+                """;
+        ResultActions resultActions = mvc.perform(
+                put("/api/v1/users/profile/escort")
+                        .cookie(escortToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(updateBody)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-10"))
+                .andExpect(jsonPath("$.msg").value("동행 매니저 프로필 수정을 완료했습니다."))
+                .andExpect(jsonPath("$.data.userId").value(escortId))
+                .andExpect(jsonPath("$.data.name").value("김춘식"))
+                .andExpect(jsonPath("$.data.region").value("서울시"))
+                .andExpect(jsonPath("$.data.intro").value("수정한 자기소개입니다."))
+                .andExpect(jsonPath("$.data.averageRating").value(nullValue()))
+                .andExpect(jsonPath("$.data.completedCount").value(0))
+                .andExpect(jsonPath("$.data.verified").value(false))
+                .andExpect(jsonPath("$.data.bankName").value("수정은행"))
+                .andExpect(jsonPath("$.data.accountHolder").value("김수정"))
+                .andExpect(jsonPath("$.data.accountNumber").value("123-0012300-123"));
+
+        em.flush();
+        em.clear();
+
+        EscortProfile updated = this.escortProfileRepository.findById(escortId).orElseThrow();
+        assertThat(updated.getIntro()).isEqualTo("수정한 자기소개입니다.");
+        assertThat(updated.getAccountNumber()).isEqualTo("123-0012300-123");
     }
 
 }
