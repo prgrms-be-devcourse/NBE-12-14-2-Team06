@@ -2012,7 +2012,7 @@ public class UserControllerTest {
 
     @Test
     @DisplayName("[UserController] 동행 매니저 프로필 생성 -  정상 생성")
-    void t100() throws Exception {
+    void t52() throws Exception {
         String username = "t1";
 
         Cookie accessToken = signUp(username, "ESCORT");
@@ -2044,7 +2044,7 @@ public class UserControllerTest {
 
     @Test
     @DisplayName("[UserController] 동행 매니저 프로필 조회 - 정상 생성")
-    void t101() throws Exception {
+    void t53() throws Exception {
         String username = "t1";
 
         Cookie accessToken = signUp(username, "ESCORT");
@@ -2066,7 +2066,7 @@ public class UserControllerTest {
 
     @Test
     @DisplayName("[UserController] 동행 매니저 프로필 조회 - 찾을 수 없음")
-    void t102() throws Exception {
+    void t54() throws Exception {
         String username = "t1";
 
         Cookie accessToken = signUp(username, "ESCORT");
@@ -2082,4 +2082,29 @@ public class UserControllerTest {
         resultActions.andExpect(jsonPath("$.statusCode").value("404"));
         resultActions.andExpect(jsonPath("$.msg").value("동행 매니저 프로필이 존재하지 않습니다."));
     }
+
+    @Test
+    @DisplayName("[UserController] 의뢰인의 동행 매니저 프로필 조회 시 200-10 반환")
+    void t55() throws Exception {
+        String username = "escort1";
+
+        Cookie accessToken = signUp(username, "ESCORT");
+        Cookie accessToken2 = signUp("client1", "CLIENT");
+        Long escortId = findUserId("escort1");
+        createEscortProfile(accessToken);
+
+        ResultActions resultActions = mvc.perform(
+                        get("/api/v1/users/{id}/profile/escort", escortId)
+                                .cookie(accessToken2))
+                .andDo(print());
+
+        resultActions.andExpect(handler().handlerType(UserController.class));
+        resultActions.andExpect(handler().methodName("getProfileEscort"));
+        resultActions.andExpect(status().isOk());
+        resultActions.andExpect(jsonPath("$.statusCode").value("200-10"));
+        resultActions.andExpect(jsonPath("$.msg").value("동행 매니저 프로필 조회를 완료했습니다."));
+        resultActions.andExpect(jsonPath("$.data.accountHolder").value("김춘식"));
+        resultActions.andExpect(jsonPath("$.data.accountNumber").value("123-0000000-123"));
+    }
+
 }

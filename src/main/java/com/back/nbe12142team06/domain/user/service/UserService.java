@@ -47,6 +47,24 @@ public class UserService {
     private final ClientProfileRepository clientProfileRepository;
     private final ApplicationRepository applicationRepository;
 
+    // 프로필 삭제, 리프레시 토큰 폐기, 회원 정보 삭제
+    private void withdraw(User user) {
+        Long userId = user.getId();
+
+        switch (user.getRole()) {
+            case CLIENT -> this.clientProfileRepository.deleteByUserId(userId);
+            case ESCORT -> this.escortProfileRepository.deleteByUserId(userId);
+        }
+
+        List<RefreshToken> refreshTokens = this.refreshTokenRepository.findAllByUserIdAndRevokedAtIsNull(userId);
+        for (RefreshToken refreshToken : refreshTokens) {
+            refreshToken.revoke();
+        }
+
+        user.deleteUser();
+        this.userRepository.save(user);
+    }
+
     // 회원가입
     @Transactional
     public User signUp(UserSignUpRequest request) {
@@ -233,9 +251,6 @@ public class UserService {
         return this.clientProfileRepository.save(clientProfile);
     }
 
-
-
-    // 관리자, 매칭이 완료된 동행인의 의뢰인 프로필 조회
     // [관리자, 매칭된 동행 매니저] 의뢰인 프로필 조회
     @Transactional(readOnly = true)
     public ClientProfile getClientProfile(Long requesterId, Long clientId) {
@@ -298,24 +313,6 @@ public class UserService {
         withdraw(user);
     }
 
-    // 프로필 삭제, 리프레시 토큰 폐기, 회원 정보 삭제
-    private void withdraw(User user) {
-        Long userId = user.getId();
-
-        switch (user.getRole()) {
-            case CLIENT -> this.clientProfileRepository.deleteByUserId(userId);
-            case ESCORT -> this.escortProfileRepository.deleteByUserId(userId);
-        }
-
-        List<RefreshToken> refreshTokens = this.refreshTokenRepository.findAllByUserIdAndRevokedAtIsNull(userId);
-        for (RefreshToken refreshToken : refreshTokens) {
-            refreshToken.revoke();
-        }
-
-        user.deleteUser();
-        this.userRepository.save(user);
-    }
-
     @Transactional
     public EscortProfile createEscortProfile(Long userId, EscortProfileRequest request) {
 
@@ -340,4 +337,6 @@ public class UserService {
         return this.escortProfileRepository.findByUserId(escortId)
                 .orElseThrow(() -> new NotFoundException("동행 매니저 프로필이 존재하지 않습니다."));
     }
+
+
 }
