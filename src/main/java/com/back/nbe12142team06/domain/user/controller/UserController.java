@@ -13,11 +13,14 @@ import com.back.nbe12142team06.domain.user.service.UserService;
 import com.back.nbe12142team06.global.response.RsData;
 import com.back.nbe12142team06.global.rq.Rq;
 import com.back.nbe12142team06.global.security.SecurityUser;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+@Tag(name = "회원", description = "회원가입, 회원 정보 및 의뢰인·동행자 프로필 관련 API")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/users")
@@ -27,7 +30,10 @@ public class UserController {
     private final RefreshTokenService refreshTokenService;
     private final Rq rq;
 
-    // username 중복 검사
+    @Operation(
+            summary = "아이디 중복 검사",
+            description = "입력한 아이디의 사용 가능 여부를 확인합니다."
+    )
     @GetMapping("/username")
     public RsData<Boolean> checkUsername(@RequestParam String username) {
         Boolean isAvailable = this.userService.isUsernameAvailable(username);
@@ -39,7 +45,10 @@ public class UserController {
         );
     }
 
-    // 회원가입
+    @Operation(
+            summary = "회원가입",
+            description = "회원가입 후 Access Token과 Refresh Token을 발급하여 쿠키에 저장합니다."
+    )
     @PostMapping
     public RsData<UserSignUpResponse> signUp(@RequestBody @Valid UserSignUpRequest request) {
 
@@ -60,7 +69,10 @@ public class UserController {
         );
     }
 
-    // 내 정보 조회
+    @Operation(
+            summary = "내 정보 조회",
+            description = "현재 로그인한 사용자의 회원 정보를 조회합니다."
+    )
     @GetMapping("/profile")
     public RsData<UserResponse> profile(@AuthenticationPrincipal SecurityUser me) {
         User user = this.userService.myProfile(me.getId());
@@ -72,7 +84,10 @@ public class UserController {
         );
     }
 
-    // 회원 정보 수정
+    @Operation(
+            summary = "내 정보 수정",
+            description = "현재 로그인한 사용자의 회원 정보를 수정합니다."
+    )
     @PatchMapping("/profile")
     public RsData<UserResponse> updateProfile(
             @AuthenticationPrincipal SecurityUser me,
@@ -87,7 +102,10 @@ public class UserController {
         );
     }
 
-    // 회원 탈퇴 -> 해당 회원의 모든 리프레시, 억세스 토큰 폐기 처리
+    @Operation(
+            summary = "회원 탈퇴",
+            description = "현재 로그인한 사용자의 프로필과 회원 정보를 삭제하고 Refresh Token을 폐기한 뒤 인증 토큰 쿠키를 제거합니다."
+    )
     @DeleteMapping("/profile")
     public RsData<Void> deleteProfile(@AuthenticationPrincipal SecurityUser me) {
 
@@ -102,7 +120,10 @@ public class UserController {
         );
     }
 
-    // 의뢰인 프로필 생성
+    @Operation(
+            summary = "의뢰인 프로필 생성",
+            description = "현재 로그인한 사용자의 의뢰인 프로필을 생성합니다."
+    )
     @PostMapping("/profile/client")
     public RsData<ClientProfileResponse> createProfileClient(
             @AuthenticationPrincipal SecurityUser me,
@@ -118,6 +139,10 @@ public class UserController {
                 );
     }
 
+    @Operation(
+            summary = "내 의뢰인 프로필 조회",
+            description = "현재 로그인한 사용자의 의뢰인 프로필을 조회합니다."
+    )
     @GetMapping("/profile/client")
     public RsData<ClientProfileResponse> getProfileClient(
             @AuthenticationPrincipal SecurityUser me
@@ -131,7 +156,10 @@ public class UserController {
         );
     }
 
-    // 관리자, 동행인이 프로필 조회 시
+    @Operation(
+            summary = "의뢰인 프로필 조회",
+            description = "관리자 또는 해당 의뢰인과 매칭된 동행자가 의뢰인 프로필을 조회합니다."
+    )
     @GetMapping("/{userId}/profile/client")
     public RsData<ClientProfileResponse> getClientProfile(
             @AuthenticationPrincipal SecurityUser me,
@@ -146,7 +174,10 @@ public class UserController {
         );
     }
 
-    // 의뢰인 자기 자신 프로필 수정
+    @Operation(
+            summary = "의뢰인 프로필 수정",
+            description = "현재 로그인한 사용자의 의뢰인 프로필을 수정합니다."
+    )
     @PutMapping("/profile/client")
     public RsData<ClientProfileModifyResponse> updateProfileClient(
             @AuthenticationPrincipal SecurityUser me,
@@ -161,7 +192,10 @@ public class UserController {
         );
     }
 
-    // 동행 매니저 프로필 생성
+    @Operation(
+            summary = "동행자 프로필 생성",
+            description = "현재 로그인한 사용자의 동행자 프로필을 생성합니다."
+    )
     @PostMapping("/profile/escort")
     public RsData<EscortProfileResponse> createProfileEscort(
             @AuthenticationPrincipal SecurityUser me,
@@ -177,7 +211,10 @@ public class UserController {
         );
     }
 
-    // 동행 매니저 자기 자신 프로필 조회 (계좌 정보 포함)
+    @Operation(
+            summary = "내 동행자 프로필 조회",
+            description = "현재 로그인한 사용자의 동행자 프로필을 계좌 정보를 포함하여 조회합니다."
+    )
     @GetMapping("/profile/escort")
     public RsData<EscortProfileResponse> getProfileEscort(
             @AuthenticationPrincipal SecurityUser me
@@ -191,7 +228,10 @@ public class UserController {
         );
     }
 
-    // 의뢰인의 동행 매니저 프로필 조회 (계좌 정보 미포함)
+    @Operation(
+            summary = "동행자 프로필 조회",
+            description = "특정 동행자의 프로필을 계좌 정보를 제외하고 조회합니다."
+    )
     @GetMapping("/{userId}/profile/escort")
     public RsData<EscortProfileForClientResponse> getProfileEscortByClient(@PathVariable Long userId){
         EscortProfile escortProfile = this.userService.getEscortProfile(userId);
