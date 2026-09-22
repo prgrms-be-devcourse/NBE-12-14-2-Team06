@@ -13,12 +13,21 @@ export type CurrentUser = {
   createdAt: string;
 };
 
+/**
+ * 로그인 성공 응답 (POST /api/v1/auth/login 의 UserLoginResponse).
+ * 역할(role)이 없어서, 로그인 뒤 갈 화면을 정하려면 프로필을 한 번 더 불러와야 합니다.
+ */
+export type UserLoginResponse = {
+  id: number;
+  name: string;
+};
+
 /** 로그인 폼 값 */
 export type LoginFormValues = {
-  /** 아이디 또는 이메일 */
+  /** 백엔드는 username 으로만 찾습니다 (이메일 로그인은 아직 없습니다) */
   username: string;
   password: string;
-  /** 로그인 상태 유지 */
+  /** 로그인 상태 유지 — 백엔드에 해당 항목이 없어서 아직 화면 표시용입니다 */
   rememberMe: boolean;
 };
 

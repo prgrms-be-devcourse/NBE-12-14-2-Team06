@@ -2,7 +2,6 @@
 
 import dynamic from 'next/dynamic';
 import { AppShell } from '@/components/layout';
-import { MOCK_USER } from '@/lib/mockSession';
 
 const PostListPage = dynamic(
     () => import('@/features/post').then((m) => m.PostListPage),
@@ -14,7 +13,7 @@ const PostListPage = dynamic(
 
 export default function Page() {
     return (
-        <AppShell user={MOCK_USER}>
+        <AppShell>
             <PostListPage detailBasePath="/escort/posts" />
         </AppShell>
     );

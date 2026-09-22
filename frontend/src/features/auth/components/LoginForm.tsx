@@ -3,7 +3,11 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/cn';
+import { login } from '../api';
+import { useAuth } from '../lib/AuthProvider';
+import { LOGIN_HOME_BY_ROLE } from '../model';
 import type { LoginFormValues } from '../types';
 import SocialLoginRow from './SocialLoginRow';
 
@@ -11,20 +15,45 @@ import SocialLoginRow from './SocialLoginRow';
 const FIELD_CLASS =
   'w-full rounded-[30px] border border-line-soft bg-white px-5 py-[22px] text-base leading-5 text-brand shadow-card placeholder:text-line';
 
+const ERROR_TEXT = 'px-4 text-sm leading-5 font-medium text-[#b91d1d]';
+
 const INITIAL_VALUES: LoginFormValues = { username: '', password: '', rememberMe: false };
 
 /** 로그인 폼 카드 안쪽 (Figma 공통_로그인 564:17969) */
 export default function LoginForm() {
+  const router = useRouter();
+  // 로그인이 필요해서 밀려온 경우 원래 가려던 주소가 ?next= 로 넘어옵니다.
+  const next = useSearchParams().get('next');
+  const { reload } = useAuth();
+
   const [values, setValues] = useState<LoginFormValues>(INITIAL_VALUES);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   const handleChange =
     (key: 'username' | 'password') => (event: ChangeEvent<HTMLInputElement>) => {
       setValues((prev) => ({ ...prev, [key]: event.target.value }));
     };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    // TODO: 로그인 API(POST /api/v1/auth/login) 연결
+
+    setSubmitting(true);
+    setSubmitError('');
+    try {
+      await login(values);
+
+      // 로그인 응답에는 역할이 없어서, 세션을 불러와 역할에 맞는 첫 화면으로 보냅니다.
+      const user = await reload();
+      const home = user ? LOGIN_HOME_BY_ROLE[user.role] : '/';
+
+      // 뒤로 가기로 로그인 화면에 다시 돌아오지 않도록 replace 로 이동합니다.
+      router.replace(next ?? home);
+    } catch (error) {
+      // 아이디·비밀번호 불일치(401) 등 실패 사유는 백엔드 문구를 그대로 보여 줍니다.
+      setSubmitError(error instanceof Error ? error.message : '로그인에 실패했습니다.');
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -34,15 +63,16 @@ export default function LoginForm() {
       <hr className="border-line-soft" />
 
       <div className="flex flex-col gap-2.5">
+        {/* 백엔드가 아이디(username)로만 찾기 때문에 이메일은 받지 않습니다. */}
         <label htmlFor="login-username" className="sr-only">
-          아이디 또는 이메일
+          아이디
         </label>
         <input
           id="login-username"
           name="username"
           autoComplete="username"
           required
-          placeholder="아이디 또는 이메일을 입력하세요"
+          placeholder="아이디를 입력하세요"
           value={values.username}
           onChange={handleChange('username')}
           className={FIELD_CLASS}
@@ -104,12 +134,21 @@ export default function LoginForm() {
         </span>
       </div>
 
-      <button
-        type="submit"
-        className="flex h-12 w-full items-center justify-center rounded-[30px] bg-brand px-[18px] text-base leading-5 font-semibold text-white drop-shadow-soft transition-colors hover:bg-brand-hover"
-      >
-        로그인하기
-      </button>
+      <div className="flex flex-col gap-2.5">
+        {submitError && (
+          <p role="alert" className={ERROR_TEXT}>
+            {submitError}
+          </p>
+        )}
+
+        <button
+          type="submit"
+          disabled={submitting}
+          className="flex h-12 w-full items-center justify-center rounded-[30px] bg-brand px-[18px] text-base leading-5 font-semibold text-white drop-shadow-soft transition-colors hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {submitting ? '로그인 중...' : '로그인하기'}
+        </button>
+      </div>
 
       {/* 구분선 · 간편 로그인 · 회원가입 안내 (Figma 564:17986) */}
       <div className="flex flex-col">

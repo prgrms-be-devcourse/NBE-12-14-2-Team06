@@ -8,7 +8,6 @@ import { AppShell } from '@/components/layout';
 import { Container, SectionHeading } from '@/components/ui';
 import { MAX_TAGS, REVIEW_TAG_ROWS, writeReview } from '@/features/review';
 import { cn } from '@/lib/cn';
-import { MOCK_CLIENT } from '@/lib/mockSession';
 import { STAGE_VIEW, getClientEscortCase } from '../model/escort';
 import ManagerInfoCard from './ManagerInfoCard';
 import TripSummary from './TripSummary';
@@ -61,7 +60,7 @@ export default function ClientReviewPage() {
 
   if (!escort) {
     return (
-      <AppShell user={MOCK_CLIENT}>
+      <AppShell>
         <section className="bg-white py-[100px] text-center text-xl font-semibold text-brand">동행 정보를 찾을 수 없습니다.</section>
       </AppShell>
     );
@@ -94,7 +93,7 @@ export default function ClientReviewPage() {
   };
 
   return (
-    <AppShell user={MOCK_CLIENT}>
+    <AppShell>
       <section className="bg-white py-[50px]">
         <Container width="wide">
           <SectionHeading title="동행 매니저 리뷰 작성" description="이번 동행에 함께해준 매니저의 서비스를 평가해주세요." className="mb-6" />

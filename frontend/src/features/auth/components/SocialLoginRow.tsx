@@ -11,7 +11,7 @@ export default function SocialLoginRow() {
   return (
     <div className="flex items-center justify-center gap-8">
       {SOCIAL_PROVIDERS.map(({ id, label, icon, width, height, left, top, badgeColor }) => (
-        // TODO: 소셜 로그인 API(OAuth2 인가 요청)가 정해지면 연결하세요.
+        // 지금은 화면에 보여 주기만 합니다. 백엔드에 OAuth2 엔드포인트가 생기면 여기서 인가 요청을 보내세요.
         <button
           key={id}
           type="button"

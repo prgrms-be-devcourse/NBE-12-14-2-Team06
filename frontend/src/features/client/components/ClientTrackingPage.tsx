@@ -12,7 +12,6 @@ import { fetchPostRaw, StatusLabel } from '@/features/post';
 import { fetchRidesByPost } from '@/features/ride';
 import { fetchUserReviews } from '@/features/review';
 import { cn } from '@/lib/cn';
-import { MOCK_CLIENT } from '@/lib/mockSession';
 import { formatTransport, toManager, topReviewTagLabels } from '../model/mapper';
 import { STAGE_VIEW, getClientEscortCase, toClientEscortCase } from '../model/escort';
 import type { ClientEscortCase, ClientEscortStage } from '../types';
@@ -97,7 +96,7 @@ export default function ClientTrackingPage() {
 
   if (liveLoading) {
     return (
-      <AppShell user={MOCK_CLIENT}>
+      <AppShell>
         <section className="bg-white py-[100px] text-center">
           <p className="text-xl font-semibold text-brand">동행 현황을 불러오는 중입니다.</p>
         </section>
@@ -107,7 +106,7 @@ export default function ClientTrackingPage() {
 
   if (liveError) {
     return (
-      <AppShell user={MOCK_CLIENT}>
+      <AppShell>
         <section className="bg-white py-[100px] text-center">
           <p role="alert" className="text-xl font-semibold text-brand">{liveError}</p>
           <Link href="/client/posts" className={cn(BUTTON, 'mx-auto mt-8 h-14 w-60 border border-line text-brand')}>
@@ -120,7 +119,7 @@ export default function ClientTrackingPage() {
 
   if (!escort) {
     return (
-      <AppShell user={MOCK_CLIENT}>
+      <AppShell>
         <section className="bg-white py-[100px] text-center">
           <p className="text-xl font-semibold text-brand">동행 정보를 찾을 수 없습니다.</p>
           <Link href="/client/posts" className={cn(BUTTON, 'mx-auto mt-8 h-14 w-60 border border-line text-brand')}>
@@ -137,7 +136,7 @@ export default function ClientTrackingPage() {
   const base = `/client/escort/${escort.applicationId}`;
 
   return (
-    <AppShell user={MOCK_CLIENT}>
+    <AppShell>
       <section className="bg-white py-[50px]">
         <Container width="wide">
           <SectionHeading title="동행 현황" description="매칭된 동행 일정의 진행 상태와 위치를 확인할 수 있습니다." className="mb-6" />

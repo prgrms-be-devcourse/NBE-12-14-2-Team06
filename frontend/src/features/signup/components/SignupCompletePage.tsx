@@ -10,6 +10,15 @@ import StepNavButton from './form/StepNavButton';
 
 const ROLE_LABEL = { CLIENT: '의뢰인', ESCORT: '동행 매니저' } as const;
 
+/**
+ * 가입하면 바로 로그인 상태라서, 로그인 대신 역할에 맞는 첫 할 일로 보냅니다.
+ * 의뢰인은 동행을 요청하는 공고를 쓰고, 동행 매니저는 지원할 공고를 찾습니다.
+ */
+const NEXT_STEP = {
+  CLIENT: { href: '/client/posts/new', label: '공고 작성하러 가기' },
+  ESCORT: { href: '/escort/posts', label: '공고 찾아보기' },
+} as const;
+
 /** 회원가입 4단계(완료) — Figma 공통_회원가입 완료 페이지 564:17555 */
 export default function SignupCompletePage() {
   const role = useSignupRole();
@@ -28,8 +37,9 @@ export default function SignupCompletePage() {
             <SignupStepper current={4} />
           </div>
 
+          {/* 결제 성공 화면(토스)의 파란 체크와 같은 색(#3182F6) 입니다. */}
           <Image
-            src="/icons/complete-check.svg"
+            src="/icons/complete-check-blue.svg"
             alt=""
             width={126}
             height={126}
@@ -59,8 +69,7 @@ export default function SignupCompletePage() {
           </dl>
 
           <div className="flex w-full max-w-[600px] gap-2.5">
-            {/* TODO: 로그인 화면이 생기면 주소를 확인하세요. */}
-            <StepNavButton href="/login">로그인 하러 가기</StepNavButton>
+            <StepNavButton href={NEXT_STEP[role].href}>{NEXT_STEP[role].label}</StepNavButton>
             <StepNavButton href="/" variant="solid">
               메인 페이지로 가기
             </StepNavButton>

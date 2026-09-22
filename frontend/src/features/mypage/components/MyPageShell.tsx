@@ -5,24 +5,8 @@ import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { AppShell } from '@/components/layout';
 import { cn } from '@/lib/cn';
-import { MOCK_CLIENT, MOCK_USER } from '@/lib/mockSession';
+import { MYPAGE_MENUS } from '../model';
 import type { MyPageRole } from '../types';
-
-// TODO: 설정 화면은 아직 디자인/구현이 없습니다.
-const MENUS: Record<MyPageRole, { label: string; href: string }[]> = {
-  escort: [
-    { label: '내 정보', href: '/mypage' },
-    { label: '내가 신청한 공고', href: '/mypage/applications' },
-    { label: '내 정산', href: '/mypage/settlements' },
-    { label: '받은 리뷰', href: '/mypage/reviews' },
-    { label: '설정', href: '#' },
-  ],
-  client: [
-    { label: '내 정보', href: '/client' },
-    { label: '작성한 공고', href: '/client/posts' },
-    { label: '설정', href: '#' },
-  ],
-};
 
 type Props = {
   children: ReactNode;
@@ -33,10 +17,10 @@ type Props = {
 /** 마이페이지 공통 틀 — 왼쪽 메뉴(256px) + 구분선 + 오른쪽 내용 (Figma Main_MyPage) */
 export default function MyPageShell({ children, role = 'escort' }: Props) {
   const pathname = usePathname();
-  const menu = MENUS[role];
+  const menu = MYPAGE_MENUS[role];
 
   return (
-    <AppShell user={role === 'client' ? MOCK_CLIENT : MOCK_USER}>
+    <AppShell>
       <div className="flex flex-col bg-white lg:flex-row">
         <nav
           aria-label="마이페이지 메뉴"
