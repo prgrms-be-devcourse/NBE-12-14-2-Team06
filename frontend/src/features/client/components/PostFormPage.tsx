@@ -3,17 +3,14 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { AppShell } from '@/components/layout';
 import { Container, SectionHeading } from '@/components/ui';
-import { getPostDetail } from '@/features/post';
-import { api } from '@/lib/api';
+import { createPost, fetchPostRaw, updatePost, type PostDto, type PostWriteRequest } from '@/features/post';
 import { cn } from '@/lib/cn';
+import type { PlaceSearchResult } from '@/lib/kakaoMap';
 import { MOCK_CLIENT } from '@/lib/mockSession';
-import { REGIONS } from '@/lib/regions';
 import {
-  DEFAULT_DISTRICTS,
-  DISTRICTS,
   EMPTY_FORM,
   PARTY_OPTIONS,
   SAMPLE_FORM,
@@ -23,11 +20,12 @@ import {
   estimateAmount,
   formatMinutes,
   parsePay,
-  regionCenter,
+  splitRegion,
   toIsoDateTime,
 } from '../model/postForm';
 import type { PostFormValues } from '../types';
-import { CheckField, FIELD, FormRow, FormSection, SearchField, SelectField } from './form/fields';
+import AddressSearchField from './form/AddressSearchField';
+import { CheckField, FIELD, FormRow, FormSection, SelectField } from './form/fields';
 
 const GUIDES = [
   '정확한 병원명과 일정을 입력해주세요.',
@@ -52,19 +50,36 @@ const ERROR_TEXT = 'px-4 text-sm leading-5 font-medium text-[#b91d1d]';
 const LIST_ITEM = 'flex items-center gap-[15px] py-1 text-sm leading-6 font-semibold text-brand';
 const CARD_TITLE = 'mb-4 flex items-center gap-[15px] text-2xl leading-6 font-semibold text-brand';
 
-/** 수정 화면에 채워 넣을 값. 공고 상세 모의 데이터가 있으면 그 값을 우선합니다. */
-function initialValues(postId?: number): PostFormValues {
-  if (postId === undefined) return EMPTY_FORM;
-  const post = getPostDetail(postId);
-  if (!post) return SAMPLE_FORM;
+/** 백엔드 공고 응답을 수정 폼의 초기값으로 바꿉니다. */
+function toFormValues(dto: PostDto): PostFormValues {
+  const { region, district } = splitRegion(dto.hospitalAddress);
   return {
-    ...SAMPLE_FORM,
-    title: post.title,
-    hospitalName: post.hospitalName,
-    region: post.region,
-    district: post.district,
-    hourlyPay: post.hourlyPay.toLocaleString(),
-    description: post.details.join('\n'),
+    title: dto.title,
+    hospitalName: dto.hospitalName,
+    hospitalAddress: dto.hospitalAddress,
+    hospitalLat: dto.hospitalLat,
+    hospitalLng: dto.hospitalLng,
+    region,
+    district,
+    departure: dto.pickupAddress,
+    pickupLat: dto.pickupLat,
+    pickupLng: dto.pickupLng,
+    date: dto.escortStartAt.slice(0, 10),
+    startTime: dto.escortStartAt.slice(11, 16),
+    endTime: dto.escortEndAt.slice(11, 16),
+    hourlyPay: dto.hourlyPay.toLocaleString(),
+    // ⚠️ 협의 가능·이동수단·동행인원은 백엔드에 없는 값이라 수정 화면에서 다시 선택해야 합니다.
+    negotiable: false,
+    transportOut: '',
+    transportBack: '',
+    party: '',
+    reportRequested: dto.reportRequired,
+    description: dto.content,
+    note: dto.patientNote ?? '',
+    recruitStartDate: dto.recruitStartAt.slice(0, 10),
+    recruitStartTime: dto.recruitStartAt.slice(11, 16),
+    recruitEndDate: dto.recruitEndAt.slice(0, 10),
+    recruitEndTime: dto.recruitEndAt.slice(11, 16),
   };
 }
 
@@ -77,21 +92,73 @@ function formatPay(value: string): string {
 /**
  * 공고 작성 / 수정 — Figma 의뢰인_공고 작성 61:1273 · 입력 예시 506:2944
  *
- * 형식 검사는 브라우저 기본 검사(required)를 씁니다.
- * 등록(POST /api/v1/posts)은 실제 백엔드에 연결되어 있습니다. 로그인(JWT 쿠키)이 아직 없어서
- * 지금은 401("로그인 후 이용해주세요.")이 정상입니다 — 로그인이 붙으면 그대로 동작합니다.
- * ⚠️ 병원명/출발지 입력칸이 아직 주소 검색 연동 전이라 위도·경도는 선택 지역의 중심 좌표로 대체합니다.
- * ⚠️ 수정(PATCH)은 아직 미연결이라 그대로 상세 화면으로만 이동합니다.
+ * 등록(POST)·수정(PUT) 모두 실제 백엔드에 연결되어 있습니다.
+ * ⚠️ 병원명·출발지는 카카오맵 검색 결과에서 골라야만 위도·경도가 채워집니다 (백엔드가 필수로 요구합니다).
+ *    그래서 Figma 의 "지역(시/도·구/군) 선택" 칸은 없앴고, 병원 주소에서 자동으로 뽑습니다.
+ * TODO: 협의 가능·이동수단·동행인원은 백엔드에 없는 값이라 서버로 보내지 않습니다.
  */
 export default function PostFormPage() {
   const params = useParams<{ postId?: string }>();
-  const router = useRouter();
   const postId = params.postId ? Number(params.postId) : undefined;
   const editing = postId !== undefined;
-  const initial = initialValues(postId);
 
+  // result.postId 로 "지금 postId 의 결과인지" 판단합니다. 새로 작성하는 경우는 서버에서 가져올 게 없어 바로 채웁니다.
+  const [result, setResult] = useState<{ postId?: number; initial?: PostFormValues; error?: string } | undefined>(
+    () => (editing ? undefined : { postId, initial: EMPTY_FORM }),
+  );
+
+  useEffect(() => {
+    if (!editing) return;
+    let ignore = false;
+    fetchPostRaw(postId)
+      .then((dto) => !ignore && setResult({ postId, initial: toFormValues(dto) }))
+      .catch((error: Error) => !ignore && setResult({ postId, error: error.message }));
+    return () => {
+      ignore = true;
+    };
+  }, [editing, postId]);
+
+  const initial = result && result.postId === postId ? result.initial : undefined;
+  const loadError = result && result.postId === postId ? result.error : undefined;
+
+  if (!initial) {
+    return (
+      <AppShell user={MOCK_CLIENT}>
+        <section className="bg-white py-[100px] text-center">
+          <p className="text-xl font-semibold text-brand">{loadError ? `불러오지 못했습니다. (${loadError})` : '불러오는 중입니다.'}</p>
+          <Link href="/client/posts" className="mx-auto mt-8 flex h-14 w-60 items-center justify-center rounded-[25px] border border-line text-xl font-semibold text-brand">
+            작성한 공고로
+          </Link>
+        </section>
+      </AppShell>
+    );
+  }
+
+  return <PostFormFields key={postId ?? 'new'} postId={postId} initial={initial} sample={editing ? undefined : SAMPLE_FORM} />;
+}
+
+type FormFieldsProps = {
+  /** 있으면 수정, 없으면 새로 작성 */
+  postId?: number;
+  initial: PostFormValues;
+  /** 작성 예시 카드에 나올 값 (수정 화면에서는 안 씀) */
+  sample?: PostFormValues;
+};
+
+function PostFormFields({ postId, initial, sample }: FormFieldsProps) {
+  const router = useRouter();
+  const editing = postId !== undefined;
+
+  const [hospitalName, setHospitalName] = useState(initial.hospitalName);
+  const [hospitalAddress, setHospitalAddress] = useState(initial.hospitalAddress);
+  const [hospitalLat, setHospitalLat] = useState(initial.hospitalLat);
+  const [hospitalLng, setHospitalLng] = useState(initial.hospitalLng);
   const [region, setRegion] = useState(initial.region);
-  const [district, setDistrict] = useState(initial.district);
+
+  const [departure, setDeparture] = useState(initial.departure);
+  const [pickupLat, setPickupLat] = useState(initial.pickupLat);
+  const [pickupLng, setPickupLng] = useState(initial.pickupLng);
+
   const [startTime, setStartTime] = useState(initial.startTime);
   const [endTime, setEndTime] = useState(initial.endTime);
   const [hourlyPay, setHourlyPay] = useState(initial.hourlyPay);
@@ -115,35 +182,51 @@ export default function PostFormPage() {
     }
   }
 
+  const handleHospitalSelect = (place: PlaceSearchResult) => {
+    setHospitalName(place.name || hospitalName);
+    setHospitalAddress(place.address);
+    setHospitalLat(place.lat);
+    setHospitalLng(place.lng);
+    setRegion(splitRegion(place.address).region);
+  };
+
+  const handleDepartureSelect = (place: PlaceSearchResult) => {
+    setDeparture(place.address);
+    setPickupLat(place.lat);
+    setPickupLng(place.lng);
+  };
+
+  const locationError =
+    hospitalLat === null || hospitalLng === null
+      ? '병원을 검색 결과에서 선택해주세요.'
+      : pickupLat === null || pickupLng === null
+        ? '출발지를 검색 결과에서 선택해주세요.'
+        : '';
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (editing) {
-      // TODO: 공고 수정 API(PATCH /api/v1/posts/{postId}) 연결
-      router.push(`/client/posts/${postId}`);
+    setSubmitError('');
+
+    if (hospitalLat === null || hospitalLng === null || pickupLat === null || pickupLng === null) {
+      setSubmitError(locationError || '병원·출발지의 위치가 확인되지 않았습니다.');
       return;
     }
-
-    setSubmitError('');
 
     // 폼에 이름(name)이 붙은 입력값을 전부 가져옵니다 (state로 관리하지 않는 필드 포함).
     const form = new FormData(event.currentTarget);
     const value = (name: string) => String(form.get(name) ?? '').trim();
 
-    const center = regionCenter(region);
-    const hospitalAddress = [region, district].filter(Boolean).join(' ') || value('hospitalName');
-    const pickupAddress = value('departure');
-
-    const payload = {
+    const payload: PostWriteRequest = {
       title: value('title'),
       content: value('description'),
       region,
-      hospitalName: value('hospitalName'),
+      hospitalName,
       hospitalAddress,
-      hospitalLat: center.lat,
-      hospitalLng: center.lng,
-      pickupAddress,
-      pickupLat: center.lat,
-      pickupLng: center.lng,
+      hospitalLat,
+      hospitalLng,
+      pickupAddress: departure,
+      pickupLat,
+      pickupLng,
       hourlyPay: parsePay(hourlyPay),
       recruitStartAt: toIsoDateTime(recruitStartDate, recruitStartTime),
       recruitEndAt: toIsoDateTime(recruitEndDate, recruitEndTime),
@@ -155,19 +238,22 @@ export default function PostFormPage() {
 
     setSubmitting(true);
     try {
-      const created = await api<{ id: number }>('/api/v1/posts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const query = new URLSearchParams({
-        postId: String(created.id),
-        amount: String(amount),
-        pay: String(estimateAmount(hourlyPay, 60)),
-      });
-      router.push(`/client/posts/new/payment?${query.toString()}`);
+      if (editing) {
+        // TODO: 수정 API(PUT /api/v1/posts/{postId})는 작성자 본인 로그인 쿠키가 있어야 하고, 모집 시작 전까지만 됩니다.
+        await updatePost(postId, payload);
+        router.push(`/client/posts/${postId}`);
+      } else {
+        // TODO: 등록 API(POST /api/v1/posts)는 의뢰인(CLIENT) 로그인 쿠키가 있어야 합니다.
+        const created = await createPost(payload);
+        const query = new URLSearchParams({
+          postId: String(created.id),
+          amount: String(amount),
+          pay: String(estimateAmount(hourlyPay, 60)),
+        });
+        router.push(`/client/posts/new/payment?${query.toString()}`);
+      }
     } catch (error) {
-      setSubmitError(error instanceof Error ? error.message : '공고 등록에 실패했습니다.');
+      setSubmitError(error instanceof Error ? error.message : editing ? '공고 수정에 실패했습니다.' : '공고 등록에 실패했습니다.');
       setSubmitting(false);
     }
   };
@@ -189,36 +275,22 @@ export default function PostFormPage() {
                   <input id="post-title" name="title" required defaultValue={initial.title} placeholder="예) 수술 전 검사 동행이 필요합니다." className={FIELD} />
                 </FormRow>
                 <FormRow label="병원명*" htmlFor="post-hospital">
-                  <SearchField id="post-hospital" name="hospitalName" placeholder="병원명을 입력해주세요." defaultValue={initial.hospitalName} />
+                  <AddressSearchField
+                    id="post-hospital"
+                    placeholder="병원명을 검색해주세요. (예: 서울아산병원)"
+                    defaultValue={initial.hospitalName}
+                    formatSelected={(place) => place.name}
+                    onSelect={handleHospitalSelect}
+                  />
                 </FormRow>
-                <FormRow label="지역*" htmlFor="post-region">
-                  <div className="grid gap-2.5 sm:grid-cols-2">
-                    <SelectField
-                      id="post-region"
-                      name="region"
-                      placeholder="시/도 선택"
-                      options={[...REGIONS]}
-                      value={region}
-                      onChange={(value) => {
-                        setRegion(value);
-                        setDistrict('');
-                      }}
-                      required
-                    />
-                    <SelectField
-                      id="post-district"
-                      name="district"
-                      placeholder="구/군 선택"
-                      options={DISTRICTS[region] ?? DEFAULT_DISTRICTS}
-                      value={district}
-                      onChange={setDistrict}
-                      disabled={!region}
-                      required
-                    />
-                  </div>
-                </FormRow>
+                {hospitalAddress && <p className="px-4 text-sm font-medium text-brand-muted">주소: {hospitalAddress}</p>}
                 <FormRow label="출발지*" htmlFor="post-departure">
-                  <SearchField id="post-departure" name="departure" placeholder="출발지를 입력해주세요." defaultValue={initial.departure} />
+                  <AddressSearchField
+                    id="post-departure"
+                    placeholder="출발지를 검색해주세요. (예: 자택 주소)"
+                    defaultValue={initial.departure}
+                    onSelect={handleDepartureSelect}
+                  />
                 </FormRow>
               </FormSection>
 
@@ -360,7 +432,7 @@ export default function PostFormPage() {
                   disabled={submitting}
                   className="flex h-[55px] flex-1 items-center justify-center rounded-[25px] bg-brand text-base leading-[18px] font-semibold text-white transition-colors hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {submitting ? '등록 중...' : editing ? '수정하기' : '등록하기'}
+                  {submitting ? (editing ? '수정 중...' : '등록 중...') : editing ? '수정하기' : '등록하기'}
                 </button>
               </div>
             </form>
@@ -381,20 +453,22 @@ export default function PostFormPage() {
                 </ul>
               </section>
 
-              <section className="rounded-[30px] border border-line bg-white px-6 py-8 shadow-card">
-                <h2 className="mb-2.5 flex items-center gap-[15px] px-2.5 text-2xl leading-6 font-semibold text-brand">
-                  <Image src="/icons/escort/clipboard.svg" alt="" width={29} height={36} className="h-8 w-auto" />
-                  작성 예시
-                </h2>
-                <div className="flex flex-col gap-2.5">
-                  {EXAMPLES.map((example) => (
-                    <div key={example.title} className="flex flex-col gap-[15px] rounded-[30px] border border-line bg-line-soft p-5 text-brand">
-                      <p className="text-xl leading-6 font-semibold">{example.title}</p>
-                      <p className="text-sm leading-5 font-medium">{example.body}</p>
-                    </div>
-                  ))}
-                </div>
-              </section>
+              {sample && (
+                <section className="rounded-[30px] border border-line bg-white px-6 py-8 shadow-card">
+                  <h2 className="mb-2.5 flex items-center gap-[15px] px-2.5 text-2xl leading-6 font-semibold text-brand">
+                    <Image src="/icons/escort/clipboard.svg" alt="" width={29} height={36} className="h-8 w-auto" />
+                    작성 예시
+                  </h2>
+                  <div className="flex flex-col gap-2.5">
+                    {EXAMPLES.map((example) => (
+                      <div key={example.title} className="flex flex-col gap-[15px] rounded-[30px] border border-line bg-line-soft p-5 text-brand">
+                        <p className="text-xl leading-6 font-semibold">{example.title}</p>
+                        <p className="text-sm leading-5 font-medium">{example.body}</p>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
 
               <section className="rounded-[30px] border border-line bg-white px-6 pt-8 pb-6 shadow-card lg:min-h-[232px]">
                 <h2 className={CARD_TITLE}>

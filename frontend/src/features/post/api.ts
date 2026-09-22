@@ -1,7 +1,7 @@
-import { api, apiDelete, type SpringPage } from '@/lib/api';
+import { api, apiDelete, apiPost, apiPut, type SpringPage } from '@/lib/api';
 import { daysFromNow, toDateTimeParam } from './lib/date';
 import { toPostDetail, toPostSummary } from './model/mapper';
-import type { PostDetail, PostDto, PostFilters, PostSummary } from './types';
+import type { PostDetail, PostDto, PostFilters, PostSummary, PostWriteRequest } from './types';
 
 /** 목록 화면이 쓰는 결과 (공고 카드 + 페이지 정보) */
 export type PostPage = {
@@ -47,6 +47,21 @@ export async function fetchPosts(filters: PostFilters, page: number, size: numbe
 export async function fetchPost(postId: number): Promise<PostDetail> {
   const dto = await api<PostDto>(`/api/v1/posts/${postId}`);
   return toPostDetail(dto);
+}
+
+/** 공고 상세를 백엔드 응답 그대로 조회합니다. 수정 폼에 값을 채울 때처럼 위도·경도 원본이 필요할 때 씁니다. */
+export function fetchPostRaw(postId: number): Promise<PostDto> {
+  return api<PostDto>(`/api/v1/posts/${postId}`);
+}
+
+/** 공고 등록 — POST /api/v1/posts (의뢰인 로그인 쿠키 필요). 등록하면 결제(Payment)도 함께 만들어집니다. */
+export function createPost(request: PostWriteRequest): Promise<{ id: number; title: string; postStatus: string; createdAt: string }> {
+  return apiPost(`/api/v1/posts`, request);
+}
+
+/** 공고 수정 — PUT /api/v1/posts/{postId} (작성자 본인만, 모집 시작 전까지만 가능) */
+export function updatePost(postId: number, request: PostWriteRequest): Promise<void> {
+  return apiPut<void>(`/api/v1/posts/${postId}`, request);
 }
 
 /**
