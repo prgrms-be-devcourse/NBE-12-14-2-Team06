@@ -9,4 +9,5 @@ export { default as CardButton } from './components/CardButton';
 export { default as StatusLabel } from './components/StatusLabel';
 export { default as Pagination } from './components/Pagination';
 export { getPostDetail } from './model';
-export type { LabelTone, PostSummary, PostDetail } from './types';
+export { fetchPost, fetchPostRaw, createPost, updatePost, deletePost } from './api';
+export type { LabelTone, PostSummary, PostDetail, PostDto, PostWriteRequest } from './types';

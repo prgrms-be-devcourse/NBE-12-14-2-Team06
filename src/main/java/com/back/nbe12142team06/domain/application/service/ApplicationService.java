@@ -298,7 +298,7 @@ public class ApplicationService {
 
         User escort = application.getEscort();
 
-        EscortProfile escortProfile = escortProfileRepository.findByUserId(escort.getId())
+        EscortProfile escortProfile = escortProfileRepository.findById(escort.getId())
                 .orElseThrow(() -> new NotFoundException("동행인 프로필을 찾을 수 없습니다."));
 
         double rating = escortProfile.getRatingCount() == 0

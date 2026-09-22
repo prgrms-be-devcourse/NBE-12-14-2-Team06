@@ -108,7 +108,7 @@ public class ApplicationControllerTest {
         userRepository.save(escort);
 
         // 테스트용 동행인 프로필 생성
-        EscortProfile escortProfile = new EscortProfile(escort);
+        EscortProfile escortProfile = new EscortProfile(escort, "ㅎㅎ", "은행은행", escort.getName(), "1234");
         escortProfileRepository.save(escortProfile);
 
         // 테스트용 공고

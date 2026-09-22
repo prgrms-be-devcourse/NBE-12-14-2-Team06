@@ -12,10 +12,16 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true) // 기본은 읽기 전용 트랜잭션으로 설정
 public class ReportService {
+
+    // 제목 자동 생성용 (예: "9월 22일")
+    private static final DateTimeFormatter TITLE_DATE = DateTimeFormatter.ofPattern("M월 d일");
 
     private final ReportRepository reportRepository;
     private final ApplicationRepository applicationRepository;
@@ -38,9 +44,23 @@ public class ReportService {
         return reportRepository.save(
                 Report.builder()
                         .application(application)
-                        .title(request.title())
+                        .title(generateTitle(request))
+                        .department(request.department())
+                        .purpose(request.purpose())
                         .originContent(request.originContent())
+                        .notes(request.notes())
                         .build()
+        );
+    }
+
+    /**
+     * 화면에 제목 입력칸이 없어 작성 시점 날짜와 진료 과목으로 자동 생성한다.
+     * 예: "9월 22일 정형외과 진료 결과"
+     */
+    private String generateTitle(ReportWriteRequest request) {
+        return "%s %s 진료 결과".formatted(
+                LocalDate.now().format(TITLE_DATE),
+                request.department().getDescription()
         );
     }
 

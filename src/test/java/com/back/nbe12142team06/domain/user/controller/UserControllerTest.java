@@ -6,9 +6,11 @@ import com.back.nbe12142team06.domain.auth.entity.RefreshToken;
 import com.back.nbe12142team06.domain.auth.repository.RefreshTokenRepository;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.repository.PostRepository;
+import com.back.nbe12142team06.domain.user.entity.EscortProfile;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Gender;
 import com.back.nbe12142team06.domain.user.enums.Role;
+import com.back.nbe12142team06.domain.user.repository.EscortProfileRepository;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
 import com.back.nbe12142team06.global.security.JwtProvider;
 import jakarta.persistence.EntityManager;
@@ -34,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -67,6 +70,9 @@ public class UserControllerTest {
 
     @Autowired
     private ApplicationRepository applicationRepository;
+
+    @Autowired
+    private EscortProfileRepository  escortProfileRepository;
 
     @Value("${custom.jwt.secret-key}")
     private String secretKey;
@@ -2011,75 +2017,242 @@ public class UserControllerTest {
 
 
     @Test
-    @DisplayName("[UserController] 동행 매니저 프로필 생성 -  정상 생성")
-    void t100() throws Exception {
-        String username = "t1";
-
-        Cookie accessToken = signUp(username, "ESCORT");
-
-        String requestBody = """
-                {
-                    "intro": "동행 매니저입니다.",
-                    "bankName": "오픈은행",
-                    "accountHolder": "김춘식",
-                    "accountNumber": "123-0000000-123"
-                }
-                """;
+    @DisplayName("[UserController] 동행 매니저 프로필 생성 - 정상 생성 시 200-8 반환")
+    void t52() throws Exception {
+        Cookie escortToken = signUp("escort1", "ESCORT");
+        Long escortId = findUserId("escort1");
 
         ResultActions resultActions = mvc.perform(
                         post("/api/v1/users/profile/escort")
-                                .cookie(accessToken)
+                                .cookie(escortToken)
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content(requestBody))
+                                .content("""
+                                    {
+                                        "intro": "동행 매니저입니다.",
+                                        "bankName": "오픈은행",
+                                        "accountHolder": "김춘식",
+                                        "accountNumber": "123-0000000-123"
+                                    }
+                                    """))
                 .andDo(print());
 
-        resultActions.andExpect(handler().handlerType(UserController.class));
-        resultActions.andExpect(handler().methodName("createProfileEscort"));
-        resultActions.andExpect(status().isOk());
-        resultActions.andExpect(jsonPath("$.statusCode").value("200-8"));
-        resultActions.andExpect(jsonPath("$.msg").value("동행 매니저 프로필이 생성되었습니다."));
-        resultActions.andExpect(jsonPath("$.data.accountHolder").value("김춘식"));
-        resultActions.andExpect(jsonPath("$.data.accountNumber").value("123-0000000-123"));
+        resultActions
+                .andExpect(handler().handlerType(UserController.class))
+                .andExpect(handler().methodName("createProfileEscort"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-8"))
+                .andExpect(jsonPath("$.msg").value("동행 매니저 프로필이 생성되었습니다."))
+                .andExpect(jsonPath("$.data.userId").value(escortId))
+                .andExpect(jsonPath("$.data.name").value("김춘식"))
+                .andExpect(jsonPath("$.data.region").value("서울시"))
+                .andExpect(jsonPath("$.data.intro").value("동행 매니저입니다."))
+                .andExpect(jsonPath("$.data.averageRating").value(nullValue()))
+                .andExpect(jsonPath("$.data.completedCount").value(0))
+                .andExpect(jsonPath("$.data.verified").value(false))
+                .andExpect(jsonPath("$.data.bankName").value("오픈은행"))
+                .andExpect(jsonPath("$.data.accountHolder").value("김춘식"))
+                .andExpect(jsonPath("$.data.accountNumber").value("123-0000000-123"));
     }
 
     @Test
-    @DisplayName("[UserController] 동행 매니저 프로필 조회 - 정상 생성")
-    void t101() throws Exception {
-        String username = "t1";
+    @DisplayName("[UserController] 동행 매니저 프로필 조회 - 본인 조회 시 계좌 포함 200-9 반환")
+    void t53() throws Exception {
+        Cookie escortToken = signUp("escort1", "ESCORT");
+        Long escortId = findUserId("escort1");
+        createEscortProfile(escortToken);
 
-        Cookie accessToken = signUp(username, "ESCORT");
-        createEscortProfile(accessToken);
+        em.flush();
+        em.clear();
 
         ResultActions resultActions = mvc.perform(
                         get("/api/v1/users/profile/escort")
-                                .cookie(accessToken))
+                                .cookie(escortToken))
                 .andDo(print());
 
-        resultActions.andExpect(handler().handlerType(UserController.class));
-        resultActions.andExpect(handler().methodName("getProfileEscort"));
-        resultActions.andExpect(status().isOk());
-        resultActions.andExpect(jsonPath("$.statusCode").value("200-9"));
-        resultActions.andExpect(jsonPath("$.msg").value("동행 매니저 프로필 조회를 완료했습니다."));
-        resultActions.andExpect(jsonPath("$.data.accountHolder").value("김춘식"));
-        resultActions.andExpect(jsonPath("$.data.accountNumber").value("123-0000000-123"));
+        resultActions
+                .andExpect(handler().handlerType(UserController.class))
+                .andExpect(handler().methodName("getProfileEscort"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-9"))
+                .andExpect(jsonPath("$.msg").value("동행 매니저 프로필 조회를 완료했습니다."))
+                .andExpect(jsonPath("$.data.userId").value(escortId))
+                .andExpect(jsonPath("$.data.name").value("김춘식"))
+                .andExpect(jsonPath("$.data.region").value("서울시"))
+                .andExpect(jsonPath("$.data.intro").value("동행 매니저입니다."))
+                .andExpect(jsonPath("$.data.averageRating").value(nullValue()))
+                .andExpect(jsonPath("$.data.completedCount").value(0))
+                .andExpect(jsonPath("$.data.verified").value(false))
+                .andExpect(jsonPath("$.data.bankName").value("오픈은행"))
+                .andExpect(jsonPath("$.data.accountHolder").value("김춘식"))
+                .andExpect(jsonPath("$.data.accountNumber").value("123-0000000-123"));
     }
 
     @Test
-    @DisplayName("[UserController] 동행 매니저 프로필 조회 - 찾을 수 없음")
-    void t102() throws Exception {
-        String username = "t1";
-
-        Cookie accessToken = signUp(username, "ESCORT");
+    @DisplayName("[UserController] 동행 매니저 프로필 조회 - 프로필이 없으면 404 반환")
+    void t54() throws Exception {
+        Cookie escortToken = signUp("escort1", "ESCORT");
 
         ResultActions resultActions = mvc.perform(
                         get("/api/v1/users/profile/escort")
-                                .cookie(accessToken))
+                                .cookie(escortToken))
                 .andDo(print());
 
-        resultActions.andExpect(handler().handlerType(UserController.class));
-        resultActions.andExpect(handler().methodName("getProfileEscort"));
-        resultActions.andExpect(status().isNotFound());
-        resultActions.andExpect(jsonPath("$.statusCode").value("404"));
-        resultActions.andExpect(jsonPath("$.msg").value("동행 매니저 프로필이 존재하지 않습니다."));
+        resultActions
+                .andExpect(handler().handlerType(UserController.class))
+                .andExpect(handler().methodName("getProfileEscort"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.statusCode").value("404"))
+                .andExpect(jsonPath("$.msg").value("동행 매니저 프로필이 존재하지 않습니다."));
+    }
+
+    @Test
+    @DisplayName("[UserController] 동행 매니저 프로필 타인 조회 - 의뢰인 조회 시 공개 정보만 200-9 반환")
+    void t55() throws Exception {
+        Cookie escortToken = signUp("escort1", "ESCORT");
+        Long escortId = findUserId("escort1");
+        createEscortProfile(escortToken);
+        Cookie clientToken = signUp("client1");
+
+        em.flush();
+        em.clear();
+
+        ResultActions resultActions = mvc.perform(
+                        get("/api/v1/users/{userId}/profile/escort", escortId)
+                                .cookie(clientToken))
+                .andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(UserController.class))
+                .andExpect(handler().methodName("getProfileEscortByClient"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-9"))
+                .andExpect(jsonPath("$.msg").value("동행 매니저 프로필 조회를 완료했습니다."))
+                // 공개 정보
+                .andExpect(jsonPath("$.data.userId").value(escortId))
+                .andExpect(jsonPath("$.data.name").value("김춘식"))
+                .andExpect(jsonPath("$.data.region").value("서울시"))
+                .andExpect(jsonPath("$.data.intro").value("동행 매니저입니다."))
+                .andExpect(jsonPath("$.data.averageRating").value(nullValue()))
+                .andExpect(jsonPath("$.data.completedCount").value(0))
+                .andExpect(jsonPath("$.data.verified").value(false))
+                // 계좌 정보는 노출되면 안 됨
+                .andExpect(jsonPath("$.data.bankName").doesNotExist())
+                .andExpect(jsonPath("$.data.accountHolder").doesNotExist())
+                .andExpect(jsonPath("$.data.accountNumber").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("[UserController] 동행 매니저 프로필 타인 조회 - 프로필 없는 동행 매니저 조회 시 404 반환")
+    void t56() throws Exception {
+        signUp("escort1", "ESCORT");   // 프로필 생성 안 함
+        Long escortId = findUserId("escort1");
+        Cookie clientToken = signUp("client1");
+
+        ResultActions resultActions = mvc.perform(
+                        get("/api/v1/users/{userId}/profile/escort", escortId)
+                                .cookie(clientToken))
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.msg").value("동행 매니저 프로필이 존재하지 않습니다."));
+    }
+
+    @Test
+    @DisplayName("[UserController] 동행 매니저 프로필 수정 - 존재하는 프로필에 대해 정상 수정 요청 시 200-10 반환")
+    void t57() throws Exception {
+        Cookie escortToken = signUp("escort1", "ESCORT");
+        Long escortId = findUserId("escort1");
+        createEscortProfile(escortToken);
+
+        String updateBody = """
+                {
+                "intro": "수정한 자기소개입니다.",
+                "bankName": "수정은행",
+                "accountHolder": "김수정",
+                "accountNumber": "123-0012300-123"
+                }
+                """;
+        ResultActions resultActions = mvc.perform(
+                put("/api/v1/users/profile/escort")
+                        .cookie(escortToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(updateBody)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-10"))
+                .andExpect(jsonPath("$.msg").value("동행 매니저 프로필 수정을 완료했습니다."))
+                .andExpect(jsonPath("$.data.userId").value(escortId))
+                .andExpect(jsonPath("$.data.name").value("김춘식"))
+                .andExpect(jsonPath("$.data.region").value("서울시"))
+                .andExpect(jsonPath("$.data.intro").value("수정한 자기소개입니다."))
+                .andExpect(jsonPath("$.data.averageRating").value(nullValue()))
+                .andExpect(jsonPath("$.data.completedCount").value(0))
+                .andExpect(jsonPath("$.data.verified").value(false))
+                .andExpect(jsonPath("$.data.bankName").value("수정은행"))
+                .andExpect(jsonPath("$.data.accountHolder").value("김수정"))
+                .andExpect(jsonPath("$.data.accountNumber").value("123-0012300-123"));
+
+        em.flush();
+        em.clear();
+
+        EscortProfile updated = this.escortProfileRepository.findById(escortId).orElseThrow();
+        assertThat(updated.getIntro()).isEqualTo("수정한 자기소개입니다.");
+        assertThat(updated.getAccountNumber()).isEqualTo("123-0012300-123");
+    }
+
+
+    @Test
+    @DisplayName("[UserController] 동행 매니저 프로필 수정 - 존재하지 않는 프로필에 대해 수정 요청 시 404 반환")
+    void t58() throws Exception {
+        Cookie escortToken = signUp("escort1", "ESCORT");
+
+        String updateBody = """
+                {
+                "intro": "수정한 자기소개입니다.",
+                "bankName": "수정은행",
+                "accountHolder": "김수정",
+                "accountNumber": "123-0012300-123"
+                }
+                """;
+        ResultActions resultActions = mvc.perform(
+                put("/api/v1/users/profile/escort")
+                        .cookie(escortToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(updateBody)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.statusCode").value("404"))
+                .andExpect(jsonPath("$.msg").value("동행 매니저 프로필이 존재하지 않습니다."));
+    }
+
+
+    @Test
+    @DisplayName("[UserController] 동행 매니저 프로필 수정 - 로그인 없이 수정 요청 시 401-1 반환")
+    void t59() throws Exception {
+        Cookie escortToken = signUp("escort1", "ESCORT");
+
+        String updateBody = """
+                {
+                "intro": "수정한 자기소개입니다.",
+                "bankName": "수정은행",
+                "accountHolder": "김수정",
+                "accountNumber": "123-0012300-123"
+                }
+                """;
+        ResultActions resultActions = mvc.perform(
+                put("/api/v1/users/profile/escort")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(updateBody)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.statusCode").value("401-1"))
+                .andExpect(jsonPath("$.msg").value("로그인 후 이용해주세요."));
     }
 }

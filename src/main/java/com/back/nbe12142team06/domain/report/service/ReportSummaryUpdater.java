@@ -31,11 +31,31 @@ public class ReportSummaryUpdater {
         Report report = reportRepository.findById(reportId)
                 .orElseThrow(() -> new NotFoundException(3, "존재하지 않는 보고서입니다."));
 
+        // 항목별로 조립한 뒤 마스킹한다. 조립 전에 마스킹하면 항목마다 반복 호출하게 된다.
         return reportMasker.mask(
-                report.getOriginContent(),
+                buildContent(report),
                 report.getApplication().getPost().getClient(),
                 report.getApplication().getEscort()
         );
+    }
+
+    /**
+     * AI 에 보낼 본문을 항목별로 조립한다.
+     * 자유 서술만 넘기는 것보다 과목·목적이 구분돼 있으면 요약 정확도가 올라간다.
+     */
+    private String buildContent(Report report) {
+
+        StringBuilder content = new StringBuilder()
+                .append("진료 과목: ").append(report.getDepartment().getDescription()).append('\n')
+                .append("진료 목적: ").append(report.getPurpose()).append('\n')
+                .append("진료 내용: ").append(report.getOriginContent());
+
+        // 특이사항은 선택 입력이므로 값이 있을 때만 붙인다
+        if (report.getNotes() != null && !report.getNotes().isBlank()) {
+            content.append('\n').append("특이사항: ").append(report.getNotes());
+        }
+
+        return content.toString();
     }
 
     @Transactional
