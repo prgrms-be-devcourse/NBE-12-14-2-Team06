@@ -5,12 +5,25 @@ export type RsData<T> = {
     data: T;
 };
 
-/** 실패 응답의 statusCode("404-2" 등)가 필요할 때 확인용으로 씁니다. */
-export type ApiError = Error & { statusCode: string };
+/**
+ * 백엔드가 준 실패 응답. msg 뿐 아니라 statusCode("404-2" 등) 도 같이 들고 있는 에러입니다.
+ *
+ * 타입 별칭이 아니라 클래스인 이유: `error instanceof ApiError` 로 좁히는 곳이 있습니다.
+ * 타입으로만 쓰는 `(error as Partial<ApiError>).statusCode` 형태도 그대로 동작합니다.
+ */
+export class ApiError extends Error {
+    readonly statusCode: string;
+
+    constructor(statusCode: string, msg: string) {
+        super(msg);
+        this.name = 'ApiError';
+        this.statusCode = statusCode;
+    }
+}
 
 /**
  * 백엔드 API 호출 함수.
- * 성공하면 응답의 data 만 돌려주고, 실패하면 에러를 던집니다.
+ * 성공하면 응답의 data 만 돌려주고, 실패하면 ApiError 를 던집니다.
  */
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
     // 1. 서버 호출 (응답이 올 때까지 기다림). 쿠키(로그인 토큰)는 같은 주소(프록시)라 자동으로 실립니다.
@@ -22,10 +35,8 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
 
     // 3. 실패(상태 코드가 200번대가 아님)면 에러를 던짐
     if (!res.ok) {
-        // 메시지는 dev 쪽(본문이 비었을 때의 기본 문구), statusCode 는 이 브랜치 쪽 — 둘 다 필요해서 합쳤습니다.
-        throw Object.assign(new Error(body.msg || `요청이 실패했습니다. (${res.status})`), {
-            statusCode: body.statusCode,
-        }) as ApiError;
+        // 본문이 비었을 때는 기본 문구를 쓰고, statusCode 는 호출한 쪽이 분기에 쓸 수 있게 같이 실어 보냅니다.
+        throw new ApiError(body.statusCode, body.msg || `요청이 실패했습니다. (${res.status})`);
     }
 
     // 4. 성공이면 껍질을 벗기고 data 만 돌려줌

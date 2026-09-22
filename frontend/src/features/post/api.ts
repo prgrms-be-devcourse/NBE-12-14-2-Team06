@@ -54,8 +54,11 @@ export function fetchPostRaw(postId: number): Promise<PostDto> {
   return api<PostDto>(`/api/v1/posts/${postId}`);
 }
 
-/** 공고 등록 — POST /api/v1/posts (의뢰인 로그인 쿠키 필요). 등록하면 결제(Payment)도 함께 만들어집니다. */
-export function createPost(request: PostWriteRequest): Promise<{ id: number; title: string; postStatus: string; createdAt: string }> {
+/**
+ * 공고 등록 — POST /api/v1/posts (의뢰인 로그인 쿠키 필요). 등록하면 결제(Payment)도 함께 만들어집니다.
+ * paymentId 는 그때 만들어진 결제의 id 로, 결제 승인(POST /api/v1/payments/{paymentId}/confirm) 에 필요합니다.
+ */
+export function createPost(request: PostWriteRequest): Promise<{ id: number; title: string; postStatus: string; createdAt: string; paymentId: number }> {
   return apiPost(`/api/v1/posts`, request);
 }
 

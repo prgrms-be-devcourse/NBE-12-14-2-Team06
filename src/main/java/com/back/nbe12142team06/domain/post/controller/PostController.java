@@ -87,11 +87,11 @@ public class PostController {
             @AuthenticationPrincipal SecurityUser actor,
             @RequestBody @Valid PostWriteRequest request) {
 
-        Post post = postService.write(actor.getId(), request);
+        PostWriteResponse response = postService.write(actor.getId(), request);
         return new RsData<>(
                 "201-1",
-                "%d번 글이 성공적으로 등록되었습니다".formatted(post.getId()),
-                new PostWriteResponse(post)
+                "%d번 글이 성공적으로 등록되었습니다".formatted(response.id()),
+                response
         );
     }
 
