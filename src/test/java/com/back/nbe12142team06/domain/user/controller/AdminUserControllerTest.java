@@ -697,4 +697,26 @@ public class AdminUserControllerTest {
                 .andExpect(jsonPath("$.data.accountHolder").value("김춘식"))
                 .andExpect(jsonPath("$.data.accountNumber").value("123-0000000-123"));
     }
+    @Test
+    @DisplayName("[AdminUserController] 동행 매니저 프로필 타인 조회 - 프로필이 없으면 404 반환")
+    void t19() throws Exception {
+        Cookie escortToken = signUp("escort1", "ESCORT");
+        Long escortId = findUserId("escort1");
+
+        createTestAdmin();
+        Cookie adminToken = loginAsAdmin();
+
+        em.flush();
+        em.clear();
+
+        ResultActions resultActions = mvc.perform(
+                        get("/api/v1/admin/users/{userId}/profile/escort", escortId)
+                                .cookie(adminToken))
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.statusCode").value("404"))
+                .andExpect(jsonPath("$.msg").value("동행 매니저 프로필이 존재하지 않습니다."));
+    }
 }
