@@ -22,6 +22,11 @@ import TextInput from './form/TextInput';
 const PHONE_HINT = '‘-’ 없이 숫자만 입력해주세요.';
 /** 계좌 정보 입력칸은 다른 칸보다 낮습니다 (Figma 높이 47) */
 const ACCOUNT_FIELD = 'h-[47px]!';
+/**
+ * 생년월일 달력에서 고를 수 있는 마지막 날 = 오늘. (백엔드가 과거 날짜만 받습니다)
+ * sv-SE 로캘이 달력 입력과 같은 YYYY-MM-DD 형식을 주고, UTC 가 아닌 현지 시간 기준이라 날짜가 밀리지 않습니다.
+ */
+const TODAY = new Date().toLocaleDateString('sv-SE');
 const GRID = 'mx-auto grid w-full max-w-[998px] gap-x-8 gap-y-[21px] lg:grid-cols-2';
 
 /**
@@ -36,8 +41,6 @@ export default function SignupInfoPage() {
   // 입력값은 3·4단계와 공유하고, 이전 단계로 돌아와도 유지됩니다.
   const { values, setValues } = useSignup();
   const confirmRef = useRef<HTMLInputElement>(null);
-  // 계좌 정보는 선택이지만, 하나라도 적었다면 세 칸을 모두 채워야 합니다.
-  const accountRequired = Boolean(values.bankName || values.accountHolder || values.accountNumber);
 
   const handleChange =
     (key: keyof SignupFormValues) =>
@@ -178,12 +181,10 @@ export default function SignupInfoPage() {
                     <TextInput
                       id="signup-birth-date"
                       name="birthDate"
-                      inputMode="numeric"
-                      autoComplete="off"
+                      type="date"
+                      autoComplete="bday"
                       required
-                      pattern="[0-9]{4}\.[0-9]{2}\.[0-9]{2}"
-                      title="YYYY.MM.DD 형식으로 입력해주세요."
-                      placeholder="YYYY.MM.DD"
+                      max={TODAY}
                       value={values.birthDate}
                       onChange={handleChange('birthDate')}
                     />
@@ -266,18 +267,20 @@ export default function SignupInfoPage() {
                   className="mb-6"
                 />
                 <FormCard className="flex flex-col gap-2.5 px-5 py-8 lg:pr-[30px] lg:pl-8">
-                  {/* 정산받을 계좌 (선택) */}
+                  {/* 정산받을 계좌 — 백엔드 EscortProfileRequest 가 셋 다 필수라 모두 required 입니다. */}
                   <div className="flex flex-col gap-[21px] py-2.5 lg:flex-row lg:justify-between lg:gap-8">
-                    <FormField label="은행" htmlFor="signup-bank" className="lg:w-[222px]">
+                    <FormField label="은행*" htmlFor="signup-bank" className="lg:w-[222px]">
                       <SelectInput
                         id="signup-bank"
                         name="bankName"
-                        required={accountRequired}
+                        required
                         value={values.bankName}
                         onChange={handleChange('bankName')}
                         className={ACCOUNT_FIELD}
                       >
-                        <option value="">은행을 선택해주세요.</option>
+                        <option value="" disabled hidden>
+                          은행을 선택해주세요.
+                        </option>
                         {BANKS.map((bank) => (
                           <option key={bank} value={bank} className="text-brand">
                             {bank}
@@ -285,25 +288,25 @@ export default function SignupInfoPage() {
                         ))}
                       </SelectInput>
                     </FormField>
-                    <FormField label="예금주" htmlFor="signup-account-holder" className="lg:w-[222px]">
+                    <FormField label="예금주*" htmlFor="signup-account-holder" className="lg:w-[222px]">
                       <TextInput
                         id="signup-account-holder"
                         name="accountHolder"
                         maxLength={50}
-                        required={accountRequired}
+                        required
                         placeholder="예금주명을 입력해주세요."
                         value={values.accountHolder}
                         onChange={handleChange('accountHolder')}
                         className={ACCOUNT_FIELD}
                       />
                     </FormField>
-                    <FormField label="계좌번호" htmlFor="signup-account-number" className="lg:w-[222px]">
+                    <FormField label="계좌번호*" htmlFor="signup-account-number" className="lg:w-[222px]">
                       <TextInput
                         id="signup-account-number"
                         name="accountNumber"
                         inputMode="numeric"
                         maxLength={30}
-                        required={accountRequired}
+                        required
                         pattern="[0-9\-]{8,30}"
                         title="숫자와 ‘-’만 입력해주세요. (8자 이상)"
                         placeholder="계좌번호를 입력해주세요."
