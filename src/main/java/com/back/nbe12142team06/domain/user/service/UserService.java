@@ -7,8 +7,9 @@ import com.back.nbe12142team06.domain.user.dto.admin.AdminUserProfileUpdateReque
 import com.back.nbe12142team06.domain.user.dto.login.UserLoginRequest;
 import com.back.nbe12142team06.domain.user.dto.profile.ClientProfileModifyRequest;
 import com.back.nbe12142team06.domain.user.dto.profile.ClientProfileRequest;
-import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpRequest;
+import com.back.nbe12142team06.domain.user.dto.profile.EscortProfileModifyRequest;
 import com.back.nbe12142team06.domain.user.dto.profile.EscortProfileRequest;
+import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpRequest;
 import com.back.nbe12142team06.domain.user.dto.user.UserProfileUpdateRequest;
 import com.back.nbe12142team06.domain.user.entity.ClientProfile;
 import com.back.nbe12142team06.domain.user.entity.EscortProfile;
@@ -273,6 +274,41 @@ public class UserService {
                 .orElseThrow(() -> new NotFoundException("의뢰인 프로필이 존재하지 않습니다."));
     }
 
+    // 동행인 프로필 생성
+    @Transactional
+    public EscortProfile createEscortProfile(Long userId, EscortProfileRequest request) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("회원 정보를 찾을 수 없습니다."));
+
+        if (escortProfileRepository.existsById(userId)) {
+            throw new DuplicatedException(5, "이미 존재하는 동행 매니저 프로필입니다.");
+        }
+
+        // 프로필 생성 및 회원 연결
+        EscortProfile escortProfile = new EscortProfile(user, request.intro(), request.bankName(), request.accountHolder(), request.accountNumber());
+
+        return this.escortProfileRepository.save(escortProfile);
+    }
+
+    // 동행인 프로필 조회
+    @Transactional(readOnly = true)
+    public EscortProfile getEscortProfile(Long escortId) {
+        return this.escortProfileRepository.findById(escortId)
+                .orElseThrow(() -> new NotFoundException("동행 매니저 프로필이 존재하지 않습니다."));
+    }
+
+    // 동행인 프로필 수정
+    @Transactional
+    public EscortProfile updateEscortProfile(Long escortId, EscortProfileModifyRequest request) {
+        EscortProfile escortProfile = this.escortProfileRepository.findById(escortId)
+                .orElseThrow(() -> new NotFoundException("동행 매니저 프로필이 존재하지 않습니다."));
+
+        escortProfile.updateProfile(request.intro(),  request.bankName(), request.accountHolder(), request.accountNumber());
+
+        return this.escortProfileRepository.save(escortProfile);
+    }
+
 
     // [ADMIN] 회원 정보 조회 (탈퇴한 회원 정보도 가능)
     @Transactional(readOnly = true)
@@ -311,30 +347,6 @@ public class UserService {
 
         // 회원 정보, 프로필, 토큰 전부 삭제
         withdraw(user);
-    }
-
-    // 동행인 프로필 생성
-    @Transactional
-    public EscortProfile createEscortProfile(Long userId, EscortProfileRequest request) {
-
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("회원 정보를 찾을 수 없습니다."));
-
-        if (escortProfileRepository.existsById(userId)) {
-            throw new DuplicatedException(5, "이미 존재하는 동행 매니저 프로필입니다.");
-        }
-
-        // 프로필 생성 및 회원 연결
-        EscortProfile escortProfile = new EscortProfile(user, request.intro(), request.bankName(), request.accountHolder(), request.accountNumber());
-
-        return this.escortProfileRepository.save(escortProfile);
-    }
-
-    // 동행인 프로필 조회
-    @Transactional(readOnly = true)
-    public EscortProfile getEscortProfile(Long escortId) {
-        return this.escortProfileRepository.findById(escortId)
-                .orElseThrow(() -> new NotFoundException("동행 매니저 프로필이 존재하지 않습니다."));
     }
 
 
