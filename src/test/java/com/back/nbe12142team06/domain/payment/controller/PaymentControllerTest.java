@@ -10,6 +10,7 @@ import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
 import com.back.nbe12142team06.domain.payment.service.PaymentPersistenceService;
 import com.back.nbe12142team06.domain.payment.service.PaymentService;
 import com.back.nbe12142team06.domain.post.dto.PostWriteRequest;
+import com.back.nbe12142team06.domain.post.dto.PostWriteResponse;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.service.PostService;
 import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpRequest;
@@ -121,7 +122,7 @@ class PaymentControllerTest {
                 "", true
         );
 
-        Post post1 = postService.write(user1.getId(), postWriteRequest1);
+        PostWriteResponse post1 = postService.write(user1.getId(), postWriteRequest1);
 
         PostWriteRequest postWriteRequest2 = new PostWriteRequest(
                 title + "2", content + "2", postRegion + "2", hospitalName + "2", hospitalAddress + "2",
@@ -129,10 +130,10 @@ class PaymentControllerTest {
                 "", true
         );
 
-        Post post2 = postService.write(user1.getId(), postWriteRequest2);
+        PostWriteResponse post2 = postService.write(user1.getId(), postWriteRequest2);
 
-        savedPayment1Id = paymentRepository.findByPostIdAndUserId(post1.getId(), savedUser1Id).get().getId();
-        savedPayment2Id = paymentRepository.findByPostIdAndUserId(post2.getId(), savedUser1Id).get().getId();
+        savedPayment1Id = paymentRepository.findByPostIdAndUserId(post1.id(), savedUser1Id).get().getId();
+        savedPayment2Id = paymentRepository.findByPostIdAndUserId(post2.id(), savedUser1Id).get().getId();
 
         // user1로 로그인해 인증 쿠키 확보
         accessTokenCookie1 = mvc.perform(

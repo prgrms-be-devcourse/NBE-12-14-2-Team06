@@ -6,9 +6,11 @@ import com.back.nbe12142team06.domain.application.enums.ApplicationStatus;
 import com.back.nbe12142team06.domain.application.enums.EscortProgress;
 import com.back.nbe12142team06.domain.application.repository.ApplicationRepository;
 import com.back.nbe12142team06.domain.application.repository.EscortProgressLogRepository;
+import com.back.nbe12142team06.domain.payment.entity.Payment;
 import com.back.nbe12142team06.domain.payment.service.PaymentService;
 import com.back.nbe12142team06.domain.post.dto.PostSearchConditionDto;
 import com.back.nbe12142team06.domain.post.dto.PostWriteRequest;
+import com.back.nbe12142team06.domain.post.dto.PostWriteResponse;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.entity.PostStatus;
 import com.back.nbe12142team06.domain.post.repository.PostRepository;
@@ -70,7 +72,7 @@ public class PostService {
     }
 
     @Transactional
-    public Post write(Long userId, PostWriteRequest request) {
+    public PostWriteResponse write(Long userId, PostWriteRequest request) {
         User user = getUser(userId);
         if (user.getRole() != Role.CLIENT && user.getRole() != Role.ADMIN) {
             throw new UnauthorizedException(10, "공고 등록 권한이 없습니다. 의뢰인으로 로그인 해주세요.");
@@ -99,12 +101,14 @@ public class PostService {
                 .reportRequired(request.reportRequired())
                 .build();
 
-        // 결제 데이터 생성
-        paymentService.createPayment(post);
-        // 이동수단 데이터 생성
-        rideService.createRide(post);
+        Post savedPost = postRepository.save(post);
 
-        return postRepository.save(post);
+        // 결제 데이터 생성
+        Payment payment = paymentService.createPayment(savedPost);
+        // 이동수단 데이터 생성
+        rideService.createRide(savedPost);
+
+        return new PostWriteResponse(savedPost, payment.getId());
     }
 
     @Transactional

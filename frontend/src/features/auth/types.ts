@@ -1,3 +1,18 @@
+/** 로그인한 사용자 (GET /api/v1/users/profile 의 UserResponse) */
+export type CurrentUser = {
+  username: string;
+  email: string;
+  name: string;
+  role: 'ADMIN' | 'CLIENT' | 'ESCORT';
+  gender: 'MALE' | 'FEMALE';
+  /** yyyy-MM-dd */
+  birthDate: string;
+  /** 하이픈이 포함된 형태로 옵니다. (예: 010-1000-0001) */
+  phoneNum: string;
+  region: string;
+  createdAt: string;
+};
+
 /** 로그인 폼 값 */
 export type LoginFormValues = {
   /** 아이디 또는 이메일 */

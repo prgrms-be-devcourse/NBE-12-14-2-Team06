@@ -1,6 +1,7 @@
 package com.back.nbe12142team06.domain.ride.controller;
 
 import com.back.nbe12142team06.domain.post.dto.PostWriteRequest;
+import com.back.nbe12142team06.domain.post.dto.PostWriteResponse;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.service.PostService;
 import com.back.nbe12142team06.domain.ride.dto.RideUpdateRequest;
@@ -101,7 +102,7 @@ class RideControllerTest {
                 "", true
         );
 
-        Post post1 = postService.write(user1.getId(), postWriteRequest1);
+        PostWriteResponse post1 = postService.write(user1.getId(), postWriteRequest1);
 
         PostWriteRequest postWriteRequest2 = new PostWriteRequest(
                 title + "2", content + "2", postRegion + "2", hospitalName + "2", hospitalAddress + "2",
@@ -109,14 +110,14 @@ class RideControllerTest {
                 "", true
         );
 
-        Post post2 = postService.write(user1.getId(), postWriteRequest2);
+        PostWriteResponse post2 = postService.write(user1.getId(), postWriteRequest2);
 
         savedUser1Id = user1.getId();
         savedUser2Id = user2.getId();
-        savedRide1Id = rideService.findByPostId(post1.getId()).getFirst().getId();
-        savedRide2Id = rideService.findByPostId(post2.getId()).getFirst().getId();
-        savedPost1Id = post1.getId();
-        savedPost2Id = post2.getId();
+        savedRide1Id = rideService.findByPostId(post1.id()).getFirst().getId();
+        savedRide2Id = rideService.findByPostId(post2.id()).getFirst().getId();
+        savedPost1Id = post1.id();
+        savedPost2Id = post2.id();
 
         // user1로 로그인해 인증 쿠키 확보
         accessTokenCookie1 = mvc.perform(

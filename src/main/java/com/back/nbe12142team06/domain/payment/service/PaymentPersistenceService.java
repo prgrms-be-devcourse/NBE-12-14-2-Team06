@@ -46,8 +46,8 @@ public class PaymentPersistenceService {
     }
 
     @Transactional
-    public void createPayment(Payment payment) {
-        paymentRepository.save(payment);
+    public Payment createPayment(Payment payment) {
+        return paymentRepository.save(payment);
     }
 
     @Transactional(readOnly = true)
