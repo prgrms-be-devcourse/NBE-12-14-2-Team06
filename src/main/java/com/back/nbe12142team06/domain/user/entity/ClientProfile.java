@@ -40,4 +40,10 @@ public class ClientProfile extends BaseTimeEntity {
         this.emergencyContactPhone = emergencyContactPhone;
         this.careNote = careNote;
     }
+
+    public void updateProfile(String emergencyContactName,  String emergencyContactPhone, String careNote){
+        this.emergencyContactName = emergencyContactName;
+        this.emergencyContactPhone = emergencyContactPhone;
+        this.careNote = careNote;
+    }
 }
