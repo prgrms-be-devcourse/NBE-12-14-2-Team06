@@ -23,18 +23,30 @@ public class Report extends BaseTimeEntity {  // createdAt, updatedAt 상속
     @JoinColumn(name = "application_id", nullable = false, unique = true)
     private Application application;  // 지원서 (FK → Application, UNIQUE / 동행 1건당 보고서 1개)
 
+    // 화면에 제목 입력칸이 없어 서비스에서 자동 생성한다. (예: "9월 22일 정형외과 진료 결과")
     @Column(nullable = false, length = 100)
-    private String title;  // 보고서 제목
+    private String title;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    private Department department;  // 진료 과목
+
+    @Column(nullable = false, length = 200)
+    private String purpose;  // 진료 목적 (한 줄)
 
     // length 를 명시하지 않으면 기본값 255 가 적용되어 MySQL 에서 tinytext(255바이트)로 생성된다.
     // 한글은 글자당 3바이트라 85자면 꽉 차므로, 65535 를 지정해 text 로 생성되게 한다.
     @Lob
     @Column(name = "origin_content", nullable = false, length = 65535)
-    private String originContent;  // 동행인 작성 원문 (TEXT)
+    private String originContent;  // 동행인이 작성한 진료 내용 본문 (원문)
+
+    @Lob
+    @Column(length = 65535)
+    private String notes;  // 특이사항 (선택)
 
     @Lob
     @Column(name = "ai_summary", length = 65535)
-    private String aiSummary;  // LLM 요약본 (TEXT, nullable / 요약 완료 후 채워짐)
+    private String aiSummary;  // LLM 요약본 (JSON 문자열, nullable / 요약 완료 후 채워짐)
 
     @Column(name = "summarized_at")
     private LocalDateTime summarizedAt;  // AI 요약 완료 시각 (nullable)

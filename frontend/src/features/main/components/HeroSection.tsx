@@ -15,11 +15,13 @@ export default function HeroSection() {
             누구랑 <span className="text-brand-muted">가지?</span>
           </h1>
 
-          <p className="mt-6 text-base leading-6 text-brand">병원 동행 서비스 뮈시기 저쩌구 멘트</p>
+          <p className="mt-6 text-base leading-6 text-brand">
+            믿을 수 있는 동행 매니저와 함께, 병원 가는 길부터 진료까지 안전하게 동행합니다.
+          </p>
 
           <div className="mt-12 flex flex-col items-stretch gap-[15px] sm:flex-row sm:items-center lg:mt-[84px]">
-            <PillButton href="#steps">동행 요청하기</PillButton>
-            <PillButton href="#steps" variant="ghost">
+            <PillButton href="/client/posts/new">동행 요청하기</PillButton>
+            <PillButton href="/posts" variant="ghost">
               공고 찾아보기
             </PillButton>
           </div>

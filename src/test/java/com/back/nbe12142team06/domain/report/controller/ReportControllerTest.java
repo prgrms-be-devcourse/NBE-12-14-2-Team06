@@ -34,6 +34,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import com.back.nbe12142team06.domain.report.entity.Department;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -154,8 +155,10 @@ public class ReportControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                    "title": "정형외과 진료 결과",
-                                    "originContent": "무릎 통증으로 내원하셨고 물리치료 처방을 받으셨습니다."
+                                    "department": "ORTHOPEDICS",
+                                    "purpose": "무릎 통증 검사",
+                                    "originContent": "무릎 통증으로 내원하셨고 물리치료 처방을 받으셨습니다.",
+                                    "notes": "대기 시간이 길어 잠시 쉬었습니다."
                                 }
                                 """)
         ).andDo(print());
@@ -163,7 +166,10 @@ public class ReportControllerTest {
         resultActions
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.statusCode").value("201-1"))
-                .andExpect(jsonPath("$.data.title").value("정형외과 진료 결과"));
+                .andExpect(jsonPath("$.data.department").value("정형외과"))
+                .andExpect(jsonPath("$.data.purpose").value("무릎 통증 검사"))
+                // 제목은 화면에서 받지 않고 서버가 "M월 d일 {과목} 진료 결과" 로 만든다
+                .andExpect(jsonPath("$.data.title").value(org.hamcrest.Matchers.endsWith("정형외과 진료 결과")));
     }
 
     @Test
@@ -176,7 +182,8 @@ public class ReportControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                    "title": "제목",
+                                    "department": "ETC",
+                                    "purpose": "목적",
                                     "originContent": "내용"
                                 }
                                 """)
@@ -197,7 +204,8 @@ public class ReportControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                    "title": "제목",
+                                    "department": "ETC",
+                                    "purpose": "목적",
                                     "originContent": "내용"
                                 }
                                 """)
@@ -216,6 +224,8 @@ public class ReportControllerTest {
                 Report.builder()
                         .application(applicationRepository.findById(testApplicationId).orElseThrow())
                         .title("기존 보고서")
+                        .department(Department.ORTHOPEDICS)
+                        .purpose("기존 목적")
                         .originContent("기존 내용")
                         .build()
         );
@@ -226,7 +236,8 @@ public class ReportControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                    "title": "새 보고서",
+                                    "department": "ETC",
+                                    "purpose": "새 목적",
                                     "originContent": "새 내용"
                                 }
                                 """)
@@ -247,7 +258,8 @@ public class ReportControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                    "title": "",
+                                    "department": null,
+                                    "purpose": "",
                                     "originContent": ""
                                 }
                                 """)
@@ -265,7 +277,9 @@ public class ReportControllerTest {
         reportRepository.save(
                 Report.builder()
                         .application(applicationRepository.findById(testApplicationId).orElseThrow())
-                        .title("정형외과 진료 결과")
+                        .title("9월 22일 정형외과 진료 결과")
+                        .department(Department.ORTHOPEDICS)
+                        .purpose("무릎 통증 검사")
                         .originContent("무릎 통증으로 내원하셨고 물리치료 처방을 받으셨습니다.")
                         .build()
         );
@@ -278,7 +292,8 @@ public class ReportControllerTest {
         resultActions
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value("200-1"))
-                .andExpect(jsonPath("$.data.title").value("정형외과 진료 결과"))
+                .andExpect(jsonPath("$.data.title").value("9월 22일 정형외과 진료 결과"))
+                .andExpect(jsonPath("$.data.department").value("정형외과"))
                 .andExpect(jsonPath("$.data.applicationId").value(testApplicationId));
     }
 
@@ -290,6 +305,8 @@ public class ReportControllerTest {
                 Report.builder()
                         .application(applicationRepository.findById(testApplicationId).orElseThrow())
                         .title("정형외과 진료 결과")
+                        .department(Department.ORTHOPEDICS)
+                        .purpose("무릎 통증 검사")
                         .originContent("무릎 통증으로 내원하셨습니다.")
                         .build()
         );
@@ -344,7 +361,8 @@ public class ReportControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                    "title": "정형외과 진료 결과",
+                                    "department": "ORTHOPEDICS",
+                                    "purpose": "무릎 통증 검사",
                                     "originContent": "무릎 통증으로 내원하셨고 물리치료 처방을 받으셨습니다."
                                 }
                                 """)
