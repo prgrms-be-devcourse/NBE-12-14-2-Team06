@@ -114,6 +114,12 @@ class SettlementControllerTest {
                 LocalDate.parse(birthDate, DateTimeFormatter.ISO_LOCAL_DATE),
                 "010-9999-9992", region));
 
+        EscortProfile escortProfile1 = new EscortProfile(savedUser2, "하이", "오픈은행", savedUser2.getName(), "000-1234567-000");
+        escortProfileRepository.save(escortProfile1);
+        EscortProfile escortProfile2 = new EscortProfile(savedUser3,"으악", "오픈은행", savedUser3.getName(), "111-7654321-111");
+        escortProfileRepository.save(escortProfile2);
+
+
         String title = "정형외과 동행 구합니다";
         String content = "무릎 수술 후 검진 예약이 있어 동행인이 필요합니다.";
         String postRegion = "서울";
@@ -153,10 +159,7 @@ class SettlementControllerTest {
         savedSettlement1 = settlementService.createSettlement(savedPost1.getTotalPay().intValue(), application1, savedUser2, LocalDate.now().plusDays(1));
         savedSettlement1Id = savedSettlement1.getId();
 
-        EscortProfile escortProfile1 = new EscortProfile(savedUser2, "하이", "오픈은행", savedUser2.getName(), "000-1234567-000");
-        escortProfileRepository.save(escortProfile1);
-        EscortProfile escortProfile2 = new EscortProfile(savedUser3,"으악", "오픈은행", savedUser3.getName(), "111-7654321-111");
-        escortProfileRepository.save(escortProfile2);
+
 
         // user로 로그인해 인증 쿠키 확보
         accessTokenCookie2 = mvc.perform(
