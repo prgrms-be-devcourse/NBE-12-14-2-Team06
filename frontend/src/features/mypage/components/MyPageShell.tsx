@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { AppShell } from '@/components/layout';
 import { cn } from '@/lib/cn';
-import { MOCK_CLIENT, MOCK_USER } from '@/lib/mockSession';
 import type { MyPageRole } from '../types';
 
 // TODO: 설정 화면은 아직 디자인/구현이 없습니다.
@@ -36,7 +35,7 @@ export default function MyPageShell({ children, role = 'escort' }: Props) {
   const menu = MENUS[role];
 
   return (
-    <AppShell user={role === 'client' ? MOCK_CLIENT : MOCK_USER}>
+    <AppShell>
       <div className="flex flex-col bg-white lg:flex-row">
         <nav
           aria-label="마이페이지 메뉴"

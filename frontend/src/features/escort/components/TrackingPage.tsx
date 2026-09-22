@@ -9,7 +9,6 @@ import { Container, InfoRow, SectionHeading } from '@/components/ui';
 import { PROGRESS_ORDER, advanceProgress } from '@/features/application';
 import { StatusLabel } from '@/features/post';
 import { cn } from '@/lib/cn';
-import { MOCK_USER } from '@/lib/mockSession';
 import { STAGE_INFO, getEscortCase } from '../model/cases';
 import type { EscortStage } from '../types';
 import MapCard from './tracking/MapCard';
@@ -37,7 +36,7 @@ export default function TrackingPage() {
 
   if (!escort) {
     return (
-      <AppShell user={MOCK_USER}>
+      <AppShell>
         <section className="bg-white py-[100px] text-center">
           <p className="text-xl font-semibold text-brand">동행 정보를 찾을 수 없습니다.</p>
           <Link href="/mypage/applications" className={cn(BUTTON, 'mx-auto mt-8 h-14 w-60 border border-line text-brand')}>
@@ -72,7 +71,7 @@ export default function TrackingPage() {
   };
 
   return (
-    <AppShell user={MOCK_USER}>
+    <AppShell>
       <section className="bg-white py-[50px]">
         <Container width="wide">
           <SectionHeading

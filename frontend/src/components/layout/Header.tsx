@@ -18,9 +18,13 @@ const BUTTON_BASE =
 type Props = {
   /** 로그인한 사용자. 있으면 "로그인 / 회원가입" 대신 "이름 ⌄ / 로그아웃"을 보여줍니다. href 는 이름을 눌렀을 때 이동할 마이페이지 (기본 /mypage) */
   user?: { name: string; href?: string };
+  /** 세션을 확인하는 중. 로그인 상태가 정해질 때까지 버튼 자리를 비워 둡니다(깜빡임 방지). */
+  pending?: boolean;
+  /** 로그아웃 버튼을 눌렀을 때 */
+  onLogout?: () => void;
 };
 
-export default function Header({ user }: Props) {
+export default function Header({ user, pending, onLogout }: Props) {
   return (
     <header className="flex items-center bg-white py-4 lg:h-[118px] lg:py-0">
       <Container className="flex flex-wrap items-center justify-between gap-6">
@@ -47,7 +51,10 @@ export default function Header({ user }: Props) {
           })}
         </nav>
 
-        {user ? (
+        {pending ? (
+          // 로그인 여부가 정해지기 전에는 버튼 자리만 잡아 둡니다 (54px = 버튼 높이).
+          <div aria-hidden="true" className="h-[54px] min-w-[104px]" />
+        ) : user ? (
           <div className="flex items-center gap-[25px]">
             <Link
               href={user.href ?? '/mypage'}
@@ -56,9 +63,9 @@ export default function Header({ user }: Props) {
               {user.name}
               <Image src="/icons/nav-chevron.svg" alt="" width={13.0667} height={7.23333} />
             </Link>
-            {/* TODO: 로그아웃 API(DELETE /api/v1/auth/logout) 연결 */}
             <button
               type="button"
+              onClick={onLogout}
               className={`${BUTTON_BASE} min-w-[104px] border border-line bg-white text-brand hover:bg-line-soft`}
             >
               로그아웃

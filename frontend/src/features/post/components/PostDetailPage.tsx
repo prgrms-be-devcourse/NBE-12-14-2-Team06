@@ -8,7 +8,6 @@ import { AppShell } from '@/components/layout';
 import { Container, InfoRow } from '@/components/ui';
 import { applyToPost } from '@/features/application';
 import { cn } from '@/lib/cn';
-import { MOCK_CLIENT, MOCK_USER } from '@/lib/mockSession';
 import { deletePost, fetchPost } from '../api';
 import { daysFromNow, formatFullDate } from '../lib/date';
 import type { LabelTone, PostBadge, PostDetail } from '../types';
@@ -84,13 +83,6 @@ export default function PostDetailPage({ viewer = 'common' }: Props) {
 
   const isClient = viewer === 'client';
 
-  const user =
-    viewer === 'client'
-      ? MOCK_CLIENT
-      : viewer === 'escort'
-        ? MOCK_USER
-        : undefined;
-
   const listHref =
     viewer === 'client'
       ? '/client/posts'
@@ -127,7 +119,7 @@ export default function PostDetailPage({ viewer = 'common' }: Props) {
 
   if (!post) {
     return (
-      <AppShell user={user}>
+      <AppShell>
         <section className="bg-white py-[100px] text-center">
           <p className="text-xl font-semibold text-brand">{loadError ? `공고를 불러오지 못했습니다. (${loadError})` : '공고를 불러오는 중입니다.'}</p>
           <Link href={listHref} className={cn(BUTTON, 'mx-auto mt-8 h-14 w-60 border border-line text-xl text-brand')}>
@@ -150,7 +142,7 @@ export default function PostDetailPage({ viewer = 'common' }: Props) {
   const editHref = `/client/posts/${post.id}/edit`;
 
   return (
-    <AppShell user={user}>
+    <AppShell>
       <section className="bg-white py-[50px]">
         <Container width="wide" className="grid items-start gap-[22px] lg:grid-cols-[858px_396px] lg:justify-center">
           <div className="flex min-w-0 flex-col gap-[22px]">

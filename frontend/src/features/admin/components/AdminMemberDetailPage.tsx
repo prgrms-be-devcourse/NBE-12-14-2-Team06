@@ -6,7 +6,6 @@ import { useParams } from 'next/navigation';
 import { AppShell } from '@/components/layout';
 import { InfoRow } from '@/components/ui';
 import { cn } from '@/lib/cn';
-import { MOCK_ADMIN } from '@/lib/mockSession';
 import { formatDotDate } from '../lib/date';
 import { ROLE_LABEL, getMemberDetail } from '../model';
 
@@ -27,7 +26,7 @@ export default function AdminMemberDetailPage() {
 
   if (!member) {
     return (
-      <AppShell user={MOCK_ADMIN}>
+      <AppShell>
         <section className="bg-white py-[100px] text-center">
           <p className="text-xl font-semibold text-brand">회원을 찾을 수 없습니다.</p>
           <Link
@@ -42,7 +41,7 @@ export default function AdminMemberDetailPage() {
   }
 
   return (
-    <AppShell user={MOCK_ADMIN}>
+    <AppShell>
       <section className="bg-white py-8 lg:py-[50px]">
         <div className="mx-auto flex w-full max-w-[1066px] flex-col gap-[22px] px-4 lg:px-0">
           {/* 목록으로 · 회원 정보 수정 (Figma 571:20849) */}

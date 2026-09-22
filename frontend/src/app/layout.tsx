@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { AuthProvider } from "@/features/auth";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -23,7 +24,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="ko"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {/* 로그인 세션을 앱 전체에서 한 번만 불러와 나눠 씁니다. */}
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   );
 }

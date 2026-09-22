@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { AppShell } from '@/components/layout';
 import { Container, SectionHeading } from '@/components/ui';
-import { MOCK_CLIENT } from '@/lib/mockSession';
 
 const BUTTON = 'flex h-14 flex-1 items-center justify-center rounded-[30px] px-6 text-xl leading-[18px] font-semibold transition-colors';
 
@@ -28,7 +27,7 @@ export default function PostCompletePage() {
   ];
 
   return (
-    <AppShell user={MOCK_CLIENT}>
+    <AppShell>
       <section className="flex min-h-[743px] items-center bg-white pt-[50px] pb-[74px]">
         <Container className="flex flex-col items-center">
           <Image src="/icons/escort/report-done-check.svg" alt="" width={126} height={126} className="mb-[30px]" />

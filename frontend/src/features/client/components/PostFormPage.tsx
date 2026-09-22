@@ -9,7 +9,6 @@ import { Container, SectionHeading } from '@/components/ui';
 import { createPost, fetchPostRaw, updatePost, type PostDto, type PostWriteRequest } from '@/features/post';
 import { cn } from '@/lib/cn';
 import type { PlaceSearchResult } from '@/lib/kakaoMap';
-import { MOCK_CLIENT } from '@/lib/mockSession';
 import {
   EMPTY_FORM,
   PARTY_OPTIONS,
@@ -123,7 +122,7 @@ export default function PostFormPage() {
 
   if (!initial) {
     return (
-      <AppShell user={MOCK_CLIENT}>
+      <AppShell>
         <section className="bg-white py-[100px] text-center">
           <p className="text-xl font-semibold text-brand">{loadError ? `불러오지 못했습니다. (${loadError})` : '불러오는 중입니다.'}</p>
           <Link href="/client/posts" className="mx-auto mt-8 flex h-14 w-60 items-center justify-center rounded-[25px] border border-line text-xl font-semibold text-brand">
@@ -261,7 +260,7 @@ function PostFormFields({ postId, initial, sample }: FormFieldsProps) {
   };
 
   return (
-    <AppShell user={MOCK_CLIENT}>
+    <AppShell>
       <section className="bg-white py-[50px]">
         <Container width="wide">
           <SectionHeading

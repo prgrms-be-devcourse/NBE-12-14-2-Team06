@@ -7,7 +7,7 @@
 - 실패 에러는 Error 를 상속한 ApiError 클래스이고, msg 외에 statusCode("401-1", "404-2" 등)도 들고 있다.
   상태코드로 분기할 때 쓴다. 타입 별칭으로 바꾸지 않는다 — error instanceof ApiError 로
   좁히는 곳이 있어서 값(클래스)이어야 한다.
-  본보기: src/features/auth/lib/useCurrentUser.ts (401 을 "로그인 필요" 상태로 구분)
+  본보기: src/features/auth/lib/AuthProvider.tsx (401 을 "로그인 필요" 상태로 구분)
 - 도메인별 호출 함수는 src/features/<도메인>/api.ts 에 모은다.
   본보기: src/features/post/api.ts
 - 서버 DTO 타입과 화면용 타입은 types.ts 에 나누어 두고,
