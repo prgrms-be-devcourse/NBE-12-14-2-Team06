@@ -1985,7 +1985,7 @@ public class UserControllerTest {
     }
 
     @Test
-    @DisplayName("[UserController] 의뢰인 자기 자신 프로필 수정 - 로그인 없이 수정 시도 시 403-1 반환")
+    @DisplayName("[UserController] 의뢰인 자기 자신 프로필 수정 - 로그인 없이 수정 시도 시 401-1 반환")
     void t51() throws Exception {
         Cookie clientToken = signUp("client1");
 
