@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 // 순환 import 가 생겨서, 이 두 개만 모듈 경로로 직접 가져옵니다.
 import { useAuth } from '@/features/auth/lib/AuthProvider';
 import { MYPAGE_BY_ROLE } from '@/features/auth/model/roleHome';
+// 마이페이지 왼쪽 메뉴와 같은 목록을 헤더 드롭다운에도 씁니다. (배럴은 위와 같은 이유로 피합니다)
+import { MYPAGE_MENUS } from '@/features/mypage/model/menu';
 import Header from './Header';
 import Footer from './Footer';
 
@@ -28,7 +30,12 @@ export default function AppShell({ children, user }: Props) {
   const router = useRouter();
   const { user: me, loading, signOut } = useAuth();
 
-  const session = me ? { name: me.name, href: MYPAGE_BY_ROLE[me.role] } : undefined;
+  // 관리자는 마이페이지 메뉴가 따로 없어서 드롭다운 없이 이름만 보여 줍니다.
+  const menuRole = me?.role === 'CLIENT' ? 'client' : me?.role === 'ESCORT' ? 'escort' : undefined;
+
+  const session = me
+    ? { name: me.name, href: MYPAGE_BY_ROLE[me.role], menu: menuRole && MYPAGE_MENUS[menuRole] }
+    : undefined;
 
   const handleLogout = async () => {
     await signOut();
