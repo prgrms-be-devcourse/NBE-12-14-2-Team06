@@ -18,6 +18,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -50,6 +52,7 @@ public class BaseInitData {
     private final PostRepository postRepository;
     private final PaymentRepository paymentRepository;
     private final PasswordEncoder passwordEncoder;
+    private final PlatformTransactionManager transactionManager;
 
     @PersistenceContext
     private EntityManager em;
@@ -234,6 +237,12 @@ public class BaseInitData {
         // 전부 "모집중" 쪽 공고 중에서 고릅니다 — "오늘 마감"/"오늘 출발" 데모용 공고는 제외해서 항상 목록에 뜨게 합니다.
         Set<Integer> readyPaymentIndexes = Set.of(1, 4, 6);
 
+        // 네이티브 UPDATE(createdAt 보정)는 executeUpdate() 에 활성 트랜잭션이 필요한데,
+        // initPosts() 는 ApplicationRunner 람다에서 this.initPosts() 로 자가 호출되어 프록시를 거치지 않으므로
+        // (Spring AOP self-invocation 한계) @Transactional 을 붙여도 적용되지 않습니다.
+        // 그래서 TransactionTemplate 으로 직접 트랜잭션을 열어서 처리합니다.
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+
         for (int i = 0; i < seeds.size(); i++) {
             PostSeed seed = seeds.get(i);
             User client = clients.get(i % clients.size());
@@ -287,11 +296,16 @@ public class BaseInitData {
 
             // createdAt 은 @CreatedDate(updatable = false) 라 엔티티/빌더로는 수정이 안 되므로,
             // 등록일을 다양하게 보여주기 위해 저장 직후 네이티브 쿼리로 직접 보정합니다.
+            // executeUpdate() 는 활성 트랜잭션이 필요하므로 TransactionTemplate 으로 직접 감싸서 실행합니다.
             if (seed.createdAtMinutesAgo() > 0) {
-                em.createNativeQuery("UPDATE post SET created_at = :createdAt WHERE id = :id")
-                        .setParameter("createdAt", LocalDateTime.now().minusMinutes(seed.createdAtMinutesAgo()))
-                        .setParameter("id", post.getId())
-                        .executeUpdate();
+                Long postId = post.getId();
+                LocalDateTime backdatedCreatedAt = LocalDateTime.now().minusMinutes(seed.createdAtMinutesAgo());
+                transactionTemplate.executeWithoutResult(status ->
+                        em.createNativeQuery("UPDATE post SET created_at = :createdAt WHERE id = :id")
+                                .setParameter("createdAt", backdatedCreatedAt)
+                                .setParameter("id", postId)
+                                .executeUpdate()
+                );
             }
         }
     }
