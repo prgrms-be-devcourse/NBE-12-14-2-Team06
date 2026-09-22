@@ -2,14 +2,19 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { AppShell } from '@/components/layout';
 import { Container, InfoRow, SectionHeading } from '@/components/ui';
+import { fetchEscortProfile } from '@/features/application';
 import { MapCard, StageBar, Timeline, type EscortStage } from '@/features/escort';
-import { StatusLabel } from '@/features/post';
+import { fetchPostRaw, StatusLabel } from '@/features/post';
+import { fetchRidesByPost } from '@/features/ride';
+import { fetchUserReviews } from '@/features/review';
 import { cn } from '@/lib/cn';
 import { MOCK_CLIENT } from '@/lib/mockSession';
-import { STAGE_VIEW, getClientEscortCase } from '../model/escort';
+import { formatTransport, toManager, topReviewTagLabels } from '../model/mapper';
+import { STAGE_VIEW, getClientEscortCase, toClientEscortCase } from '../model/escort';
 import type { ClientEscortCase, ClientEscortStage } from '../types';
 import ManagerInfoCard from './ManagerInfoCard';
 import TripSummary from './TripSummary';
@@ -51,11 +56,67 @@ function summaryRows(escort: ClientEscortCase): { label: string; value: string[]
  * 의뢰인 동행 현황 — Figma 의뢰인_매칭 동행 현황 431:4289(매칭) · 431:4119(동행 중) · 464:3497(병원 도착)
  * · 506:2059(귀가 완료) · 431:3953(완료)
  *
- * ⚠️ 모의 데이터(model/escort.ts)를 보여줍니다. 실시간 위치·진행 상태·결제·정산은 아직 연결하지 않았습니다.
+ * postId 쿼리가 있으면 실제 API 로 채웁니다(공고: GET /api/v1/posts/{postId}, 매니저: .../escort-profile,
+ * 이동수단: GET /api/v1/rides/posts/{postId}). 다른 화면에서 postId 없이 들어올 수도 있어, 그때는
+ * 지금처럼 모의 데이터(model/escort.ts)를 보여줍니다.
+ * ⚠️ 진행 단계는 공고 상태로 3단계까지만 대신하고, 타임라인 시각·실시간 위치·결제·정산은 아직 모의 값입니다.
  */
 export default function ClientTrackingPage() {
   const params = useParams<{ applicationId: string }>();
-  const escort = getClientEscortCase(Number(params.applicationId));
+  const searchParams = useSearchParams();
+  const applicationId = Number(params.applicationId);
+  const postIdParam = searchParams.get('postId');
+  const postId = postIdParam ? Number(postIdParam) : undefined;
+
+  const [live, setLive] = useState<{ key?: number; escort?: ClientEscortCase; error?: string }>({});
+
+  useEffect(() => {
+    if (postId === undefined) return;
+    let ignore = false;
+
+    Promise.all([fetchPostRaw(postId), fetchEscortProfile(applicationId), fetchRidesByPost(postId)])
+      .then(async ([post, profile, rides]) => {
+        // 리뷰는 매니저 카드의 태그 계산용이라, 실패해도 나머지 화면은 그대로 보여줍니다.
+        const reviews = await fetchUserReviews(profile.escortId).catch(() => []);
+        if (ignore) return;
+        const manager = toManager(profile, topReviewTagLabels(reviews));
+        setLive({ key: postId, escort: toClientEscortCase(post, applicationId, manager, formatTransport(rides)) });
+      })
+      .catch((error: unknown) => {
+        if (!ignore) setLive({ key: postId, error: error instanceof Error ? error.message : '동행 현황을 불러오지 못했습니다.' });
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [postId, applicationId]);
+
+  const liveLoading = postId !== undefined && live.key !== postId;
+  const liveError = postId !== undefined && live.key === postId ? live.error : undefined;
+  const escort = postId !== undefined ? (live.key === postId ? live.escort : undefined) : getClientEscortCase(applicationId);
+
+  if (liveLoading) {
+    return (
+      <AppShell user={MOCK_CLIENT}>
+        <section className="bg-white py-[100px] text-center">
+          <p className="text-xl font-semibold text-brand">동행 현황을 불러오는 중입니다.</p>
+        </section>
+      </AppShell>
+    );
+  }
+
+  if (liveError) {
+    return (
+      <AppShell user={MOCK_CLIENT}>
+        <section className="bg-white py-[100px] text-center">
+          <p role="alert" className="text-xl font-semibold text-brand">{liveError}</p>
+          <Link href="/client/posts" className={cn(BUTTON, 'mx-auto mt-8 h-14 w-60 border border-line text-brand')}>
+            작성한 공고로
+          </Link>
+        </section>
+      </AppShell>
+    );
+  }
 
   if (!escort) {
     return (

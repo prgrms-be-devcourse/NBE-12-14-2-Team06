@@ -2,13 +2,14 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { SectionHeading } from '@/components/ui';
 import { MyPageShell } from '@/features/mypage';
 import { Pagination } from '@/features/post';
 import { cn } from '@/lib/cn';
-import { CLIENT_POSTS, SORT_OPTIONS, STATUS_TABS, filterClientPosts, type ClientPostSort } from '../model/posts';
-import type { ClientPostStatus } from '../types';
+import { fetchMyPosts } from '../api';
+import { SORT_OPTIONS, STATUS_TABS, filterClientPosts, type ClientPostSort } from '../model/posts';
+import type { ClientPost, ClientPostStatus } from '../types';
 import ClientPostCard from './ClientPostCard';
 
 const PAGE_SIZE = 4;
@@ -16,7 +17,8 @@ const PAGE_SIZE = 4;
 /**
  * 내가 작성한 공고 — Figma 의뢰인_내가 작성한 공고 겸 메인페이지 562:14622
  *
- * ⚠️ 모의 데이터(model/posts.ts)를 화면에서 걸러 보여줍니다. API 연결은 아직 하지 않았습니다.
+ * 목록은 fetchMyPosts() 로 가져옵니다. 서버에 "내 공고만" 조회하는 API 가 없어 화면에서 걸러내는
+ * 임시 방편이며, 그 한계는 features/client/api.ts 의 fetchMyPosts 주석에 적어 두었습니다.
  */
 export default function ClientPostsPage() {
   const [status, setStatus] = useState<'all' | ClientPostStatus>('all');
@@ -25,7 +27,20 @@ export default function ClientPostsPage() {
   const [sort, setSort] = useState<ClientPostSort>('latest');
   const [page, setPage] = useState(0);
 
-  const results = filterClientPosts(CLIENT_POSTS, status, keyword, sort);
+  const [result, setResult] = useState<{ posts?: ClientPost[]; error?: string }>({});
+
+  useEffect(() => {
+    let ignore = false;
+    fetchMyPosts()
+      .then((posts) => !ignore && setResult({ posts }))
+      .catch((error: unknown) => !ignore && setResult({ error: error instanceof Error ? error.message : '공고 목록을 불러오지 못했습니다.' }));
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const loading = !result.posts && !result.error;
+  const results = filterClientPosts(result.posts ?? [], status, keyword, sort);
   const pageCount = Math.max(1, Math.ceil(results.length / PAGE_SIZE));
   const visible = results.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
@@ -114,7 +129,11 @@ export default function ClientPostsPage() {
             </Link>
           </div>
 
-          {visible.length > 0 ? (
+          {loading ? (
+            <p className="py-20 text-center text-base font-semibold text-brand-muted">불러오는 중입니다.</p>
+          ) : result.error ? (
+            <p role="alert" className="py-20 text-center text-base font-semibold text-brand-muted">불러오지 못했습니다. ({result.error})</p>
+          ) : visible.length > 0 ? (
             <ul className="grid gap-x-[13px] gap-y-4 lg:grid-cols-2">
               {visible.map((post) => (
                 <li key={post.id} className="flex justify-center">

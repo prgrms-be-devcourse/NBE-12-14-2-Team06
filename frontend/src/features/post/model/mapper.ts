@@ -24,6 +24,8 @@ export function toPostSummary(dto: PostDto): PostSummary {
     hospitalName: dto.hospitalName,
     region: dto.region,
     district: dto.hospitalAddress.split(' ')[1] ?? '',
+    clientId: dto.client_id,
+    postStatus: dto.postStatus,
     postedAgo: formatAgo(dto.createdAt),
     startsInDays: daysUntil(dto.escortStartAt),
     startTime: formatTime(dto.escortStartAt),
@@ -38,8 +40,6 @@ export function toPostSummary(dto: PostDto): PostSummary {
 export function toPostDetail(dto: PostDto): PostDetail {
   return {
     ...toPostSummary(dto),
-    clientId: dto.client_id,
-    postStatus: dto.postStatus,
     postedAt: formatDateTime(dto.createdAt),
     hospitalAddress: dto.hospitalAddress,
     pickupAddress: dto.pickupAddress,
