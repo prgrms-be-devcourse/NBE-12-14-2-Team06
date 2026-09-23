@@ -36,3 +36,22 @@ export const POST_STATUS_LABEL: Record<PostStatusKey, { text: string; tone: Labe
 export function postStatusLabel(postStatus: string): { text: string; tone: LabelTone } {
   return POST_STATUS_LABEL[toPostStatusKey(postStatus)];
 }
+
+/**
+ * 의뢰인이 공고를 수정할 수 있는지 — 백엔드 PostService.modify 와 같은 조건입니다.
+ * 모집 중(OPEN) 이면서 "아직 모집이 시작되지 않았을 때"만 됩니다.
+ * ⚠️ 모집 중이어도 모집 시작 시각이 지나면 서버가 거부합니다(InvalidException 8).
+ *    상태만 보고 판단하면 안 됩니다.
+ */
+export function canEditPost(postStatus: string, recruitStarted: boolean): boolean {
+  return toPostStatusKey(postStatus) === 'open' && !recruitStarted;
+}
+
+/**
+ * 의뢰인이 공고를 삭제할 수 있는지 — 백엔드 PostService.delete 와 같은 조건입니다.
+ * 모집 중(OPEN) 이거나 마감 기한 초과(EXPIRED) 일 때만 됩니다. (수정과 달리 시간 제한은 없습니다)
+ */
+export function canDeletePost(postStatus: string): boolean {
+  const key = toPostStatusKey(postStatus);
+  return key === 'open' || key === 'expired';
+}

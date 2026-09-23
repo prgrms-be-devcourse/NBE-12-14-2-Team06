@@ -56,6 +56,11 @@ export type PostDetail = PostSummary & {
   reportRequired: boolean;
   /** "2026.10.02(금) 오전 9:00 ~ 10.05(월) 오후 6:00" */
   recruitPeriod: string;
+  /**
+   * 모집 시작 시각이 이미 지났는지 (조회 시점 기준).
+   * 백엔드가 "모집 시작 전"까지만 공고 수정을 허용해서 수정 버튼 노출에 씁니다.
+   */
+  recruitStarted: boolean;
 };
 
 export type PostSort = 'latest' | 'payHigh' | 'payLow';

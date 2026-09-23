@@ -12,7 +12,7 @@ import { fetchPendingPayment, type PaymentDto } from '@/features/payment';
 import { cn } from '@/lib/cn';
 import { deletePost, fetchPost } from '../api';
 import { daysFromNow, formatFullDate } from '../lib/date';
-import { postStatusLabel, toPostStatusKey } from '../model/status';
+import { canDeletePost, canEditPost, postStatusLabel, toPostStatusKey } from '../model/status';
 import type { LabelTone, PostBadge, PostDetail } from '../types';
 import StatusLabel from './StatusLabel';
 
@@ -219,12 +219,11 @@ function PostDetailPageBody({ viewer }: Props) {
       })}`
     : '';
 
-  // 추가 결제가 남아 있으면 그게 이 화면의 유일한 주 동작입니다.
-  // 수정하기를 보조 버튼으로 낮춰 똑같은 파란 버튼이 나란히 붙지 않게 합니다.
-  // (동행이 끝난 공고라 수정은 어차피 서버가 거부합니다 — 모집 시작 전까지만 가능)
-  const editStyle = pendingPayment
-    ? 'border border-line bg-white text-brand hover:bg-line-soft'
-    : 'bg-brand text-white hover:bg-brand-hover';
+  // 수정·삭제는 백엔드가 공고 상태로 막습니다. 눌러도 실패할 버튼은 아예 보여 주지 않습니다.
+  // 수정은 "모집 중 + 모집 시작 전", 삭제는 "모집 중이거나 마감 기한 초과"일 때만 됩니다.
+  // (조건이 서로 달라서 따로 계산합니다 — 모집이 시작된 공고는 삭제만 됩니다)
+  const canEdit = isClient && canEditPost(post.postStatus, post.recruitStarted);
+  const canDelete = isClient && canDeletePost(post.postStatus);
 
   return (
     <AppShell>
@@ -350,17 +349,21 @@ function PostDetailPageBody({ viewer }: Props) {
               </Link>
               {isClient ? (
                 <>
-                  <button
-                    type="button"
-                    onClick={handleDelete}
-                    disabled={deleting}
-                    className={cn(BUTTON, 'h-14 flex-1 border border-line bg-white text-xl text-[#b91d1d] hover:bg-line-soft')}
-                  >
-                    {deleting ? '삭제 중…' : '삭제하기'}
-                  </button>
-                  <Link href={editHref} className={cn(BUTTON, 'h-14 flex-1 text-xl', editStyle)}>
-                    수정하기
-                  </Link>
+                  {canDelete && (
+                    <button
+                      type="button"
+                      onClick={handleDelete}
+                      disabled={deleting}
+                      className={cn(BUTTON, 'h-14 flex-1 border border-line bg-white text-xl text-[#b91d1d] hover:bg-line-soft')}
+                    >
+                      {deleting ? '삭제 중…' : '삭제하기'}
+                    </button>
+                  )}
+                  {canEdit && (
+                    <Link href={editHref} className={cn(BUTTON, 'h-14 flex-1 bg-brand text-xl text-white hover:bg-brand-hover')}>
+                      수정하기
+                    </Link>
+                  )}
                 </>
               ) : (
                 <button type="button" onClick={handleApply} disabled={applyDisabled} className={cn(BUTTON, 'h-14 flex-1 bg-brand text-xl text-white hover:bg-brand-hover')}>
@@ -388,17 +391,21 @@ function PostDetailPageBody({ viewer }: Props) {
               )}
               {isClient ? (
                 <>
-                  <Link href={editHref} className={cn(BUTTON, 'h-11 text-base', editStyle)}>
-                    수정하기
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={handleDelete}
-                    disabled={deleting}
-                    className={cn(BUTTON, 'h-11 border border-line bg-white text-base text-[#b91d1d] hover:bg-line-soft')}
-                  >
-                    {deleting ? '삭제 중…' : '삭제하기'}
-                  </button>
+                  {canEdit && (
+                    <Link href={editHref} className={cn(BUTTON, 'h-11 bg-brand text-base text-white hover:bg-brand-hover')}>
+                      수정하기
+                    </Link>
+                  )}
+                  {canDelete && (
+                    <button
+                      type="button"
+                      onClick={handleDelete}
+                      disabled={deleting}
+                      className={cn(BUTTON, 'h-11 border border-line bg-white text-base text-[#b91d1d] hover:bg-line-soft')}
+                    >
+                      {deleting ? '삭제 중…' : '삭제하기'}
+                    </button>
+                  )}
                 </>
               ) : (
                 <button type="button" onClick={handleApply} disabled={applyDisabled} className={cn(BUTTON, 'h-11 bg-brand text-base text-white hover:bg-brand-hover')}>
