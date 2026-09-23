@@ -33,9 +33,11 @@ type Props = {
   onLogout?: () => void;
   /** 의뢰인 또는 관리자로 로그인했는지 — "공고 찾기" 옆에 "공고등록"을 진하게 보여줍니다. */
   canRegisterPost?: boolean;
+  /** 동행 매니저로 로그인했는지 — "공고 찾기"를 지원용 목록(/escort/posts)으로 보냅니다. */
+  isEscort?: boolean;
 };
 
-export default function Header({ user, pending, onLogout, canRegisterPost }: Props) {
+export default function Header({ user, pending, onLogout, canRegisterPost, isEscort }: Props) {
   const menuItems = canRegisterPost ? [...MENU.slice(0, 2), POST_REGISTER_ITEM, ...MENU.slice(2)] : MENU;
 
   return (
@@ -47,10 +49,11 @@ export default function Header({ user, pending, onLogout, canRegisterPost }: Pro
           className="order-2 flex w-full items-center gap-5 overflow-x-auto pb-1 lg:order-none lg:w-auto lg:gap-[33px] lg:overflow-visible lg:pb-0"
         >
           {menuItems.map((item) => {
-            const href =
-                item.label === '공고 찾기' && user
-                    ? '/escort/posts'
-                    : item.href;
+            // "공고 찾기"는 동행 매니저에게만 지원용 목록(/escort/posts, 로그인 필요)으로 보내고,
+            // 그 외(의뢰인·관리자·비로그인)는 원래 공개 목록(/posts)으로 보냅니다.
+            // ⚠️ /escort/posts 는 ESCORT 전용 가드가 걸려 있어서, 예전처럼 "로그인만 하면" 보내면
+            //    CLIENT/ADMIN 은 눌러도 그 페이지에서 바로 튕겨나와 안 눌리는 것처럼 보입니다.
+            const href = item.label === '공고 찾기' && isEscort ? '/escort/posts' : item.href;
 
             return (
                 <Link
