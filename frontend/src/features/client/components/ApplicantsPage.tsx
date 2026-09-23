@@ -13,6 +13,7 @@ import {
   rejectApplication,
   type Applicant,
 } from '@/features/application';
+import { useRequireAuth } from '@/features/auth';
 import { fetchPost, type PostDetail } from '@/features/post';
 import { cn } from '@/lib/cn';
 import ManagerProfile from './ManagerProfile';
@@ -37,6 +38,7 @@ function statusTone(postStatus: string): 'purple' | 'green' | 'blue' | 'gray' {
  * ⚠️ 지원자 프로필에 지역·태그 정보가 없어 화면에서 뺐습니다.
  */
 export default function ApplicantsPage() {
+  const { loading: authLoading, user } = useRequireAuth('CLIENT');
   const params = useParams<{ postId: string }>();
   const postId = Number(params.postId);
 
@@ -100,6 +102,17 @@ export default function ApplicantsPage() {
   const post = result?.postId === postId ? result.post : undefined;
   const applicants = result?.postId === postId ? result.applicants : undefined;
   const loadError = result?.postId === postId ? result.error : undefined;
+
+  if (authLoading) {
+    return (
+      <AppShell>
+        <section className="bg-white py-[100px] text-center">
+          <p className="text-xl font-semibold text-brand">불러오는 중입니다...</p>
+        </section>
+      </AppShell>
+    );
+  }
+  if (!user) return null;
 
   if (!post || !applicants) {
     return (

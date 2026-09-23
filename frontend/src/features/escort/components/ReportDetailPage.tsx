@@ -6,10 +6,10 @@ import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { AppShell } from '@/components/layout';
 import { Container, InfoRow, SectionHeading } from '@/components/ui';
+import { useRequireAuth } from '@/features/auth';
 import { StatusLabel } from '@/features/post';
 import { aiSummaryItems, fetchReport, isReportNotFoundError, parseAiSummary, type ReportDto } from '@/features/report';
 import { cn } from '@/lib/cn';
-import { MOCK_USER } from '@/lib/mockSession';
 import { formatDateTime } from '../lib/date';
 import { getEscortCase } from '../model/cases';
 
@@ -41,6 +41,7 @@ function MultilineText({ text }: { text: string }) {
  * 공고 정보·동행인 정보는 아직 연결 전이라 모의 데이터(model/cases.ts)를 그대로 씁니다.
  */
 export default function ReportDetailPage() {
+  const { loading: authLoading, user } = useRequireAuth('ESCORT');
   const { applicationId } = useParams<{ applicationId: string }>();
   const escort = getEscortCase(Number(applicationId));
   const targetApplicationId = escort?.applicationId;
@@ -71,6 +72,17 @@ export default function ReportDetailPage() {
   }, [targetApplicationId]);
 
   const state = result.key === targetApplicationId ? result.data : undefined;
+
+  if (authLoading) {
+    return (
+      <AppShell>
+        <section className="bg-white py-[100px] text-center">
+          <p className="text-xl font-semibold text-brand">불러오는 중입니다...</p>
+        </section>
+      </AppShell>
+    );
+  }
+  if (!user) return null;
 
   if (!escort) {
     return (
@@ -183,7 +195,7 @@ export default function ReportDetailPage() {
               <section className="rounded-[30px] border border-line bg-white px-6 py-7 shadow-card lg:pr-6 lg:pl-[35px]">
                 <h2 className={cn(TITLE, 'mb-[15px]')}>제출 정보</h2>
                 <dl className="grid gap-x-[22px] lg:grid-cols-[373px_1px_1fr] lg:items-center">
-                  <InfoRow label="작성자" labelWidth={106} style={{ minHeight: 47 }}>{MOCK_USER.name}(동행 매니저)</InfoRow>
+                  <InfoRow label="작성자" labelWidth={106} style={{ minHeight: 47 }}>{user.name}(동행 매니저)</InfoRow>
                   <div aria-hidden="true" className="hidden h-[30px] bg-[#e6e8ec] opacity-50 lg:block" />
                   <InfoRow label="제출일" labelWidth={106}>{formatDateTime(report.createdAt)}</InfoRow>
                 </dl>

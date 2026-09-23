@@ -73,18 +73,12 @@ export type ActivityStat = {
   icon: string;
 };
 
-/** 의뢰인 마이페이지(role='client')용 모의 프로필. "/client" 는 이번 작업 범위가 아니라 그대로 둡니다. */
-export type MyProfile = {
-  name: string;
-  roleLabel: string;
-  username: string;
-  email: string;
-  phone: string;
-  address: string;
-  birthDate: string;
-  gender: string;
-  intro?: string[];
-  guardian?: { name: string; phone: string; careNote: string };
+/** 백엔드 GET/POST/PUT /api/v1/users/profile/client 응답 (ClientProfileResponse) */
+export type ClientProfileDto = {
+  userId: number;
+  emergencyContactName: string;
+  emergencyContactPhone: string;
+  careNote: string | null;
 };
 
 /** 백엔드 GET/PUT /api/v1/users/profile/escort 응답 (EscortProfileResponse) */

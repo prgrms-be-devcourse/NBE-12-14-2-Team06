@@ -6,6 +6,7 @@ import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { AppShell } from '@/components/layout';
 import { Container, InfoRow, SectionHeading } from '@/components/ui';
+import { useRequireAuth } from '@/features/auth';
 import { aiSummaryItems, fetchReport, isReportNotFoundError, parseAiSummary, type ReportDto } from '@/features/report';
 import { cn } from '@/lib/cn';
 import { STAGE_VIEW, getClientEscortCase } from '../model/escort';
@@ -33,6 +34,7 @@ function lines(text: string): string[] {
  * 동행 정보·매니저 정보는 아직 연결 전이라 모의 데이터(model/escort.ts)를 그대로 씁니다.
  */
 export default function ClientReportPage() {
+  const { loading: authLoading, user } = useRequireAuth('CLIENT');
   const { applicationId } = useParams<{ applicationId: string }>();
   const escort = getClientEscortCase(Number(applicationId));
   const targetApplicationId = escort?.applicationId;
@@ -63,6 +65,17 @@ export default function ClientReportPage() {
   }, [targetApplicationId]);
 
   const state = result.key === targetApplicationId ? result.data : undefined;
+
+  if (authLoading) {
+    return (
+      <AppShell>
+        <section className="bg-white py-[100px] text-center">
+          <p className="text-xl font-semibold text-brand">불러오는 중입니다...</p>
+        </section>
+      </AppShell>
+    );
+  }
+  if (!user) return null;
 
   if (!escort) {
     return (

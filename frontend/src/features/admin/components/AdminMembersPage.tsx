@@ -2,7 +2,9 @@
 
 import Image from 'next/image';
 import { useState, type FormEvent } from 'react';
+import { AppShell } from '@/components/layout';
 import { SectionHeading } from '@/components/ui';
+import { useRequireAuth } from '@/features/auth';
 import { Pagination } from '@/features/post';
 import { cn } from '@/lib/cn';
 import {
@@ -25,6 +27,7 @@ const PAGE_SIZE = 6;
  * ⚠️ 모의 데이터(model/members.ts)를 보여줍니다. 회원 목록 API 연결 전입니다.
  */
 export default function AdminMembersPage() {
+  const { loading, user } = useRequireAuth('ADMIN');
   const [tab, setTab] = useState<RoleTab>('all');
   const [keywordInput, setKeywordInput] = useState('');
   const [keyword, setKeyword] = useState('');
@@ -36,6 +39,17 @@ export default function AdminMembersPage() {
     setKeyword(keywordInput.trim());
     setPage(0);
   };
+
+  if (loading) {
+    return (
+      <AppShell>
+        <section className="bg-white py-[100px] text-center">
+          <p className="text-xl font-semibold text-brand">불러오는 중입니다...</p>
+        </section>
+      </AppShell>
+    );
+  }
+  if (!user) return null;
 
   const members = filterMembers(MEMBERS, { tab, keyword, sort });
   const pageCount = Math.max(1, Math.ceil(members.length / PAGE_SIZE));

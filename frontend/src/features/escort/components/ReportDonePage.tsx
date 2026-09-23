@@ -5,12 +5,25 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { AppShell } from '@/components/layout';
 import { Container, SectionHeading } from '@/components/ui';
+import { useRequireAuth } from '@/features/auth';
 
 const BUTTON = 'flex h-14 flex-1 items-center justify-center rounded-[30px] px-6 text-xl leading-[18px] font-semibold transition-colors';
 
 /** 동행 보고서 제출 완료 — Figma 동행 매니저_보고서 작성 완료 276:844 */
 export default function ReportDonePage() {
+  const { loading, user } = useRequireAuth('ESCORT');
   const { applicationId } = useParams<{ applicationId: string }>();
+
+  if (loading) {
+    return (
+      <AppShell>
+        <section className="bg-white py-[100px] text-center">
+          <p className="text-xl font-semibold text-brand">불러오는 중입니다...</p>
+        </section>
+      </AppShell>
+    );
+  }
+  if (!user) return null;
 
   return (
     <AppShell>

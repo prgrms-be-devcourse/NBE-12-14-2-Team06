@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react';
 import { AppShell } from '@/components/layout';
 import { Container, InfoRow, SectionHeading } from '@/components/ui';
+import { useRequireAuth } from '@/features/auth';
 import { cn } from '@/lib/cn';
 import { writeReport } from '@/features/report';
 import { getEscortCase } from '../model/cases';
@@ -47,6 +48,7 @@ function SectionTitle({ children }: { children: ReactNode }) {
  * 첨부 사진은 서버에 업로드 API 가 없어 미리보기만 보여주고 전송하지 않습니다.
  */
 export default function ReportWritePage() {
+  const { loading: authLoading, user } = useRequireAuth('ESCORT');
   const params = useParams<{ applicationId: string }>();
   const router = useRouter();
   const escort = getEscortCase(Number(params.applicationId));
@@ -57,6 +59,17 @@ export default function ReportWritePage() {
 
   // 미리보기 주소는 화면을 떠날 때 정리합니다.
   useEffect(() => () => photos.forEach((photo) => URL.revokeObjectURL(photo.url)), [photos]);
+
+  if (authLoading) {
+    return (
+      <AppShell>
+        <section className="bg-white py-[100px] text-center">
+          <p className="text-xl font-semibold text-brand">불러오는 중입니다...</p>
+        </section>
+      </AppShell>
+    );
+  }
+  if (!user) return null;
 
   if (!escort) {
     return (
