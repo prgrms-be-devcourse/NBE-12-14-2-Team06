@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { LOGIN_HOME_BY_ROLE } from '../model';
 import type { CurrentUser } from '../types';
 import { useAuth, type CurrentUserState } from './AuthProvider';
@@ -19,6 +19,7 @@ export function useRequireAuth(role?: CurrentUser['role']): CurrentUserState {
   const state = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   const { loading, unauthenticated, user } = state;
 
@@ -26,14 +27,17 @@ export function useRequireAuth(role?: CurrentUser['role']): CurrentUserState {
     if (loading) return;
 
     if (unauthenticated) {
-      router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+      // usePathname 은 경로만 주고 "?" 뒤 쿼리 문자열은 주지 않아서 searchParams 로 따로 붙입니다.
+      const query = searchParams.toString();
+      const next = query ? `${pathname}?${query}` : pathname;
+      router.replace(`/login?next=${encodeURIComponent(next)}`);
       return;
     }
 
     if (user && role && user.role !== role) {
       router.replace(LOGIN_HOME_BY_ROLE[user.role]);
     }
-  }, [loading, unauthenticated, user, role, pathname, router]);
+  }, [loading, unauthenticated, user, role, pathname, searchParams, router]);
 
   return state;
 }

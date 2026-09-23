@@ -2,9 +2,16 @@
 
 import Image from 'next/image';
 import { Container, PillButton, ImagePlaceholder } from '@/components/ui';
+import { useCurrentUser } from '@/features/auth';
 
 /** Figma 564:18147 — 오늘 병원, 누구랑 가지? */
 export default function HeroSection() {
+  const { user } = useCurrentUser();
+  // "동행 요청하기"의 목적지(/client/posts/new)는 CLIENT·ADMIN 전용 가드가 걸려 있어
+  // 동행 매니저(ESCORT)가 누르면 바로 튕겨나와 반응이 없는 것처럼 보입니다.
+  // 동행 매니저는 공고를 등록하는 쪽이 아니라 지원하는 쪽이라, 그 대신 자신의 공고 찾기 화면으로 보냅니다.
+  const requestHref = user?.role === 'ESCORT' ? '/escort/posts' : '/client/posts/new';
+
   return (
     <section className="bg-white py-14 lg:py-20">
       <Container className="flex flex-col-reverse items-center gap-10 lg:flex-row">
@@ -20,7 +27,7 @@ export default function HeroSection() {
           </p>
 
           <div className="mt-12 flex flex-col items-stretch gap-[15px] sm:flex-row sm:items-center lg:mt-[84px]">
-            <PillButton href="/client/posts/new">동행 요청하기</PillButton>
+            <PillButton href={requestHref}>동행 요청하기</PillButton>
             <PillButton href="/posts" variant="ghost">
               공고 찾아보기
             </PillButton>
