@@ -14,8 +14,8 @@ const TONE: Record<LabelTone, string> = {
 const SIZE = {
   /** 목록 카드 (Figma 74×25) */
   small: 'h-[25px] min-w-[72px] px-4 text-[10.83px] leading-3',
-  /** 공고 상세 제목 (Figma 102×36) */
-  large: 'h-9 w-[102px] text-base leading-5',
+  /** 공고 상세 제목 (Figma 102×36). "마감 기한 초과" 처럼 긴 문구도 들어가도록 102px 는 최소 너비로 씁니다. */
+  large: 'h-9 min-w-[102px] px-4 text-base leading-5',
 } as const;
 
 type Props = {

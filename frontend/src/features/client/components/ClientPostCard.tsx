@@ -1,6 +1,5 @@
 import Image from 'next/image';
-import { CardButton, StatusLabel } from '@/features/post';
-import { STATUS_LABEL } from '../model/posts';
+import { CardButton, POST_STATUS_LABEL, StatusLabel } from '@/features/post';
 import type { ClientPost } from '../types';
 
 const DIVIDER = 'h-px w-full max-w-[377px] self-center bg-[#e6e8ec] opacity-50';
@@ -10,7 +9,7 @@ const DIVIDER = 'h-px w-full max-w-[377px] self-center bg-[#e6e8ec] opacity-50';
  * 모집 중이면 "지원자 확인", 매칭 이후에는 "동행 현황" 버튼이 나옵니다.
  */
 export default function ClientPostCard({ post }: { post: ClientPost }) {
-  const label = STATUS_LABEL[post.status];
+  const label = POST_STATUS_LABEL[post.status];
 
   return (
     <article className="flex min-h-[315px] w-full min-w-0 flex-col justify-center gap-[5.5px] rounded-[30px] border-[0.68px] border-line bg-white p-5 shadow-[0_0.68px_2.7px_rgba(25,33,61,0.08)] lg:h-[315px] lg:w-[447px]">
