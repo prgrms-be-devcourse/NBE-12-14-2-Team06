@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState, type FormEvent } from 'react';
 import { AppShell } from '@/components/layout';
 import { Container, SectionHeading } from '@/components/ui';
+import { useRequireAuth } from '@/features/auth';
 import { createPost, fetchPostRaw, updatePost, type PostDto, type PostWriteRequest } from '@/features/post';
 import { cn } from '@/lib/cn';
 import type { PlaceSearchResult } from '@/lib/kakaoMap';
@@ -102,6 +103,7 @@ function formatPay(value: string): string {
  * TODO: 협의 가능·이동수단·동행인원은 백엔드에 없는 값이라 서버로 보내지 않습니다.
  */
 export default function PostFormPage() {
+  const { loading: authLoading, user } = useRequireAuth('CLIENT');
   const params = useParams<{ postId?: string }>();
   const postId = params.postId ? Number(params.postId) : undefined;
   const editing = postId !== undefined;
@@ -124,6 +126,17 @@ export default function PostFormPage() {
 
   const initial = result && result.postId === postId ? result.initial : undefined;
   const loadError = result && result.postId === postId ? result.error : undefined;
+
+  if (authLoading) {
+    return (
+      <AppShell>
+        <section className="bg-white py-[100px] text-center">
+          <p className="text-xl font-semibold text-brand">불러오는 중입니다...</p>
+        </section>
+      </AppShell>
+    );
+  }
+  if (!user) return null;
 
   if (!initial) {
     return (

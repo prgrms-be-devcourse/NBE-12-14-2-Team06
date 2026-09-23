@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { AppShell } from '@/components/layout';
 import { Container, SectionHeading } from '@/components/ui';
+import { useRequireAuth } from '@/features/auth';
 
 const BUTTON = 'flex h-14 flex-1 items-center justify-center rounded-[30px] px-6 text-xl leading-[18px] font-semibold transition-colors';
 
@@ -14,10 +15,22 @@ const BUTTON = 'flex h-14 flex-1 items-center justify-center rounded-[30px] px-6
  * ⚠️ 공고 번호·시급·결제 금액은 앞 화면에서 넘어온 값입니다. (공고 등록·결제 API 연결 전)
  */
 export default function PostCompletePage() {
+  const { loading, user } = useRequireAuth('CLIENT');
   const searchParams = useSearchParams();
   const postId = searchParams.get('postId') ?? '1';
   const pay = Number(searchParams.get('pay') ?? 14000);
   const amount = Number(searchParams.get('amount') ?? 49000);
+
+  if (loading) {
+    return (
+      <AppShell>
+        <section className="bg-white py-[100px] text-center">
+          <p className="text-xl font-semibold text-brand">불러오는 중입니다...</p>
+        </section>
+      </AppShell>
+    );
+  }
+  if (!user) return null;
 
   const rows = [
     { label: '공고 번호', value: postId },

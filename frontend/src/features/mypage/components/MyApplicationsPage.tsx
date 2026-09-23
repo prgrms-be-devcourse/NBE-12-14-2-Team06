@@ -2,7 +2,9 @@
 
 import Image from 'next/image';
 import { useState, type FormEvent } from 'react';
+import { AppShell } from '@/components/layout';
 import { SectionHeading } from '@/components/ui';
+import { useRequireAuth } from '@/features/auth';
 import { CardButton, PostCard } from '@/features/post';
 import { cn } from '@/lib/cn';
 import { APPLICATIONS, STATUS_INFO, STATUS_TABS, type StatusTab } from '../model';
@@ -56,6 +58,7 @@ function ApplicationActions({ application }: { application: Application }) {
  * ⚠️ 모의 데이터(model/applications.ts)를 보여줍니다. 신청 목록 API 가 아직 없습니다.
  */
 export default function MyApplicationsPage() {
+  const { loading, user } = useRequireAuth('ESCORT');
   const [tab, setTab] = useState<StatusTab>('all');
   const [keywordInput, setKeywordInput] = useState('');
   const [keyword, setKeyword] = useState('');
@@ -75,6 +78,17 @@ export default function MyApplicationsPage() {
   });
   const applications = sort === 'latest' ? filtered : [...filtered].reverse();
   const tabLabel = STATUS_TABS.find((item) => item.value === tab)?.label ?? '';
+
+  if (loading) {
+    return (
+      <AppShell>
+        <section className="bg-white py-[100px] text-center">
+          <p className="text-xl font-semibold text-brand">불러오는 중입니다...</p>
+        </section>
+      </AppShell>
+    );
+  }
+  if (!user) return null;
 
   return (
     <MyPageShell>

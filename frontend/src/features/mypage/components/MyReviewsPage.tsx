@@ -2,7 +2,9 @@
 
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
+import { AppShell } from '@/components/layout';
 import { SectionHeading } from '@/components/ui';
+import { useRequireAuth } from '@/features/auth';
 import { fetchMyEscortProfile, fetchMyReviews } from '../api';
 import type { ReviewDto, ReviewTagName } from '../types';
 import DateRangeFilter from './DateRangeFilter';
@@ -37,6 +39,7 @@ function formatDate(value: string): string {
  * ⚠️ 리뷰 응답에 공고 제목·병원명이 없어서(공고 상세를 알 방법이 없음), 카드에서 그 부분은 뺐습니다.
  */
 export default function MyReviewsPage() {
+  const { loading: authLoading, user } = useRequireAuth('ESCORT');
   const [fromInput, setFromInput] = useState('');
   const [toInput, setToInput] = useState('');
   const [range, setRange] = useState({ from: '', to: '' });
@@ -53,6 +56,17 @@ export default function MyReviewsPage() {
       ignore = true;
     };
   }, []);
+
+  if (authLoading) {
+    return (
+      <AppShell>
+        <section className="bg-white py-[100px] text-center">
+          <p className="text-xl font-semibold text-brand">불러오는 중입니다...</p>
+        </section>
+      </AppShell>
+    );
+  }
+  if (!user) return null;
 
   if (!state?.reviews) {
     return (

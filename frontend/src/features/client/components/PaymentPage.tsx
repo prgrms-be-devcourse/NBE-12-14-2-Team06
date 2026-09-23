@@ -8,7 +8,7 @@ import {
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from "react";
 import Link from 'next/link';
-import { useCurrentUser } from '@/features/auth';
+import { useRequireAuth } from '@/features/auth';
 import { fetchSaveAmount } from '../api';
 
 // SDK 가 Amount 타입을 export 하지 않으므로 setAmount 의 파라미터에서 가져옵니다.
@@ -34,7 +34,7 @@ function toDigits(phoneNum: string) {
 export default function PaymentPage() {
   // 결제 API 는 모두 로그인이 필요하므로(SecurityConfig: /api/** authenticated)
   // 로그인 사용자를 확인한 뒤에야 위젯을 띄웁니다.
-  const { user, loading: userLoading, unauthenticated, error: userError } = useCurrentUser();
+  const { user, loading: userLoading, unauthenticated, error: userError } = useRequireAuth('CLIENT');
   const searchParams = useSearchParams();
   // 공고 작성 화면에서 넘어온 값 — 결제 후 완료 화면까지 그대로 들고 가야 합니다.
   const postId = searchParams.get('postId') ?? '1';

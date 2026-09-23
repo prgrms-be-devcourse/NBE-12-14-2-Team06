@@ -2,11 +2,12 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { usePathname, useParams, useRouter } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
 import { AppShell } from '@/components/layout';
 import { Container, InfoRow } from '@/components/ui';
 import { applyToPost } from '@/features/application';
+import { useCurrentUser, useRequireAuth, type CurrentUser } from '@/features/auth';
 import { fetchPendingPayment, type PaymentDto } from '@/features/payment';
 import { cn } from '@/lib/cn';
 import { deletePost, fetchPost } from '../api';
@@ -53,15 +54,48 @@ type Props = {
   viewer?: 'common' | 'escort' | 'client';
 };
 
+const REQUIRED_ROLE: Record<'escort' | 'client', CurrentUser['role']> = {
+  escort: 'ESCORT',
+  client: 'CLIENT',
+};
+
 /**
  * 공고 상세 — Figma 동행 매니저_공고 상세 225:1146 · 의뢰인_공고 상세 521:2254
  *
+ * viewer='common'(/posts/[postId])은 비로그인도 볼 수 있는 공개 화면이라 로그인 가드를 걸지 않습니다.
+ * viewer='escort'·'client' 는 각각 역할 가드를 거친 뒤에만 본문을 그립니다.
+ */
+export default function PostDetailPage({ viewer = 'common' }: Props) {
+  if (viewer === 'common') return <PostDetailPageBody viewer={viewer} />;
+  return <GuardedPostDetailPage viewer={viewer} />;
+}
+
+function GuardedPostDetailPage({ viewer }: { viewer: 'escort' | 'client' }) {
+  const { loading, user } = useRequireAuth(REQUIRED_ROLE[viewer]);
+
+  if (loading) {
+    return (
+      <AppShell>
+        <section className="bg-white py-[100px] text-center">
+          <p className="text-xl font-semibold text-brand">불러오는 중입니다...</p>
+        </section>
+      </AppShell>
+    );
+  }
+  if (!user) return null;
+
+  return <PostDetailPageBody viewer={viewer} />;
+}
+
+/**
  * 상세 API(GET /api/v1/posts/{postId})로 조회합니다. 삭제·지원하기도 여기서 연결합니다.
  * ⚠️ 백엔드에 없는 항목(진료과 · 이동수단 · 의뢰인 유형/보호자 동행 여부/성별 선호/소개)은 화면에서 뺐습니다.
  */
-export default function PostDetailPage({ viewer = 'common' }: Props) {
+function PostDetailPageBody({ viewer }: Props) {
   const params = useParams<{ postId: string }>();
   const router = useRouter();
+  const pathname = usePathname();
+  const { unauthenticated } = useCurrentUser();
   const postId = Number(params.postId);
 
   // result.postId 로 "지금 postId 의 결과인지"를 판단합니다. (postId 가 바뀐 직후에는 이전 결과를 버리고 loading 으로 봅니다)
@@ -131,6 +165,12 @@ export default function PostDetailPage({ viewer = 'common' }: Props) {
   };
 
   const handleApply = async () => {
+    // 공개 화면(viewer='common')은 비로그인도 볼 수 있어서, 여기서만 로그인 여부를 확인합니다.
+    // escort·client 화면은 이미 useRequireAuth 가드를 거쳐 들어오므로 항상 로그인 상태입니다.
+    if (unauthenticated) {
+      router.push(`/login?next=${encodeURIComponent(pathname)}`);
+      return;
+    }
     // TODO: 지원 API(POST /api/v1/applications/{postId})는 동행 매니저(ESCORT) 로그인 쿠키가 있어야 합니다.
     setApplyState('applying');
     setApplyError(undefined);
