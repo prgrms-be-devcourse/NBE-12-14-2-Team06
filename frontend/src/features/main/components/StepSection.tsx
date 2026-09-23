@@ -1,6 +1,7 @@
 'use client';
 
 import { Container, SectionHeading, ArrowRightIcon } from '@/components/ui';
+import { useCurrentUser } from '@/features/auth';
 import { cn } from '@/lib/cn';
 import { REQUESTER_STEPS, MANAGER_STEPS } from '../model';
 import type { UsageStep } from '../types';
@@ -64,6 +65,12 @@ function Cta({
 
 /** Figma 564:18047 — 이렇게 이용해요 + CTA */
 export default function StepSection() {
+  const { user } = useCurrentUser();
+  // "동행 요청하기"의 목적지(/client/posts/new)는 CLIENT·ADMIN 전용 가드가 걸려 있어
+  // 동행 매니저(ESCORT)가 누르면 바로 튕겨나와 반응이 없는 것처럼 보입니다.
+  // 동행 매니저는 공고를 등록하는 쪽이 아니라 지원하는 쪽이라, 그 대신 자신의 공고 찾기 화면으로 보냅니다.
+  const requestHref = user?.role === 'ESCORT' ? '/escort/posts' : '/client/posts/new';
+
   return (
     <section id="steps" className="bg-white py-14 lg:py-20">
       <Container width="narrow">
@@ -75,7 +82,7 @@ export default function StepSection() {
         </div>
 
         <div className="flex flex-col gap-5 lg:flex-row">
-          <Cta variant="solid" title="병원 동행이 필요하신가요?" sub="동행 요청하기" href="/client/posts/new" />
+          <Cta variant="solid" title="병원 동행이 필요하신가요?" sub="동행 요청하기" href={requestHref} />
           <Cta variant="ghost" title="고소득꿀알바 하고 싶으신가요?" sub="공고 찾아보기" href="/posts" />
         </div>
       </Container>
