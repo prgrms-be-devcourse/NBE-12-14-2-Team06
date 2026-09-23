@@ -5,6 +5,13 @@ export type LabelTone = 'green' | 'red' | 'blue' | 'purple' | 'gray' | 'strong';
 export type PostBadge = 'new' | 'closing' | 'open' | 'closed';
 
 /**
+ * 공고 진행 상태 (백엔드 PostStatus: OPEN → MATCHED → IN_PROGRESS → COMPLETED).
+ * canceled·expired(취소됨·마감 기한 초과)는 위 흐름에서 벗어난 상태입니다.
+ * 한글 문구와의 대응은 model/status.ts 를 보세요.
+ */
+export type PostStatusKey = 'open' | 'matched' | 'inProgress' | 'completed' | 'canceled' | 'expired';
+
+/**
  * 공고 목록 카드용 요약. 백엔드 응답(PostDto)을 model/mapper.ts 의 toPostSummary 로 바꾼 모양입니다.
  * 백엔드 PostDto 와 대응: title, hospitalName, region, escortStartAt, escortHours, hourlyPay, content, postStatus, createdAt
  */
@@ -49,6 +56,11 @@ export type PostDetail = PostSummary & {
   reportRequired: boolean;
   /** "2026.10.02(금) 오전 9:00 ~ 10.05(월) 오후 6:00" */
   recruitPeriod: string;
+  /**
+   * 모집 시작 시각이 이미 지났는지 (조회 시점 기준).
+   * 백엔드가 "모집 시작 전"까지만 공고 수정을 허용해서 수정 버튼 노출에 씁니다.
+   */
+  recruitStarted: boolean;
 };
 
 export type PostSort = 'latest' | 'payHigh' | 'payLow';

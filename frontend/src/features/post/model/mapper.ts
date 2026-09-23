@@ -47,5 +47,6 @@ export function toPostDetail(dto: PostDto): PostDetail {
     patientNote: dto.patientNote ? dto.patientNote.split('\n').filter((line) => line.trim() !== '') : [],
     reportRequired: dto.reportRequired,
     recruitPeriod: `${formatMonthDayTime(dto.recruitStartAt)} ~ ${formatMonthDayTime(dto.recruitEndAt)}`,
+    recruitStarted: parseDateTime(dto.recruitStartAt).getTime() <= Date.now(),
   };
 }

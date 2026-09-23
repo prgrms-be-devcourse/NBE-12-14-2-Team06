@@ -12,6 +12,7 @@ import { fetchPendingPayment, type PaymentDto } from '@/features/payment';
 import { cn } from '@/lib/cn';
 import { deletePost, fetchPost } from '../api';
 import { daysFromNow, formatFullDate } from '../lib/date';
+import { canDeletePost, canEditPost, postStatusLabel, toPostStatusKey } from '../model/status';
 import type { LabelTone, PostBadge, PostDetail } from '../types';
 import StatusLabel from './StatusLabel';
 
@@ -21,9 +22,6 @@ const BADGE: Record<PostBadge, { text: string; tone: LabelTone }> = {
   open: { text: '모집 중', tone: 'blue' },
   closed: { text: '마감', tone: 'gray' },
 };
-
-/** 백엔드 PostStatus.COMPLETED 의 설명 문구. 이 상태여야 남은 결제를 "추가 결제"로 볼 수 있습니다. */
-const COMPLETED_STATUS = '동행 완료';
 
 const CARD = 'rounded-[30px] border border-line bg-white shadow-card';
 const CARD_TITLE = 'text-2xl leading-6 font-semibold text-brand';
@@ -133,7 +131,7 @@ function PostDetailPageBody({ viewer }: Props) {
   // 동행이 끝난 내 공고일 때만 남은 결제를 확인합니다.
   // 결제 조회는 로그인(의뢰인 본인)이 필요하고, 동행 완료 전에 남아 있는 READY 결제는
   // "추가 결제"가 아니라 아직 안 낸 최초 결제라서 여기서 물어보면 안 됩니다.
-  const canHaveExtraPayment = isClient && post?.postStatus === COMPLETED_STATUS;
+  const canHaveExtraPayment = isClient && !!post && toPostStatusKey(post.postStatus) === 'completed';
 
   useEffect(() => {
     if (!canHaveExtraPayment) return;
@@ -196,7 +194,9 @@ function PostDetailPageBody({ viewer }: Props) {
     );
   }
 
-  const label = isClient ? { text: '모집 중', tone: 'purple' as const } : BADGE[post.badge];
+  // 의뢰인은 자기 공고의 진행 상태(모집 중 · 매칭 완료 · 진행 중 · 동행 완료 …)를 봅니다.
+  // 동행 매니저·비로그인은 "지원할 수 있는지"가 중요해서 신규/오늘 마감 같은 모집 배지를 그대로 씁니다.
+  const label = isClient ? postStatusLabel(post.postStatus) : BADGE[post.badge];
   const date = formatFullDate(daysFromNow(post.startsInDays));
   const duration = `약 ${post.hours}시간`;
   const pay = `시급 ${post.hourlyPay.toLocaleString()}원`;
@@ -219,12 +219,11 @@ function PostDetailPageBody({ viewer }: Props) {
       })}`
     : '';
 
-  // 추가 결제가 남아 있으면 그게 이 화면의 유일한 주 동작입니다.
-  // 수정하기를 보조 버튼으로 낮춰 똑같은 파란 버튼이 나란히 붙지 않게 합니다.
-  // (동행이 끝난 공고라 수정은 어차피 서버가 거부합니다 — 모집 시작 전까지만 가능)
-  const editStyle = pendingPayment
-    ? 'border border-line bg-white text-brand hover:bg-line-soft'
-    : 'bg-brand text-white hover:bg-brand-hover';
+  // 수정·삭제는 백엔드가 공고 상태로 막습니다. 눌러도 실패할 버튼은 아예 보여 주지 않습니다.
+  // 수정은 "모집 중 + 모집 시작 전", 삭제는 "모집 중이거나 마감 기한 초과"일 때만 됩니다.
+  // (조건이 서로 달라서 따로 계산합니다 — 모집이 시작된 공고는 삭제만 됩니다)
+  const canEdit = isClient && canEditPost(post.postStatus, post.recruitStarted);
+  const canDelete = isClient && canDeletePost(post.postStatus);
 
   return (
     <AppShell>
@@ -350,17 +349,21 @@ function PostDetailPageBody({ viewer }: Props) {
               </Link>
               {isClient ? (
                 <>
-                  <button
-                    type="button"
-                    onClick={handleDelete}
-                    disabled={deleting}
-                    className={cn(BUTTON, 'h-14 flex-1 border border-line bg-white text-xl text-[#b91d1d] hover:bg-line-soft')}
-                  >
-                    {deleting ? '삭제 중…' : '삭제하기'}
-                  </button>
-                  <Link href={editHref} className={cn(BUTTON, 'h-14 flex-1 text-xl', editStyle)}>
-                    수정하기
-                  </Link>
+                  {canDelete && (
+                    <button
+                      type="button"
+                      onClick={handleDelete}
+                      disabled={deleting}
+                      className={cn(BUTTON, 'h-14 flex-1 border border-line bg-white text-xl text-[#b91d1d] hover:bg-line-soft')}
+                    >
+                      {deleting ? '삭제 중…' : '삭제하기'}
+                    </button>
+                  )}
+                  {canEdit && (
+                    <Link href={editHref} className={cn(BUTTON, 'h-14 flex-1 bg-brand text-xl text-white hover:bg-brand-hover')}>
+                      수정하기
+                    </Link>
+                  )}
                 </>
               ) : (
                 <button type="button" onClick={handleApply} disabled={applyDisabled} className={cn(BUTTON, 'h-14 flex-1 bg-brand text-xl text-white hover:bg-brand-hover')}>
@@ -388,17 +391,21 @@ function PostDetailPageBody({ viewer }: Props) {
               )}
               {isClient ? (
                 <>
-                  <Link href={editHref} className={cn(BUTTON, 'h-11 text-base', editStyle)}>
-                    수정하기
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={handleDelete}
-                    disabled={deleting}
-                    className={cn(BUTTON, 'h-11 border border-line bg-white text-base text-[#b91d1d] hover:bg-line-soft')}
-                  >
-                    {deleting ? '삭제 중…' : '삭제하기'}
-                  </button>
+                  {canEdit && (
+                    <Link href={editHref} className={cn(BUTTON, 'h-11 bg-brand text-base text-white hover:bg-brand-hover')}>
+                      수정하기
+                    </Link>
+                  )}
+                  {canDelete && (
+                    <button
+                      type="button"
+                      onClick={handleDelete}
+                      disabled={deleting}
+                      className={cn(BUTTON, 'h-11 border border-line bg-white text-base text-[#b91d1d] hover:bg-line-soft')}
+                    >
+                      {deleting ? '삭제 중…' : '삭제하기'}
+                    </button>
+                  )}
                 </>
               ) : (
                 <button type="button" onClick={handleApply} disabled={applyDisabled} className={cn(BUTTON, 'h-11 bg-brand text-base text-white hover:bg-brand-hover')}>

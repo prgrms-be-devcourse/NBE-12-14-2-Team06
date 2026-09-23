@@ -14,19 +14,11 @@ import {
   type Applicant,
 } from '@/features/application';
 import { useRequireAuth } from '@/features/auth';
-import { fetchPost, type PostDetail } from '@/features/post';
+import { fetchPost, postStatusLabel, StatusLabel, type PostDetail } from '@/features/post';
 import { cn } from '@/lib/cn';
 import ManagerProfile from './ManagerProfile';
 
 const BUTTON = 'flex h-[35px] flex-1 items-center justify-center rounded-[17px] text-[13px] leading-3 font-semibold transition-colors disabled:cursor-not-allowed';
-
-/** 백엔드 postStatus 문구 → 라벨 색 */
-function statusTone(postStatus: string): 'purple' | 'green' | 'blue' | 'gray' {
-  if (postStatus === '모집 중') return 'purple';
-  if (postStatus === '매칭 완료') return 'green';
-  if (postStatus === '동행 진행 중') return 'blue';
-  return 'gray';
-}
 
 /**
  * 지원자 확인 — Figma 의뢰인_지원자 목록 381:3563
@@ -127,7 +119,7 @@ export default function ApplicantsPage() {
     );
   }
 
-  const tone = statusTone(post.postStatus);
+  const label = postStatusLabel(post.postStatus);
   const acceptedId = applicants.find((item) => item.status === 'ACCEPTED')?.applicationId;
 
   return (
@@ -162,17 +154,9 @@ export default function ApplicantsPage() {
                 </div>
               ))}
             </dl>
-            <span
-              className={cn(
-                'inline-flex h-9 w-[102px] shrink-0 items-center justify-center rounded-[17px] border text-base font-semibold',
-                tone === 'purple' && 'border-[#ede8fa] bg-[#ede8fa] text-[#43209d]',
-                tone === 'green' && 'border-[#e6ffe5] bg-[#e6ffe5] text-[#209d37]',
-                tone === 'blue' && 'border-[#e8eefa] bg-[#e8eefa] text-[#203b9d]',
-                tone === 'gray' && 'border-[#e6e8ec] bg-[#e6e8ec] text-footer',
-              )}
-            >
-              {post.postStatus}
-            </span>
+            <StatusLabel tone={label.tone} size="large">
+              {label.text}
+            </StatusLabel>
           </section>
 
           {decisionError && (

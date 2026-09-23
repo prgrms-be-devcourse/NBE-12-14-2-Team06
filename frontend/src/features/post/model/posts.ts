@@ -98,5 +98,7 @@ export function getPostDetail(id: number): PostDetail | undefined {
     patientNote: ['휠체어 이용 없음', '기타 특이사항 없음'],
     reportRequired: true,
     recruitPeriod: '10월 2일(금) 오전 9:00 ~ 10월 5일(월) 오후 6:00',
+    // 모의 데이터는 모두 "모집 중"이라 모집 시작 전으로 둡니다. (의뢰인 화면에서 수정·삭제가 다 보입니다)
+    recruitStarted: false,
   };
 }
