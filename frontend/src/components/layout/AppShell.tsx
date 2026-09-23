@@ -39,6 +39,8 @@ export default function AppShell({ children, user }: Props) {
 
   // 의뢰인·관리자만 헤더에 "공고등록"을 보여 줍니다(공고 작성 화면 자체도 이 두 역할만 들어갈 수 있음).
   const canRegisterPost = me?.role === 'CLIENT' || me?.role === 'ADMIN';
+  // "공고 찾기"를 동행 매니저 전용 목록(/escort/posts)으로 보낼지 — 그 화면이 ESCORT 전용 가드가 걸려 있어서 구분합니다.
+  const isEscort = me?.role === 'ESCORT';
 
   const handleLogout = async () => {
     await signOut();
@@ -47,7 +49,13 @@ export default function AppShell({ children, user }: Props) {
 
   return (
     <>
-      <Header user={user ?? session} pending={!user && loading} onLogout={handleLogout} canRegisterPost={canRegisterPost} />
+      <Header
+        user={user ?? session}
+        pending={!user && loading}
+        onLogout={handleLogout}
+        canRegisterPost={canRegisterPost}
+        isEscort={isEscort}
+      />
       <main>{children}</main>
       <Footer />
     </>
