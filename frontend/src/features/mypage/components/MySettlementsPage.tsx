@@ -3,7 +3,9 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { AppShell } from '@/components/layout';
 import { SectionHeading } from '@/components/ui';
+import { useRequireAuth } from '@/features/auth';
 import { cn } from '@/lib/cn';
 import { fetchSettlements, requestSettlement } from '../api';
 import type { SettlementDto, SettlementStatus } from '../types';
@@ -111,6 +113,7 @@ function SettlementCard({ settlement, onRequested }: { settlement: SettlementDto
  * ⚠️ "동행 보기" 버튼은 이 응답에 신청(application) 번호가 없어서 뺐습니다.
  */
 export default function MySettlementsPage() {
+  const { loading: authLoading, user } = useRequireAuth('ESCORT');
   const [tab, setTab] = useState<Tab>('all');
   const [fromInput, setFromInput] = useState('');
   const [toInput, setToInput] = useState('');
@@ -145,6 +148,17 @@ export default function MySettlementsPage() {
   const totalAmount = all.reduce((sum, item) => sum + item.payoutAmount, 0);
   const pendingCount = all.filter((item) => item.status === 'PENDING').length;
   const completedCount = all.filter((item) => item.status === 'COMPLETED').length;
+
+  if (authLoading) {
+    return (
+      <AppShell>
+        <section className="bg-white py-[100px] text-center">
+          <p className="text-xl font-semibold text-brand">불러오는 중입니다...</p>
+        </section>
+      </AppShell>
+    );
+  }
+  if (!user) return null;
 
   return (
     <MyPageShell>

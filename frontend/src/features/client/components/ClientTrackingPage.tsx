@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { AppShell } from '@/components/layout';
 import { Container, InfoRow, SectionHeading } from '@/components/ui';
 import { fetchEscortProfile } from '@/features/application';
+import { useRequireAuth } from '@/features/auth';
 import { MapCard, StageBar, Timeline, type EscortStage } from '@/features/escort';
 import { fetchPostRaw, StatusLabel } from '@/features/post';
 import { fetchRidesByPost } from '@/features/ride';
@@ -61,6 +62,7 @@ function summaryRows(escort: ClientEscortCase): { label: string; value: string[]
  * ⚠️ 진행 단계는 공고 상태로 3단계까지만 대신하고, 타임라인 시각·실시간 위치·결제·정산은 아직 모의 값입니다.
  */
 export default function ClientTrackingPage() {
+  const { loading: authLoading, user } = useRequireAuth('CLIENT');
   const params = useParams<{ applicationId: string }>();
   const searchParams = useSearchParams();
   const applicationId = Number(params.applicationId);
@@ -93,6 +95,17 @@ export default function ClientTrackingPage() {
   const liveLoading = postId !== undefined && live.key !== postId;
   const liveError = postId !== undefined && live.key === postId ? live.error : undefined;
   const escort = postId !== undefined ? (live.key === postId ? live.escort : undefined) : getClientEscortCase(applicationId);
+
+  if (authLoading) {
+    return (
+      <AppShell>
+        <section className="bg-white py-[100px] text-center">
+          <p className="text-xl font-semibold text-brand">불러오는 중입니다...</p>
+        </section>
+      </AppShell>
+    );
+  }
+  if (!user) return null;
 
   if (liveLoading) {
     return (

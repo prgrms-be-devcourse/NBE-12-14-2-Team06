@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { AppShell } from '@/components/layout';
 import { Container, SectionHeading } from '@/components/ui';
+import { useRequireAuth } from '@/features/auth';
 import { MAX_TAGS, REVIEW_TAG_ROWS, writeReview } from '@/features/review';
 import { cn } from '@/lib/cn';
 import { STAGE_VIEW, getClientEscortCase } from '../model/escort';
@@ -48,6 +49,7 @@ function Star({ filled }: { filled: boolean }) {
  * 리뷰는 POST /api/v1/applications/{applicationId}/reviews 로 등록합니다.
  */
 export default function ClientReviewPage() {
+  const { loading: authLoading, user } = useRequireAuth('CLIENT');
   const { applicationId } = useParams<{ applicationId: string }>();
   const router = useRouter();
   const escort = getClientEscortCase(Number(applicationId));
@@ -57,6 +59,17 @@ export default function ClientReviewPage() {
   const [showError, setShowError] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
+
+  if (authLoading) {
+    return (
+      <AppShell>
+        <section className="bg-white py-[100px] text-center">
+          <p className="text-xl font-semibold text-brand">불러오는 중입니다...</p>
+        </section>
+      </AppShell>
+    );
+  }
+  if (!user) return null;
 
   if (!escort) {
     return (

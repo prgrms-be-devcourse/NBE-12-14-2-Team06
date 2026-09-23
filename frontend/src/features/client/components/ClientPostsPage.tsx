@@ -3,7 +3,9 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { AppShell } from '@/components/layout';
 import { SectionHeading } from '@/components/ui';
+import { useRequireAuth } from '@/features/auth';
 import { MyPageShell } from '@/features/mypage';
 import { Pagination } from '@/features/post';
 import { cn } from '@/lib/cn';
@@ -21,6 +23,7 @@ const PAGE_SIZE = 4;
  * 임시 방편이며, 그 한계는 features/client/api.ts 의 fetchMyPosts 주석에 적어 두었습니다.
  */
 export default function ClientPostsPage() {
+  const { loading: authLoading, user } = useRequireAuth('CLIENT');
   const [status, setStatus] = useState<'all' | ClientPostStatus>('all');
   const [keywordInput, setKeywordInput] = useState('');
   const [keyword, setKeyword] = useState('');
@@ -43,6 +46,17 @@ export default function ClientPostsPage() {
   const results = filterClientPosts(result.posts ?? [], status, keyword, sort);
   const pageCount = Math.max(1, Math.ceil(results.length / PAGE_SIZE));
   const visible = results.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
+  if (authLoading) {
+    return (
+      <AppShell>
+        <section className="bg-white py-[100px] text-center">
+          <p className="text-xl font-semibold text-brand">불러오는 중입니다...</p>
+        </section>
+      </AppShell>
+    );
+  }
+  if (!user) return null;
 
   return (
     <MyPageShell role="client">

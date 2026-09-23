@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { AppShell } from '@/components/layout';
 import { Container, InfoRow, SectionHeading } from '@/components/ui';
 import { PROGRESS_ORDER, advanceProgress } from '@/features/application';
+import { useRequireAuth } from '@/features/auth';
 import { StatusLabel } from '@/features/post';
 import { cn } from '@/lib/cn';
 import { STAGE_INFO, getEscortCase } from '../model/cases';
@@ -26,6 +27,7 @@ const BUTTON = 'flex h-11 w-full items-center justify-center rounded-[25px] text
  *    API(PATCH /api/v1/applications/{id}/progress)를 호출합니다 — 새로고침하면 진행 상태는 모의 데이터로 되돌아갑니다.
  */
 export default function TrackingPage() {
+  const { loading: authLoading, user } = useRequireAuth('ESCORT');
   const params = useParams<{ applicationId: string }>();
   const escort = getEscortCase(Number(params.applicationId));
 
@@ -33,6 +35,17 @@ export default function TrackingPage() {
   const [doneCount, setDoneCount] = useState(() => escort?.timeline.filter((step) => step.done).length ?? 0);
   const [advancing, setAdvancing] = useState(false);
   const [progressError, setProgressError] = useState<string>();
+
+  if (authLoading) {
+    return (
+      <AppShell>
+        <section className="bg-white py-[100px] text-center">
+          <p className="text-xl font-semibold text-brand">불러오는 중입니다...</p>
+        </section>
+      </AppShell>
+    );
+  }
+  if (!user) return null;
 
   if (!escort) {
     return (

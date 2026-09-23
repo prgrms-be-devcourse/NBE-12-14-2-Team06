@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { AppShell } from '@/components/layout';
 import { InfoRow } from '@/components/ui';
+import { useRequireAuth } from '@/features/auth';
 import { cn } from '@/lib/cn';
 import { formatDotDate } from '../lib/date';
 import { ROLE_LABEL, getMemberDetail } from '../model';
@@ -21,8 +22,20 @@ const CARD_TITLE = 'text-2xl leading-6 font-semibold text-brand';
  *    회원 상세 API(GET /api/v1/admin/users/{userId}) 연결 전입니다.
  */
 export default function AdminMemberDetailPage() {
+  const { loading, user } = useRequireAuth('ADMIN');
   const params = useParams<{ memberId: string }>();
   const member = getMemberDetail(params.memberId);
+
+  if (loading) {
+    return (
+      <AppShell>
+        <section className="bg-white py-[100px] text-center">
+          <p className="text-xl font-semibold text-brand">불러오는 중입니다...</p>
+        </section>
+      </AppShell>
+    );
+  }
+  if (!user) return null;
 
   if (!member) {
     return (
