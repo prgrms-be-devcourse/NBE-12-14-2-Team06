@@ -1,6 +1,6 @@
 import type { CurrentUser } from '@/features/auth';
 import { api, apiPatch, apiPost, apiPut, type SpringPage } from '@/lib/api';
-import type { EscortProfileDto, ReviewDto, SettlementDto, SettlementStatus } from './types';
+import type { ClientProfileDto, EscortProfileDto, ReviewDto, SettlementDto, SettlementStatus } from './types';
 
 /** 기본 정보 수정 — PATCH /api/v1/users/profile. 백엔드가 수정할 때마다 비밀번호 재확인을 요구합니다. */
 export type ProfileUpdateRequest = {
@@ -37,6 +37,27 @@ export function createMyEscortProfile(request: EscortProfileWriteRequest): Promi
 /** 동행 매니저 추가 정보 수정 — PUT (이미 만들어져 있을 때) */
 export function updateMyEscortProfile(request: EscortProfileWriteRequest): Promise<EscortProfileDto> {
   return apiPut<EscortProfileDto>('/api/v1/users/profile/escort', request);
+}
+
+/** 의뢰인 추가 정보 — GET /api/v1/users/profile/client (보호자 연락처·특이사항, CLIENT 본인만) */
+export function fetchMyClientProfile(): Promise<ClientProfileDto> {
+  return api<ClientProfileDto>('/api/v1/users/profile/client');
+}
+
+export type ClientProfileWriteRequest = {
+  emergencyContactName: string;
+  emergencyContactPhone: string;
+  careNote: string;
+};
+
+/** 의뢰인 추가 정보 생성 — POST (아직 만든 적 없을 때) */
+export function createMyClientProfile(request: ClientProfileWriteRequest): Promise<ClientProfileDto> {
+  return apiPost<ClientProfileDto>('/api/v1/users/profile/client', request);
+}
+
+/** 의뢰인 추가 정보 수정 — PUT (이미 만들어져 있을 때) */
+export function updateMyClientProfile(request: ClientProfileWriteRequest): Promise<ClientProfileDto> {
+  return apiPut<ClientProfileDto>('/api/v1/users/profile/client', request);
 }
 
 /** 정산 목록 — GET /api/v1/settlements (기간·페이지·정렬은 서버가 처리) */
