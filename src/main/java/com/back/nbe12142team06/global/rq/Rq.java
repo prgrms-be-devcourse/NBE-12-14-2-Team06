@@ -33,7 +33,7 @@ public class Rq {
     private long refreshExpireSeconds;
 
     public void setAccessTokenCookie(String token) {
-        addCookie(ACCESS_TOKEN, token, "/", accessExpireSeconds);
+        addCookie(ACCESS_TOKEN, token, "/", refreshExpireSeconds);
     }
 
     // refresh 쿠키는 path를 재발급 경로로 제한해 일반 요청에 실리지 않게 한다
