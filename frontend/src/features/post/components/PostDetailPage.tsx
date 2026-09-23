@@ -12,6 +12,7 @@ import { fetchPendingPayment, type PaymentDto } from '@/features/payment';
 import { cn } from '@/lib/cn';
 import { deletePost, fetchPost } from '../api';
 import { daysFromNow, formatFullDate } from '../lib/date';
+import { postStatusLabel, toPostStatusKey } from '../model/status';
 import type { LabelTone, PostBadge, PostDetail } from '../types';
 import StatusLabel from './StatusLabel';
 
@@ -21,9 +22,6 @@ const BADGE: Record<PostBadge, { text: string; tone: LabelTone }> = {
   open: { text: '모집 중', tone: 'blue' },
   closed: { text: '마감', tone: 'gray' },
 };
-
-/** 백엔드 PostStatus.COMPLETED 의 설명 문구. 이 상태여야 남은 결제를 "추가 결제"로 볼 수 있습니다. */
-const COMPLETED_STATUS = '동행 완료';
 
 const CARD = 'rounded-[30px] border border-line bg-white shadow-card';
 const CARD_TITLE = 'text-2xl leading-6 font-semibold text-brand';
@@ -133,7 +131,7 @@ function PostDetailPageBody({ viewer }: Props) {
   // 동행이 끝난 내 공고일 때만 남은 결제를 확인합니다.
   // 결제 조회는 로그인(의뢰인 본인)이 필요하고, 동행 완료 전에 남아 있는 READY 결제는
   // "추가 결제"가 아니라 아직 안 낸 최초 결제라서 여기서 물어보면 안 됩니다.
-  const canHaveExtraPayment = isClient && post?.postStatus === COMPLETED_STATUS;
+  const canHaveExtraPayment = isClient && !!post && toPostStatusKey(post.postStatus) === 'completed';
 
   useEffect(() => {
     if (!canHaveExtraPayment) return;
@@ -196,7 +194,9 @@ function PostDetailPageBody({ viewer }: Props) {
     );
   }
 
-  const label = isClient ? { text: '모집 중', tone: 'purple' as const } : BADGE[post.badge];
+  // 의뢰인은 자기 공고의 진행 상태(모집 중 · 매칭 완료 · 진행 중 · 동행 완료 …)를 봅니다.
+  // 동행 매니저·비로그인은 "지원할 수 있는지"가 중요해서 신규/오늘 마감 같은 모집 배지를 그대로 씁니다.
+  const label = isClient ? postStatusLabel(post.postStatus) : BADGE[post.badge];
   const date = formatFullDate(daysFromNow(post.startsInDays));
   const duration = `약 ${post.hours}시간`;
   const pay = `시급 ${post.hourlyPay.toLocaleString()}원`;

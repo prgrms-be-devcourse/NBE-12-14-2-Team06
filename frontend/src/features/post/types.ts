@@ -5,6 +5,13 @@ export type LabelTone = 'green' | 'red' | 'blue' | 'purple' | 'gray' | 'strong';
 export type PostBadge = 'new' | 'closing' | 'open' | 'closed';
 
 /**
+ * 공고 진행 상태 (백엔드 PostStatus: OPEN → MATCHED → IN_PROGRESS → COMPLETED).
+ * canceled·expired(취소됨·마감 기한 초과)는 위 흐름에서 벗어난 상태입니다.
+ * 한글 문구와의 대응은 model/status.ts 를 보세요.
+ */
+export type PostStatusKey = 'open' | 'matched' | 'inProgress' | 'completed' | 'canceled' | 'expired';
+
+/**
  * 공고 목록 카드용 요약. 백엔드 응답(PostDto)을 model/mapper.ts 의 toPostSummary 로 바꾼 모양입니다.
  * 백엔드 PostDto 와 대응: title, hospitalName, region, escortStartAt, escortHours, hourlyPay, content, postStatus, createdAt
  */

@@ -1,10 +1,12 @@
 import type { TimelineStep } from '@/features/escort';
+import type { PostStatusKey } from '@/features/post';
 
 /**
- * 내가 작성한 공고의 진행 상태 (백엔드 PostStatus: OPEN → MATCHED → IN_PROGRESS → COMPLETED).
+ * 내가 작성한 공고의 진행 상태. 공고 상태는 post 도메인 것이라 PostStatusKey 를 그대로 씁니다.
+ * (한글 문구 ↔ 상태값 변환과 라벨 표는 features/post/model/status.ts 한 곳에 있습니다.)
  * canceled·expired(취소됨·마감 기한 초과)는 상태 탭이 따로 없어 "전체" 탭에서만 보입니다.
  */
-export type ClientPostStatus = 'open' | 'matched' | 'inProgress' | 'completed' | 'canceled' | 'expired';
+export type ClientPostStatus = PostStatusKey;
 
 /** "내가 작성한 공고" 카드 한 장 (모의 데이터용 모양) */
 export type ClientPost = {
