@@ -76,6 +76,13 @@ public class BaseInitData {
                 createClient("client03", "박의뢰", "010-1000-0003", "경기")
         );
 
+        // 동행 매니저 3명 + 관리자 1명. 지금은 로그인 확인용으로만 쓰여서 프로필(EscortProfile)은 따로 안 만듭니다.
+        createEscort("escort01", "최동행", "010-2000-0001", "서울");
+        createEscort("escort02", "정동행", "010-2000-0002", "부산");
+        createEscort("escort03", "한동행", "010-2000-0003", "경기");
+
+        createAdmin("admin01", "관리자", "010-3000-0001", "서울");
+
         record PostSeed(
                 String title, String content, String patientNote,
                 String region, String hospitalName, String hospitalAddress,
@@ -317,6 +324,37 @@ public class BaseInitData {
                 .region(region)
                 .build();
         return userRepository.save(client);
+    }
+
+    private User createEscort(String username, String name, String phoneNum, String region) {
+        User escort = User.builder()
+                .username(username)
+                .password(passwordEncoder.encode("password1!"))
+                .email(username + "@example.com")
+                .name(name)
+                .role(Role.ESCORT)
+                .gender(Gender.MALE)
+                .birthDate(LocalDate.of(1990, 6, 15))
+                .phoneNum(phoneNum)
+                .region(region)
+                .build();
+        return userRepository.save(escort);
+    }
+
+    // 회원가입 API(UserController.signUp)로는 ADMIN 을 만들 수 없어서(UserService.signUp 참고), 로그인 확인용으로 여기서 하나 심어둡니다.
+    private User createAdmin(String username, String name, String phoneNum, String region) {
+        User admin = User.builder()
+                .username(username)
+                .password(passwordEncoder.encode("password1!"))
+                .email(username + "@example.com")
+                .name(name)
+                .role(Role.ADMIN)
+                .gender(Gender.MALE)
+                .birthDate(LocalDate.of(1985, 1, 1))
+                .phoneNum(phoneNum)
+                .region(region)
+                .build();
+        return userRepository.save(admin);
     }
 
     private static BigDecimal bd(String value) {

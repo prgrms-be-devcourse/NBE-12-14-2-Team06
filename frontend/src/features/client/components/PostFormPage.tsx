@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState, type FormEvent } from 'react';
 import { AppShell } from '@/components/layout';
 import { Container, SectionHeading } from '@/components/ui';
-import { useRequireAuth } from '@/features/auth';
+import { LOGIN_HOME_BY_ROLE, useRequireAuth } from '@/features/auth';
 import { createPost, fetchPostRaw, updatePost, type PostDto, type PostWriteRequest } from '@/features/post';
 import { cn } from '@/lib/cn';
 import type { PlaceSearchResult } from '@/lib/kakaoMap';
@@ -101,12 +101,26 @@ function formatPay(value: string): string {
  * ⚠️ 병원명·출발지는 카카오맵 검색 결과에서 골라야만 위도·경도가 채워집니다 (백엔드가 필수로 요구합니다).
  *    그래서 Figma 의 "지역(시/도·구/군) 선택" 칸은 없앴고, 병원 주소에서 자동으로 뽑습니다.
  * TODO: 협의 가능·이동수단·동행인원은 백엔드에 없는 값이라 서버로 보내지 않습니다.
+ *
+ * 공고 등록·수정은 의뢰인(CLIENT) 또는 관리자(ADMIN)만 할 수 있습니다(백엔드 PostService.write/modify 와 동일 규칙).
+ * ⚠️ 이건 UX 용 가드일 뿐입니다 — 실제 차단은 백엔드가 하고, 여기선 로그인 안 했거나 역할이 안 맞는
+ *    사용자에게 폼을 보여줬다가 제출 시점에야 에러를 띄우지 않도록 미리 돌려보내는 역할만 합니다.
  */
 export default function PostFormPage() {
-  const { loading: authLoading, user } = useRequireAuth('CLIENT');
   const params = useParams<{ postId?: string }>();
   const postId = params.postId ? Number(params.postId) : undefined;
   const editing = postId !== undefined;
+  const router = useRouter();
+
+  // 로그인 안 됐으면 useRequireAuth 가 알아서 /login 으로 보냅니다.
+  // role 은 훅이 하나만 받을 수 있어서(CLIENT|ADMIN 둘 다 허용해야 함) 여기서 직접 확인합니다.
+  const { user, loading: authLoading, unauthenticated } = useRequireAuth();
+  const authorized = !!user && (user.role === 'CLIENT' || user.role === 'ADMIN');
+
+  useEffect(() => {
+    if (authLoading || unauthenticated || !user || authorized) return;
+    router.replace(LOGIN_HOME_BY_ROLE[user.role]);
+  }, [authLoading, unauthenticated, user, authorized, router]);
 
   // result.postId 로 "지금 postId 의 결과인지" 판단합니다. 새로 작성하는 경우는 서버에서 가져올 게 없어 바로 채웁니다.
   const [result, setResult] = useState<{ postId?: number; initial?: PostFormValues; error?: string } | undefined>(
@@ -127,16 +141,17 @@ export default function PostFormPage() {
   const initial = result && result.postId === postId ? result.initial : undefined;
   const loadError = result && result.postId === postId ? result.error : undefined;
 
-  if (authLoading) {
+  // 로그인 확인 중이거나(스피너), 로그인이 안 됐거나(곧 /login 으로 이동), 역할이 안 맞으면(곧 자기 홈으로 이동)
+  // 폼을 그리지 않고 기다립니다.
+  if (authLoading || unauthenticated || !authorized) {
     return (
       <AppShell>
         <section className="bg-white py-[100px] text-center">
-          <p className="text-xl font-semibold text-brand">불러오는 중입니다...</p>
+          <p className="text-xl font-semibold text-brand">확인하는 중입니다.</p>
         </section>
       </AppShell>
     );
   }
-  if (!user) return null;
 
   if (!initial) {
     return (

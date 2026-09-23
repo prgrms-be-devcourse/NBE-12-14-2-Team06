@@ -37,6 +37,9 @@ export default function AppShell({ children, user }: Props) {
     ? { name: me.name, href: MYPAGE_BY_ROLE[me.role], menu: menuRole && MYPAGE_MENUS[menuRole] }
     : undefined;
 
+  // 의뢰인·관리자만 헤더에 "공고등록"을 보여 줍니다(공고 작성 화면 자체도 이 두 역할만 들어갈 수 있음).
+  const canRegisterPost = me?.role === 'CLIENT' || me?.role === 'ADMIN';
+
   const handleLogout = async () => {
     await signOut();
     router.replace('/');
@@ -44,7 +47,7 @@ export default function AppShell({ children, user }: Props) {
 
   return (
     <>
-      <Header user={user ?? session} pending={!user && loading} onLogout={handleLogout} />
+      <Header user={user ?? session} pending={!user && loading} onLogout={handleLogout} canRegisterPost={canRegisterPost} />
       <main>{children}</main>
       <Footer />
     </>
