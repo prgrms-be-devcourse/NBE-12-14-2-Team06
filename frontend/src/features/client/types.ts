@@ -108,7 +108,6 @@ export type PostFormValues = {
   startTime: string;
   endTime: string;
   hourlyPay: string;
-  negotiable: boolean;
   transportOut: string;
   transportBack: string;
   party: string;
