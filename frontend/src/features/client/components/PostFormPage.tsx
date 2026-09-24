@@ -73,8 +73,7 @@ function toFormValues(dto: PostDto): PostFormValues {
     startTime: dto.escortStartAt.slice(11, 16),
     endTime: dto.escortEndAt.slice(11, 16),
     hourlyPay: dto.hourlyPay.toLocaleString(),
-    // ⚠️ 협의 가능·이동수단·동행인원은 백엔드에 없는 값이라 수정 화면에서 다시 선택해야 합니다.
-    negotiable: false,
+    // ⚠️ 이동수단·동행인원은 백엔드에 없는 값이라 수정 화면에서 다시 선택해야 합니다.
     transportOut: '',
     transportBack: '',
     party: '',
@@ -100,7 +99,7 @@ function formatPay(value: string): string {
  * 등록(POST)·수정(PUT) 모두 실제 백엔드에 연결되어 있습니다.
  * ⚠️ 병원명·출발지는 카카오맵 검색 결과에서 골라야만 위도·경도가 채워집니다 (백엔드가 필수로 요구합니다).
  *    그래서 Figma 의 "지역(시/도·구/군) 선택" 칸은 없앴고, 병원 주소에서 자동으로 뽑습니다.
- * TODO: 협의 가능·이동수단·동행인원은 백엔드에 없는 값이라 서버로 보내지 않습니다.
+ * TODO: 이동수단·동행인원은 백엔드에 없는 값이라 서버로 보내지 않습니다.
  *
  * 공고 등록·수정은 의뢰인(CLIENT) 또는 관리자(ADMIN)만 할 수 있습니다(백엔드 PostService.write/modify 와 동일 규칙).
  * ⚠️ 이건 UX 용 가드일 뿐입니다 — 실제 차단은 백엔드가 하고, 여기선 로그인 안 했거나 역할이 안 맞는
@@ -488,21 +487,18 @@ function PostFormFields({ postId, initial, sample }: FormFieldsProps) {
 
               <FormSection title="요청 조건">
                 <FormRow label="시급(금액)*" htmlFor="post-pay">
-                  <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-                    <div className="relative min-w-0 flex-1 sm:max-w-[389px]">
-                      <input
-                        id="post-pay"
-                        name="hourlyPay"
-                        required
-                        inputMode="numeric"
-                        value={hourlyPay}
-                        onChange={(event) => setHourlyPay(formatPay(event.target.value))}
-                        placeholder="예) 12,000"
-                        className={cn(FIELD, 'pr-12')}
-                      />
-                      <span className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-base text-brand-muted">원</span>
-                    </div>
-                    <CheckField name="negotiable" label="협의 가능" defaultChecked={initial.negotiable} />
+                  <div className="relative min-w-0 sm:max-w-[389px]">
+                    <input
+                      id="post-pay"
+                      name="hourlyPay"
+                      required
+                      inputMode="numeric"
+                      value={hourlyPay}
+                      onChange={(event) => setHourlyPay(formatPay(event.target.value))}
+                      placeholder="예) 12,000"
+                      className={cn(FIELD, 'pr-12')}
+                    />
+                    <span className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-base text-brand-muted">원</span>
                   </div>
                 </FormRow>
                 <FormRow label="이동수단*" htmlFor="post-transport-out">
