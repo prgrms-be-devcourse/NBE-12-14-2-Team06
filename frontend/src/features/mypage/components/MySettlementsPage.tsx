@@ -170,26 +170,29 @@ export default function MySettlementsPage() {
         />
 
         <div
-          role="tablist"
-          aria-label="정산 상태"
-          className="flex h-[35px] w-full max-w-[433px] items-center justify-center rounded-[50px] border border-line-soft bg-white px-[24px]"
+            role="tablist"
+            aria-label="정산 상태"
+            className="flex h-[35px] w-full max-w-[360px] items-center rounded-[999px] border border-line-soft bg-white"
         >
           {TABS.map((item) => {
             const selected = item.value === tab;
+
             return (
-              <button
-                key={item.value}
-                type="button"
-                role="tab"
-                aria-selected={selected}
-                onClick={() => setTab(item.value)}
-                className={cn(
-                  'h-[26px] flex-1 rounded-[30px] text-base leading-4 font-semibold whitespace-nowrap transition-colors',
-                  selected ? 'bg-brand text-white' : 'text-brand hover:bg-line-soft',
-                )}
-              >
-                {item.label}
-              </button>
+                <button
+                    key={item.value}
+                    type="button"
+                    role="tab"
+                    aria-selected={selected}
+                    onClick={() => setTab(item.value)}
+                    className={cn(
+                        'h-[35px] flex-1 rounded-[999px] text-base font-semibold whitespace-nowrap transition-colors',
+                        selected
+                            ? 'bg-brand text-white'
+                            : 'bg-transparent text-brand hover:bg-line-soft'
+                    )}
+                >
+                  {item.label}
+                </button>
             );
           })}
         </div>

@@ -68,9 +68,9 @@ export default function ClientPostsPage() {
         />
 
         <div
-          role="tablist"
-          aria-label="공고 상태"
-          className="flex w-full max-w-[735px] gap-2 overflow-x-auto rounded-[50px] bg-white ring-1 ring-line-soft lg:gap-[30px] lg:overflow-visible"
+            role="tablist"
+            aria-label="공고 상태"
+            className="flex w-full max-w-[600px] overflow-x-auto rounded-[50px] bg-white ring-1 ring-line-soft lg:overflow-visible"
         >
           {STATUS_TABS.map((tab) => (
             <button
@@ -83,8 +83,8 @@ export default function ClientPostsPage() {
                 setPage(0);
               }}
               className={cn(
-                'h-[35px] min-w-[80px] flex-1 rounded-[30px] px-4 text-base leading-[18px] font-semibold whitespace-nowrap transition-colors lg:w-[123px] lg:flex-none',
-                status === tab.value ? 'bg-brand text-white' : 'text-brand hover:bg-line-soft',
+                  'h-[35px] min-w-[80px] flex-1 rounded-[30px] px-3 text-lg leading-[18px] font-semibold whitespace-nowrap transition-colors',
+                  status === tab.value ? 'bg-brand text-white' : 'text-brand hover:bg-line-soft',
               )}
             >
               {tab.label}

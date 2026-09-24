@@ -103,7 +103,7 @@ export default function MyApplicationsPage() {
         <div
           role="tablist"
           aria-label="신청 상태"
-          className="mx-auto flex w-full max-w-[734px] justify-between gap-2 rounded-[50px] border border-line-soft bg-white max-lg:overflow-x-auto lg:gap-[30px]"
+          className="mx-auto flex w-full max-w-[600px] rounded-[50px] border border-line-soft bg-white max-lg:overflow-x-auto"
         >
           {STATUS_TABS.map((item) => {
             const selected = item.value === tab;
@@ -115,8 +115,8 @@ export default function MyApplicationsPage() {
                 aria-selected={selected}
                 onClick={() => setTab(item.value)}
                 className={cn(
-                  'h-[35px] w-[123px] shrink-0 rounded-[30px] px-3 text-lg leading-[18px] font-semibold whitespace-nowrap transition-colors',
-                  selected ? 'bg-brand text-white' : 'text-brand hover:bg-line-soft',
+                    'h-[35px] flex-1 rounded-[30px] px-3 text-lg leading-[18px] font-semibold whitespace-nowrap transition-colors',
+                    selected ? 'bg-brand text-white' : 'text-brand hover:bg-line-soft',
                 )}
               >
                 {item.label}
