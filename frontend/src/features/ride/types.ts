@@ -2,7 +2,7 @@
 export type RideDirection = 'TO_HOSPITAL' | 'TO_HOME';
 
 /** 이동수단 선택 상태 */
-export type RideStatus = 'PROCESSING' | 'ACCEPTED' | 'IN_PROGRESS' | 'COMPLETED';
+export type RideStatus = 'ACCEPTED' | 'IN_PROGRESS' | 'COMPLETED';
 
 /** 이동수단. 선택 전이면 null */
 export type RideSelect = 'WALK' | 'BUS' | 'TAXI' | 'OWN_CAR';

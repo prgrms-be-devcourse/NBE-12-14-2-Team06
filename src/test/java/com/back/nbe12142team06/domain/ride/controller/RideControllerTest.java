@@ -163,7 +163,7 @@ class RideControllerTest {
         resultActions.andExpect(jsonPath("$.statusCode").value("200-21"));
         resultActions.andExpect(jsonPath("$.msg").value("공고글 이동 정보를 불러왔습니다."));
         resultActions.andExpect(jsonPath("$.data[0].direction").value("TO_HOSPITAL"));
-        resultActions.andExpect(jsonPath("$.data[0].status").value("PROCESSING"));
+        resultActions.andExpect(jsonPath("$.data[0].status").value("ACCEPTED"));
         resultActions.andExpect(jsonPath("$.data[0].selected").value("TAXI")); // 공고 등록 때 고른 이동수단이 그대로 들어갑니다
     }
 
@@ -196,7 +196,7 @@ class RideControllerTest {
         resultActions.andExpect(jsonPath("$.statusCode").value("200-22"));
         resultActions.andExpect(jsonPath("$.msg").value("이동 정보를 불러왔습니다."));
         resultActions.andExpect(jsonPath("$.data.direction").value("TO_HOSPITAL"));
-        resultActions.andExpect(jsonPath("$.data.status").value("PROCESSING"));
+        resultActions.andExpect(jsonPath("$.data.status").value("ACCEPTED"));
         resultActions.andExpect(jsonPath("$.data.selected").value("TAXI")); // 공고 등록 때 고른 이동수단이 그대로 들어갑니다
     }
 
