@@ -13,6 +13,7 @@ import com.back.nbe12142team06.domain.post.dto.PostWriteRequest;
 import com.back.nbe12142team06.domain.post.dto.PostWriteResponse;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.service.PostService;
+import com.back.nbe12142team06.domain.ride.entity.RideSelect;
 import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpRequest;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Gender;
@@ -119,7 +120,7 @@ class PaymentControllerTest {
         PostWriteRequest postWriteRequest1 = new PostWriteRequest(
                 title, content, postRegion, hospitalName, hospitalAddress, hospitalLat, hospitalLng,
                 pickupAddress, pickupLat, pickupLng, hourlyPay, recruitStartAt, recruitEndAt, escortStartAt, escortEndAt,
-                "", true
+                RideSelect.TAXI, RideSelect.TAXI, "", true
         );
 
         PostWriteResponse post1 = postService.write(user1.getId(), postWriteRequest1);
@@ -127,7 +128,7 @@ class PaymentControllerTest {
         PostWriteRequest postWriteRequest2 = new PostWriteRequest(
                 title + "2", content + "2", postRegion + "2", hospitalName + "2", hospitalAddress + "2",
                 hospitalLat, hospitalLng, pickupAddress + "2", pickupLat, pickupLng, hourlyPay, recruitStartAt, recruitEndAt, escortStartAt, escortEndAt,
-                "", true
+                RideSelect.TAXI, RideSelect.TAXI, "", true
         );
 
         PostWriteResponse post2 = postService.write(user1.getId(), postWriteRequest2);
