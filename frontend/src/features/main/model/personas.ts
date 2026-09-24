@@ -7,7 +7,7 @@ export const PERSONAS: Persona[] = [
     tabDesc: ['혼자 병원 가기 어렵지만', '도움이 필요한 어르신께'],
     headline: '“혼자 병원 가기 어려운 어르신”',
     body: ['혼자 병원 가기 어려운 어르신,', '동행 매니저가 함께 이동합니다!'],
-    image: '/images/persona-senior.png',
+    image: '/images/signup/role-escort.png',
     imageAlt: '동행 매니저가 휠체어를 밀어주는 모습',
   },
   {

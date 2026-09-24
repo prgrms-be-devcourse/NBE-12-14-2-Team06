@@ -1,8 +1,7 @@
-import type { ComponentType, SVGProps } from 'react';
-
 /** 화면3 — 가지가 만드는 특별한 변화 */
 export type ChangeItem = {
-  icon: ComponentType<SVGProps<SVGSVGElement>>;
+  image: string;
+  imageAlt: string;
   title: string;
   description: [string, string];
 };
