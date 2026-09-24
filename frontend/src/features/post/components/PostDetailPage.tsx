@@ -93,7 +93,7 @@ function PostDetailPageBody({ viewer }: Props) {
   const params = useParams<{ postId: string }>();
   const router = useRouter();
   const pathname = usePathname();
-  const { unauthenticated } = useCurrentUser();
+  const { user, unauthenticated } = useCurrentUser();
   const postId = Number(params.postId);
 
   // result.postId 로 "지금 postId 의 결과인지"를 판단합니다. (postId 가 바뀐 직후에는 이전 결과를 버리고 loading 으로 봅니다)
@@ -202,8 +202,18 @@ function PostDetailPageBody({ viewer }: Props) {
   const pay = `시급 ${post.hourlyPay.toLocaleString()}원`;
   const location = `${post.region} ${post.district}`;
   const applyClosed = post.badge === 'closed';
-  const applyLabel = applyState === 'applied' ? '지원 완료' : applyState === 'applying' ? '지원 중…' : applyClosed ? '지원 불가' : '지원하기';
-  const applyDisabled = applyClosed || applyState !== 'idle';
+  // 지원은 동행 매니저(ESCORT)만 할 수 있어서, 의뢰인(CLIENT)으로 로그인했으면 공개 화면에서도 누를 수 없게 둡니다.
+  const applyBlockedByRole = user?.role === 'CLIENT';
+  const applyLabel = applyBlockedByRole
+    ? '지원 불가'
+    : applyState === 'applied'
+      ? '지원 완료'
+      : applyState === 'applying'
+        ? '지원 중…'
+        : applyClosed
+          ? '지원 불가'
+          : '지원하기';
+  const applyDisabled = applyBlockedByRole || applyClosed || applyState !== 'idle';
 
   const editHref = `/client/posts/${post.id}/edit`;
 
