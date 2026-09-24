@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { Container, SectionHeading } from '@/components/ui';
 import { applyToPost } from '@/features/application';
+import { useCurrentUser } from '@/features/auth';
 import { cn } from '@/lib/cn';
 import { fetchPosts, type PostPage } from '../api';
 import { DEFAULT_FILTERS, PAY_OPTIONS, PERIOD_OPTIONS, optionLabel } from '../model';
@@ -43,6 +44,10 @@ type PostListPageProps = {
 export default function PostListPage({
                                        detailBasePath = '/posts',
                                      }: PostListPageProps) {
+  // 지원은 동행 매니저(ESCORT)만 할 수 있어서, 의뢰인(CLIENT)에게는 버튼을 눌리지 않게 둡니다.
+  const { user } = useCurrentUser();
+  const isClient = user?.role === 'CLIENT';
+
   const [filters, setFilters] = useState<PostFilters>(DEFAULT_FILTERS);
   const [keywordInput, setKeywordInput] = useState('');
   const [page, setPage] = useState(0);
@@ -202,7 +207,9 @@ export default function PostListPage({
                       <CardButton href={`${detailBasePath}/${post.id}`}>
                         상세보기
                       </CardButton>
-                      {post.badge === 'closed' ? (
+                      {isClient ? (
+                        <CardButton variant="disabled">지원 불가</CardButton>
+                      ) : post.badge === 'closed' ? (
                         <CardButton variant="disabled">지원 불가</CardButton>
                       ) : applyStatus[post.id] === 'applied' ? (
                         <CardButton variant="disabled">지원 완료</CardButton>
