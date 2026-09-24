@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import Container from '@/components/ui/Container';
 import { cn } from '@/lib/cn';
@@ -42,11 +43,22 @@ export default function Header({ user, pending, onLogout, canRegisterPost, isEsc
 
   return (
     <header className="flex items-center bg-white py-4 lg:h-[118px] lg:py-0">
-      <Container className="flex flex-wrap items-center justify-between gap-6">
+      <Container className="flex flex-wrap items-center justify-between gap-6 lg:gap-x-10">
+        <Link href="/" aria-label="가지 홈" className="shrink-0">
+          <Image
+            src="/images/logo/logo.png"
+            alt=""
+            width={528}
+            height={528}
+            priority
+            className="size-[58px] -rotate-90 object-contain lg:size-[72px]"
+          />
+        </Link>
+
         {/* 모바일에서는 메뉴를 아래로 내리고 가로 스크롤 */}
         <nav
           aria-label="주요 메뉴"
-          className="order-2 flex w-full items-center gap-5 overflow-x-auto pb-1 lg:order-none lg:w-auto lg:gap-[33px] lg:overflow-visible lg:pb-0"
+          className="order-2 flex w-full items-center gap-5 overflow-x-auto pb-1 lg:order-none lg:mr-auto lg:w-auto lg:gap-[33px] lg:overflow-visible lg:pb-0"
         >
           {menuItems.map((item) => {
             // "공고 찾기"는 동행 매니저에게만 지원용 목록(/escort/posts, 로그인 필요)으로 보내고,
