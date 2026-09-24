@@ -10,7 +10,7 @@ export default function AboutSection() {
       {/* 데스크톱에서는 카드가 이미지 위로 겹침 (Figma: Image mr -317px) */}
       <Container className="flex flex-col items-stretch lg:flex-row lg:items-center">
         <div className="-mb-14 min-w-0 lg:mr-[-200px] lg:mb-0 lg:flex-[1_1_936px] xl:mr-[-317px]">
-          <Image src="/images/about-senior.jpeg" alt="휠체어에 앉아 손을 든 어르신 일러스트" width={936} height={630} priority className="h-auto w-full rounded-card object-contain" />
+          <Image src="/images/about-senior.png" alt="지팡이를 짚고있는 가지 일러스트" width={936} height={630} priority className="h-auto w-full rounded-card object-contain" />
         </div>
 
         <div className="relative z-10 mx-auto flex w-[calc(100%-2rem)] flex-col justify-center rounded-card border border-line bg-white px-10 py-12 drop-shadow-soft lg:mx-0 lg:w-auto lg:min-h-[434px] lg:flex-[0_0_440px] lg:px-14 lg:py-[62px] xl:flex-[0_0_487px]">

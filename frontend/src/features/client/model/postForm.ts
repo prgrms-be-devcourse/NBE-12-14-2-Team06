@@ -1,3 +1,4 @@
+import type { RideSelect } from '@/features/ride';
 import type { PostFormValues } from '../types';
 
 /** 공고 작성 폼의 선택지와 계산 도우미입니다. */
@@ -8,7 +9,23 @@ export const TIME_OPTIONS: string[] = Array.from({ length: 48 }, (_, index) => {
   return `${hour}:${index % 2 ? '30' : '00'}`;
 });
 
-export const TRANSPORT_OPTIONS = ['도보', '택시', '자가용', '대중교통', '휠체어 택시(콜택시)', '기타'];
+/**
+ * 이동수단 선택지. 백엔드 RideSelect 와 1:1 로 맞춰 둡니다 (여기에 없는 값을 보내면 백엔드가 400 을 냅니다).
+ * 화면에는 한글 라벨을 보여주고, 서버로 보낼 땐 toRideSelect 로 ENUM 이름을 꺼냅니다.
+ */
+const RIDE_SELECT_BY_LABEL: Record<string, RideSelect> = {
+  도보: 'WALK',
+  대중교통: 'BUS',
+  택시: 'TAXI',
+  자가용: 'OWN_CAR',
+};
+
+export const TRANSPORT_OPTIONS = Object.keys(RIDE_SELECT_BY_LABEL);
+
+/** "택시" → "TAXI". 선택지에 없는 값이면 undefined (폼에서 required 로 막고 있습니다) */
+export function toRideSelect(label: string): RideSelect | undefined {
+  return RIDE_SELECT_BY_LABEL[label];
+}
 export const PARTY_OPTIONS = ['1명 (본인만)', '2명 (보호자 동반)', '3명 이상'];
 
 export const EMPTY_FORM: PostFormValues = {
@@ -26,7 +43,6 @@ export const EMPTY_FORM: PostFormValues = {
   startTime: '',
   endTime: '',
   hourlyPay: '',
-  negotiable: false,
   transportOut: '',
   transportBack: '',
   party: '',
@@ -150,7 +166,6 @@ export const SAMPLE_FORM: PostFormValues = {
   startTime: '10:00',
   endTime: '13:30',
   hourlyPay: '14,000',
-  negotiable: false,
   transportOut: '택시',
   transportBack: '택시',
   party: '1명 (본인만)',

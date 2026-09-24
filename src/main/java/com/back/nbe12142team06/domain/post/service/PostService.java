@@ -14,6 +14,7 @@ import com.back.nbe12142team06.domain.post.dto.PostWriteResponse;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.entity.PostStatus;
 import com.back.nbe12142team06.domain.post.repository.PostRepository;
+import com.back.nbe12142team06.domain.ride.dto.RideUpdateRequest;
 import com.back.nbe12142team06.domain.ride.service.RideService;
 import com.back.nbe12142team06.domain.user.entity.EscortProfile;
 import com.back.nbe12142team06.domain.user.entity.User;
@@ -109,7 +110,7 @@ public class PostService {
         // 결제 데이터 생성
         Payment payment = paymentService.createPayment(savedPost);
         // 이동수단 데이터 생성
-        rideService.createRide(savedPost);
+        rideService.createRide(savedPost, request.rideSelectToHospital(), request.rideSelectToHome());
 
         return new PostWriteResponse(savedPost, payment.getId());
     }
@@ -148,6 +149,9 @@ public class PostService {
                 request.escortStartAt(), request.escortEndAt(),
                 request.patientNote(), request.reportRequired()
         ); //더티체킹으로 자동 update 쿼리 생성
+
+        // 이동 수단 변경
+        rideService.updateRide(postId, new RideUpdateRequest(request.rideSelectToHospital(), request.rideSelectToHome()));
     }
     @Transactional
     public void delete(Long postId, Long userId) {

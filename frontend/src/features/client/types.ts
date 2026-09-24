@@ -1,5 +1,6 @@
 import type { TimelineStep } from '@/features/escort';
 import type { PostStatusKey } from '@/features/post';
+import type { RoutePoint } from '@/lib/kakaoT';
 
 /**
  * 내가 작성한 공고의 진행 상태. 공고 상태는 post 도메인 것이라 PostStatusKey 를 그대로 씁니다.
@@ -81,6 +82,9 @@ export type ClientEscortCase = {
   confirmedEndAt?: string;
   transport: string;
   meetingPlace: string;
+  /** 카카오 T 호출 링크에 쓰는 집(픽업)·병원 좌표. 둘 다 있어야 버튼을 보여줍니다. */
+  pickupPoint?: RoutePoint;
+  hospitalPoint?: RoutePoint;
   /** 지도 "최근 업데이트" 시각 */
   updatedAt: string;
   manager: Manager;
@@ -108,7 +112,6 @@ export type PostFormValues = {
   startTime: string;
   endTime: string;
   hourlyPay: string;
-  negotiable: boolean;
   transportOut: string;
   transportBack: string;
   party: string;

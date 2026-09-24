@@ -1,5 +1,6 @@
 package com.back.nbe12142team06.domain.post.dto;
 
+import com.back.nbe12142team06.domain.ride.entity.RideSelect;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -40,6 +41,10 @@ public record PostWriteRequest(
         LocalDateTime escortStartAt,
         @NotNull(message = "동행 종료 시간은 필수 항목입니다.")
         LocalDateTime escortEndAt,
+        @NotNull(message = "집 -> 병원 이동 수단은 필수 항목입니다.")
+        RideSelect rideSelectToHospital,
+        @NotNull(message = "병원 -> 집 이동 수단은 필수 항목입니다.")
+        RideSelect rideSelectToHome,
         String patientNote,       // nullable - 선택 항목
         boolean reportRequired    // 기본값 true
 ) {

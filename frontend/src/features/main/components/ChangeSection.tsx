@@ -1,5 +1,7 @@
 'use client';
 
+import Image from 'next/image';
+
 import { Container, SectionHeading } from '@/components/ui';
 import { CHANGES } from '../model';
 
@@ -27,11 +29,15 @@ export default function ChangeSection() {
         />
 
         <div className="grid grid-cols-1 rounded-card border border-line bg-white p-8 drop-shadow-soft sm:grid-cols-2 xl:grid-cols-4 xl:px-[66px] xl:py-10">
-          {CHANGES.map(({ icon: Icon, title, description }) => (
+          {CHANGES.map(({ image, imageAlt, title, description }) => (
             <div key={title} className={CELL}>
-              <span className="grid size-[58px] shrink-0 place-items-center rounded-[18px] bg-line-soft">
-                <Icon className="size-[30px] text-brand" />
-              </span>
+              <Image
+                src={image}
+                alt={imageAlt}
+                width={240}
+                height={240}
+                className="size-[120px] shrink-0 object-contain"
+              />
               <h3 className="text-xl leading-6 font-semibold text-brand">{title}</h3>
               <p className="max-w-[170px] text-base leading-[22px] font-semibold text-brand-muted">
                 {description[0]}
