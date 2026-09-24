@@ -4,6 +4,7 @@ import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.ride.dto.RideUpdateRequest;
 import com.back.nbe12142team06.domain.ride.entity.Ride;
 import com.back.nbe12142team06.domain.ride.entity.RideDirection;
+import com.back.nbe12142team06.domain.ride.entity.RideSelect;
 import com.back.nbe12142team06.domain.ride.entity.RideStatus;
 import com.back.nbe12142team06.domain.ride.repository.RideRepository;
 import com.back.nbe12142team06.global.exception.ForbiddenException;
@@ -24,18 +25,24 @@ public class RideService {
 
     // 이동 수단 변경
     @Transactional
-    public Ride updateRide(Long userId, Long rideId, RideUpdateRequest request) {
-        Ride ride = findById(userId, rideId);
+    public List<Ride> updateRide(Long postId, RideUpdateRequest request) {
+        List<Ride> rides = findByPostId(postId);
 
-        RideStatus status = ride.getRideStatus();
-        if (status.equals(RideStatus.IN_PROGRESS) ||
-                status.equals(RideStatus.COMPLETED)) {
-            throw new InvalidException(20, "이미 이동 중이거나 이동 완료이므로 수정이 불가능합니다.");
+        for (Ride ride : rides) {
+            RideStatus status = ride.getRideStatus();
+            if (status.equals(RideStatus.IN_PROGRESS) ||
+                    status.equals(RideStatus.COMPLETED)) {
+                throw new InvalidException(20, "이미 이동 중이거나 이동 완료이므로 수정이 불가능합니다.");
+            }
+
+            if (ride.getDirection().equals(RideDirection.TO_HOSPITAL)) {
+                ride.rideUpdate(request.rideSelectToHospital().toString());
+            } else {
+                ride.rideUpdate(request.rideSelectToHome().toString());
+            }
         }
 
-        ride.rideUpdate(request.rideSelect());
-
-        return ride;
+        return rides;
     }
 
     // 공고로 상세 정보 찾기
@@ -94,22 +101,18 @@ public class RideService {
 
         ride.updateStatus(RideStatus.COMPLETED);
 
-        // 이동 완료 후 집으로 돌아가는 이동 데이터 생성
-        Ride toHomeRide = Ride.builder()
-                .post(ride.getPost())
-                .direction(RideDirection.TO_HOME)
-                .build();
-
-        return toHomeRide;
+        return ride;
     }
 
     @Transactional
-    public void createRide(Post post) {
+    public void createRide(Post post, RideSelect toHospital, RideSelect toHome) {
         Ride rideToHos = Ride.builder()
                 .post(post)
+                .selected(toHospital)
                 .build();
         Ride rideToHome = Ride.builder()
                 .post(post)
+                .selected(toHome)
                 .direction(RideDirection.TO_HOME)
                 .build();
         rideRepository.save(rideToHos);

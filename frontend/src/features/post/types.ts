@@ -1,3 +1,5 @@
+import type { RideSelect } from '@/features/ride';
+
 /** 상태 라벨 색 (Figma 라벨 컴포넌트) */
 export type LabelTone = 'green' | 'red' | 'blue' | 'purple' | 'gray' | 'strong';
 
@@ -120,6 +122,10 @@ export type PostWriteRequest = {
   recruitEndAt: string;
   escortStartAt: string;
   escortEndAt: string;
+  /** 갈 때(집 → 병원) 이동수단. 공고를 만들 때 Ride 2건이 이 값으로 함께 생성됩니다. */
+  rideSelectToHospital: RideSelect;
+  /** 올 때(병원 → 집) 이동수단 */
+  rideSelectToHome: RideSelect;
   patientNote: string | null;
   reportRequired: boolean;
 };
