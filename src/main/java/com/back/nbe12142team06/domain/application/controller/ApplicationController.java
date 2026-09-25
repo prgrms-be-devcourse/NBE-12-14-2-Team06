@@ -13,6 +13,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Tag(name = "지원", description = "동행 지원 관련 API")
 @RestController
 @RequiredArgsConstructor
@@ -129,6 +131,21 @@ public class ApplicationController {
                 "200-2",
                 "지원자 프로필 조회가 완료되었습니다.",
                 response
+        );
+    }
+
+    @Operation(summary = "내 지원 목록 조회", description = "로그인한 동행 매니저의 지원 내역을 조회합니다.")
+    @GetMapping("/me")
+    public RsData<List<MyApplicationResponse>> myApplications(
+            @AuthenticationPrincipal SecurityUser actor
+    ) {
+        List<MyApplicationResponse> responses =
+                applicationService.getMyApplications(actor.getId());
+
+        return new RsData<>(
+                "200-1",
+                "내 지원 목록 조회가 완료되었습니다.",
+                responses
         );
     }
 

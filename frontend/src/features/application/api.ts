@@ -6,14 +6,22 @@ import type {
   ApplicationApplyDto,
   EscortProfileDto,
   EscortProgress,
+  MyApplicationDto,
 } from './types';
-
 /**
  * 공고에 지원하기 — POST /api/v1/applications/{postId}
  * 동행 매니저(ESCORT)로 로그인해야 하고, 모집 중인 공고에만, 같은 공고엔 한 번만 지원할 수 있습니다.
  */
 export function applyToPost(postId: number): Promise<ApplicationApplyDto> {
   return apiPost<ApplicationApplyDto>(`/api/v1/applications/${postId}`);
+}
+
+/**
+ * 내 지원 목록 조회 — GET /api/v1/applications/me
+ * 로그인한 동행 매니저의 전체 지원 내역을 조회합니다.
+ */
+export function fetchMyApplications(): Promise<MyApplicationDto[]> {
+  return api<MyApplicationDto[]>('/api/v1/applications/me');
 }
 
 /**
