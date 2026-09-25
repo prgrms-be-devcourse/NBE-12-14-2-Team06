@@ -38,8 +38,12 @@ public class WatchProgressLog {
     private LocalDateTime receivedAt;
 
 
-    public WatchProgressLog(EscortProfile escortProfile, EducationVideo educationVideo,
-                    double positionSec, LocalDateTime receivedAt) {
+    public WatchProgressLog(
+            EscortProfile escortProfile,
+            EducationVideo educationVideo,
+            double positionSec,
+            LocalDateTime receivedAt
+    ) {
         this.escortProfile = escortProfile;
         this.educationVideo = educationVideo;
         this.positionSec = positionSec;
