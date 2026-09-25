@@ -66,8 +66,8 @@ public class ApplicationService {
             throw new ForbiddenException("교육 영상 시청을 완료한 후 지원할 수 있습니다.");
         }
 
-        // 동일 공고 중복 지원 방지
-        if (applicationRepository.existsByPostAndEscort(post, escort)) {
+        // 취소되지 않은 동일 공고 지원이 있으면 중복 지원 방지
+        if (applicationRepository.existsByPostAndEscortAndStatusNot(post, escort, ApplicationStatus.CANCELED)) {
             throw new DuplicatedException("이미 지원한 공고입니다.");
         }
 

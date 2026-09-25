@@ -13,8 +13,8 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface ApplicationRepository extends JpaRepository<Application, Long> {
-    // 중복 지원 방지(post+escort)
-    boolean existsByPostAndEscort(Post post, User escort);
+    // 취소되지 않은 동일 공고 중복 지원 방지
+    boolean existsByPostAndEscortAndStatusNot(Post post, User escort, ApplicationStatus status);
 
     // 공고별 지원 목록 조회
     @Query("""

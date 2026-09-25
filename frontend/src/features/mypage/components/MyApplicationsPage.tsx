@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { useEffect, useState, type FormEvent } from 'react';
 import { AppShell } from '@/components/layout';
 import { SectionHeading } from '@/components/ui';
-import { fetchMyApplications, type MyApplicationDto } from '@/features/application';
+import { cancelApplication, fetchMyApplications, type MyApplicationDto } from '@/features/application';
 import { useRequireAuth } from '@/features/auth';
 import { CardButton, PostCard } from '@/features/post';
 import { cn } from '@/lib/cn';
@@ -20,9 +20,12 @@ function toApplicationStatus(application: MyApplicationDto): ApplicationStatus {
     return 'pending';
   }
 
+  if (application.applicationStatus === 'CANCELED') {
+    return 'canceled';
+  }
+
   if (
       application.applicationStatus === 'REJECTED' ||
-      application.applicationStatus === 'CANCELED' ||
       application.applicationStatus === 'NO_SHOW'
   ) {
     return 'rejected';
@@ -66,17 +69,27 @@ function toApplication(dto: MyApplicationDto): Application {
 }
 
 /** 상태별 카드 아래쪽 버튼 (Figma: 지원 취소 / 동행 보기 / 보고서 보기 / 지원불가) */
-function ApplicationActions({ application }: { application: Application }) {
+function ApplicationActions({
+                              application,
+                              onCancel,
+                            }: {
+  application: Application;
+  onCancel: (applicationId: number) => void;
+}) {
   const detail = <CardButton href={`/posts/${application.postId}`}>상세보기</CardButton>;
 
   switch (application.status) {
     case 'pending':
-      // TODO: 지원 취소 API(PATCH /api/v1/applications/{applicationId}/cancel) 연결
       return (
-        <>
-          {detail}
-          <CardButton variant="solid">지원 취소</CardButton>
-        </>
+          <>
+            {detail}
+            <CardButton
+                variant="solid"
+                onClick={() => onCancel(application.id)}
+            >
+              지원 취소
+            </CardButton>
+          </>
       );
     case 'matched':
     case 'inProgress':
@@ -99,6 +112,13 @@ function ApplicationActions({ application }: { application: Application }) {
           {detail}
           <CardButton variant="disabled">지원불가</CardButton>
         </>
+      );
+    case 'canceled':
+      return (
+          <>
+            {detail}
+            <CardButton variant="disabled">지원 취소</CardButton>
+          </>
       );
   }
 }
@@ -127,7 +147,14 @@ export default function MyApplicationsPage() {
         .then((data) => {
           if (ignore) return;
 
-          setApplicationData(data.map(toApplication));
+          const latestApplications = data.filter(
+              (application, index, array) =>
+                  index === array.findIndex(
+                      (item) => item.postId === application.postId
+                  )
+          );
+
+          setApplicationData(latestApplications.map(toApplication));
         })
         .catch((error) => {
           if (ignore) return;
@@ -148,6 +175,28 @@ export default function MyApplicationsPage() {
       ignore = true;
     };
   }, [user]);
+
+  const handleCancel = async (applicationId: number) => {
+    if (!window.confirm('지원을 취소하시겠습니까?')) return;
+
+    try {
+      await cancelApplication(applicationId);
+
+      setApplicationData((current) =>
+          current.map((application) =>
+              application.id === applicationId
+                  ? { ...application, status: 'canceled' }
+                  : application,
+          ),
+      );
+    } catch (error) {
+      setApplicationsError(
+          error instanceof Error
+              ? error.message
+              : '지원 취소에 실패했습니다.',
+      );
+    }
+  };
 
   const handleSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -294,7 +343,10 @@ export default function MyApplicationsPage() {
                     payLabel={application.payLabel}
                     description={application.description}
                   >
-                    <ApplicationActions application={application} />
+                    <ApplicationActions
+                        application={application}
+                        onCancel={handleCancel}
+                    />
                   </PostCard>
                 </li>
               );

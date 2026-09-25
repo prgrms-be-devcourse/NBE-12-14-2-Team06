@@ -152,7 +152,11 @@ function PostDetailPageBody({ viewer }: Props) {
           if (ignore) return;
 
           setAlreadyApplied(
-              applications.some((application) => application.postId === postId)
+              applications.some(
+                  (application) =>
+                      application.postId === postId &&
+                      application.applicationStatus !== 'CANCELED'
+              )
           );
         })
         .catch(() => {

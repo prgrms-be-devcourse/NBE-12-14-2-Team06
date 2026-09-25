@@ -77,7 +77,11 @@ export default function PostListPage({
         .then((applications) => {
           if (ignore) return;
           setAppliedPostIds(
-              new Set(applications.map((application) => application.postId))
+              new Set(
+                  applications
+                      .filter((application) => application.applicationStatus !== 'CANCELED')
+                      .map((application) => application.postId)
+              )
           );
         })
         .catch(() => {
