@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(name = "watch_log")
+@Table(name = "watch_progress_log")
 public class WatchProgressLog {
 
     @Id
