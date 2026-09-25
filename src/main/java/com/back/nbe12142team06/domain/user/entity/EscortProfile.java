@@ -101,4 +101,14 @@ public class EscortProfile extends BaseTimeEntity {
     public void increaseNoShowCount() {
         this.noShowCount++;
     }
+
+    // 교육 이수 처리
+    public void verify(LocalDateTime now) {
+        if (this.verified) {
+            return;
+        }
+        this.verifiedAt = now;
+        this.verified = true;
+    }
+
 }

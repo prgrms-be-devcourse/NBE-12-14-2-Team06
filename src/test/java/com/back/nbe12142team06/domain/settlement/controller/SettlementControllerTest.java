@@ -117,6 +117,8 @@ class SettlementControllerTest {
 
         EscortProfile escortProfile1 = new EscortProfile(savedUser2, "하이", "오픈은행", savedUser2.getName(), "000-1234567-000");
         escortProfileRepository.save(escortProfile1);
+        escortProfile1.verify(LocalDateTime.now()); // 교육 이수 처리 (지원 가능 상태)
+
         EscortProfile escortProfile2 = new EscortProfile(savedUser3,"으악", "오픈은행", savedUser3.getName(), "111-7654321-111");
         escortProfileRepository.save(escortProfile2);
 

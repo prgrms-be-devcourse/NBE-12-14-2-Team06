@@ -1,14 +1,19 @@
 package com.back.nbe12142team06.global.initData;
 
+import com.back.nbe12142team06.domain.education.entity.EducationVideo;
+import com.back.nbe12142team06.domain.education.repository.EducationVideoRepository;
+import com.back.nbe12142team06.domain.education.service.EducationService;
 import com.back.nbe12142team06.domain.payment.entity.Payment;
 import com.back.nbe12142team06.domain.payment.entity.PaymentStatus;
 import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.entity.PostStatus;
 import com.back.nbe12142team06.domain.post.repository.PostRepository;
+import com.back.nbe12142team06.domain.user.entity.EscortProfile;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Gender;
 import com.back.nbe12142team06.domain.user.enums.Role;
+import com.back.nbe12142team06.domain.user.repository.EscortProfileRepository;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -53,6 +58,9 @@ public class BaseInitData {
     private final PaymentRepository paymentRepository;
     private final PasswordEncoder passwordEncoder;
     private final PlatformTransactionManager transactionManager;
+    private final EducationVideoRepository educationVideoRepository;
+    private final EscortProfileRepository escortProfileRepository;
+    private final EducationService educationService;
 
     @PersistenceContext
     private EntityManager em;
@@ -63,7 +71,10 @@ public class BaseInitData {
             TransactionTemplate transactionTemplate =
                     new TransactionTemplate(transactionManager);
 
-            transactionTemplate.executeWithoutResult(status -> initPosts());
+            transactionTemplate.executeWithoutResult(status -> {
+                initEducationVideos();
+                initPosts();
+            });
         };
     }
 
@@ -76,10 +87,12 @@ public class BaseInitData {
                 createClient("client03", "박의뢰", "010-1000-0003", "경기")
         );
 
-        // 동행 매니저 3명 + 관리자 1명. 지금은 로그인 확인용으로만 쓰여서 프로필(EscortProfile)은 따로 안 만듭니다.
-        createEscort("escort01", "최동행", "010-2000-0001", "서울");
-        createEscort("escort02", "정동행", "010-2000-0002", "부산");
-        createEscort("escort03", "한동행", "010-2000-0003", "경기");
+        // 동행 매니저 3명: 프로필 + 교육 진행 상황까지 생성. escort01만 교육 이수 완료 상태
+        EscortProfile escort01 = createEscortWithProfile("escort01", "최동행", "010-2000-0001", "서울");
+        createEscortWithProfile("escort02", "정동행", "010-2000-0002", "부산");
+        createEscortWithProfile("escort03", "한동행", "010-2000-0003", "경기");
+
+        escort01.verify(LocalDateTime.now());
 
         createAdmin("admin01", "관리자", "010-3000-0001", "서울");
 
@@ -311,6 +324,14 @@ public class BaseInitData {
         }
     }
 
+    void initEducationVideos() {
+        if (educationVideoRepository.count() > 0) return;
+
+        educationVideoRepository.save(
+                new EducationVideo("동행 서비스 기본 교육", "/videos/sample_video.mp4", 60, true)
+        );
+    }
+
     private User createClient(String username, String name, String phoneNum, String region) {
         User client = User.builder()
                 .username(username)
@@ -339,6 +360,19 @@ public class BaseInitData {
                 .region(region)
                 .build();
         return userRepository.save(escort);
+    }
+
+    // 동행 매니저 회원 + 프로필 + 교육 진행 상황 생성
+    private EscortProfile createEscortWithProfile(String username, String name, String phoneNum, String region) {
+        User user = createEscort(username, name, phoneNum, region);
+
+        EscortProfile profile = escortProfileRepository.save(
+                new EscortProfile(user, "안녕하세요. 동행 매니저 " + name + "입니다.", "국민은행", name, "123-456-789012")
+        );
+
+        educationService.createProgresses(profile);
+
+        return profile;
     }
 
     // 회원가입 API(UserController.signUp)로는 ADMIN 을 만들 수 없어서(UserService.signUp 참고), 로그인 확인용으로 여기서 하나 심어둡니다.
