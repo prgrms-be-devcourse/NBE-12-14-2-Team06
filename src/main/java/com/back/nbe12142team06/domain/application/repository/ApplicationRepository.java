@@ -57,4 +57,15 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
           )
         """)
     boolean hasActiveMatching(@Param("escortId") Long escortId, @Param("clientId") Long clientId);
+
+    @Query("""
+    SELECT a
+    FROM Application a
+    JOIN FETCH a.post
+    WHERE a.escort.id = :escortId
+    ORDER BY a.id DESC
+    """)
+    List<Application> findAllByEscortIdWithPost(
+            @Param("escortId") Long escortId
+    );
 }

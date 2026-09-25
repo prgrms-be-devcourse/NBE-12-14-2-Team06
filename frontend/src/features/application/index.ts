@@ -4,6 +4,7 @@
  */
 export {
   applyToPost,
+  fetchMyApplications,
   fetchApplicants,
   fetchEscortProfile,
   acceptApplication,
@@ -20,4 +21,5 @@ export type {
   EscortProfileDto,
   ApplicationApplyDto,
   ApplicationAcceptDto,
+  MyApplicationDto,
 } from './types';

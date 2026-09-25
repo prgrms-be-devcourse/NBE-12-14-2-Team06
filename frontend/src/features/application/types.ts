@@ -58,3 +58,19 @@ export type Applicant = {
   /** 프로필은 별도 호출(escort-profile)로 채워집니다. 아직 안 왔으면 undefined */
   profile?: EscortProfileDto;
 };
+
+export type MyApplicationDto = {
+  applicationId: number;
+  postId: number;
+  applicationStatus: ApplicationStatus;
+  postStatus: string;
+  title: string;
+  hospitalName: string;
+  region: string;
+  hospitalAddress: string;
+  escortStartAt: string;
+  escortEndAt: string;
+  hourlyPay: number;
+  escortHours: number;
+  content: string;
+};
