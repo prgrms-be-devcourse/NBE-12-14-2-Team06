@@ -14,6 +14,10 @@ import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.entity.PostStatus;
 import com.back.nbe12142team06.domain.post.repository.PostRepository;
 import com.back.nbe12142team06.domain.post.service.PostService;
+import com.back.nbe12142team06.domain.ride.entity.RideDirection;
+import com.back.nbe12142team06.domain.ride.entity.RideSelect;
+import com.back.nbe12142team06.domain.ride.entity.RideStatus;
+import com.back.nbe12142team06.domain.ride.repository.RideRepository;
 import com.back.nbe12142team06.domain.user.entity.EscortProfile;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Gender;
@@ -67,6 +71,8 @@ public class PostControllerTest {
     private EscortProfileRepository escortProfileRepository;
     @Autowired
     private EscortProgressLogRepository escortProgressLogRepository;
+    @Autowired
+    private RideRepository rideRepository;
     @Autowired
     private PostService postService;
     @Autowired
@@ -269,6 +275,13 @@ public class PostControllerTest {
     // 시간 순서: 모집시작 -> 모집마감 -> 동행시작 -> 동행종료
     private String validPostJson(LocalDateTime recruitStartAt, LocalDateTime recruitEndAt,
                                  LocalDateTime escortStartAt, LocalDateTime escortEndAt) {
+        return validPostJson(recruitStartAt, recruitEndAt, escortStartAt, escortEndAt,
+                RideSelect.TAXI, RideSelect.TAXI);
+    }
+
+    private String validPostJson(LocalDateTime recruitStartAt, LocalDateTime recruitEndAt,
+                                 LocalDateTime escortStartAt, LocalDateTime escortEndAt,
+                                 RideSelect toHospital, RideSelect toHome) {
         return """
                 {
                     "title": "정형외과 동행 구합니다",
@@ -286,10 +299,20 @@ public class PostControllerTest {
                     "recruitEndAt": "%s",
                     "escortStartAt": "%s",
                     "escortEndAt": "%s",
+                    "rideSelectToHospital": "%s",
+                    "rideSelectToHome": "%s",
                     "patientNote": "거동이 불편하신 70대 어르신",
                     "reportRequired": true
                 }
-                """.formatted(recruitStartAt, recruitEndAt, escortStartAt, escortEndAt);
+                """.formatted(recruitStartAt, recruitEndAt, escortStartAt, escortEndAt, toHospital, toHome);
+    }
+
+    private RideSelect selectedOf(Long postId, RideDirection direction) {
+        return rideRepository.findAllByPostId(postId).stream()
+                .filter(ride -> ride.getDirection() == direction)
+                .findFirst()
+                .orElseThrow()
+                .getSelected();
     }
 
     @Test
@@ -916,6 +939,55 @@ public class PostControllerTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.statusCode").value("401-15"));
     }
+
+    @Test
+    @DisplayName("[PostController] 공고 수정 - 이동수단도 함께 변경된다")
+    void t28() throws Exception {
+        Long postId = registerPost(); // 등록 시 갈 때·올 때 모두 TAXI
+        assertThat(selectedOf(postId, RideDirection.TO_HOSPITAL)).isEqualTo(RideSelect.TAXI);
+        assertThat(selectedOf(postId, RideDirection.TO_HOME)).isEqualTo(RideSelect.TAXI);
+
+        LocalDateTime now = LocalDateTime.now();
+        ResultActions resultActions = mvc
+                .perform(put("/api/v1/posts/{postId}", postId)
+                        .cookie(accessTokenCookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validPostJson(now.plusDays(1), now.plusDays(2),
+                                now.plusDays(3), now.plusDays(3).plusHours(3),
+                                RideSelect.WALK, RideSelect.BUS)))
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-1"));
+
+        assertThat(selectedOf(postId, RideDirection.TO_HOSPITAL)).isEqualTo(RideSelect.WALK);
+        assertThat(selectedOf(postId, RideDirection.TO_HOME)).isEqualTo(RideSelect.BUS);
+    }
+
+    @Test
+    @DisplayName("[PostController] 공고 수정 - 이미 이동 중이면 400 반환")
+    void t29() throws Exception {
+        Long postId = registerPost();
+
+        // 갈 때 이동을 "이동 중"으로 바꿔 두면 이동수단을 더 이상 수정할 수 없어야 합니다.
+        rideRepository.findAllByPostId(postId).stream()
+                .filter(ride -> ride.getDirection() == RideDirection.TO_HOSPITAL)
+                .findFirst().orElseThrow()
+                .updateStatus(RideStatus.IN_PROGRESS);
+
+        LocalDateTime now = LocalDateTime.now();
+        ResultActions resultActions = mvc
+                .perform(put("/api/v1/posts/{postId}", postId)
+                        .cookie(accessTokenCookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validPostJson(now.plusDays(1), now.plusDays(2),
+                                now.plusDays(3), now.plusDays(3).plusHours(3),
+                                RideSelect.WALK, RideSelect.BUS)))
+                .andDo(print());
+
+        resultActions
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.statusCode").value("400-20"));
+    }
 }
-
-

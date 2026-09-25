@@ -9,6 +9,7 @@ import com.back.nbe12142team06.domain.payment.client.TossPaymentClient;
 import com.back.nbe12142team06.domain.post.dto.PostWriteRequest;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.service.PostService;
+import com.back.nbe12142team06.domain.ride.entity.RideSelect;
 import com.back.nbe12142team06.domain.settlement.entity.Settlement;
 import com.back.nbe12142team06.domain.settlement.entity.SettlementStatus;
 import com.back.nbe12142team06.domain.settlement.repository.SettlementRepository;
@@ -138,7 +139,7 @@ class SettlementControllerTest {
         PostWriteRequest postWriteRequest1 = new PostWriteRequest(
                 title, content, postRegion, hospitalName, hospitalAddress, hospitalLat, hospitalLng,
                 pickupAddress, pickupLat, pickupLng, hourlyPay, recruitStartAt, recruitEndAt, escortStartAt, escortEndAt,
-                "", true
+                RideSelect.TAXI, RideSelect.TAXI, "", true
         );
 
         savedPost1 = postService.findById(postService.write(savedUser1.getId(), postWriteRequest1).id());
@@ -146,7 +147,7 @@ class SettlementControllerTest {
         PostWriteRequest postWriteRequest2 = new PostWriteRequest(
                 title + "2", content + "2", postRegion + "2", hospitalName + "2", hospitalAddress + "2",
                 hospitalLat, hospitalLng, pickupAddress + "2", pickupLat, pickupLng, hourlyPay, recruitStartAt, recruitEndAt, escortStartAt, escortEndAt,
-                "", true
+                RideSelect.TAXI, RideSelect.TAXI, "", true
         );
 
         postService.write(savedUser1.getId(), postWriteRequest2);

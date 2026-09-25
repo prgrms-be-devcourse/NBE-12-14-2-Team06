@@ -32,7 +32,7 @@ public class Ride extends BaseTimeEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
-    private RideStatus rideStatus = RideStatus.PROCESSING;
+    private RideStatus rideStatus = RideStatus.ACCEPTED;
 
     @Enumerated(EnumType.STRING)
     private RideSelect selected;
@@ -44,7 +44,6 @@ public class Ride extends BaseTimeEntity {
     // 이동수단 선택 시 정보 업데이트
     public void rideUpdate(String selected) {
         updateSelect(RideSelect.valueOf(selected));
-        updateStatus(RideStatus.ACCEPTED);
     }
 
     public void updateSelect(RideSelect selected) {

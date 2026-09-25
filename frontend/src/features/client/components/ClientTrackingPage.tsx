@@ -13,6 +13,7 @@ import { fetchPostRaw, StatusLabel } from '@/features/post';
 import { fetchRidesByPost } from '@/features/ride';
 import { fetchUserReviews } from '@/features/review';
 import { cn } from '@/lib/cn';
+import { buildKakaoTCallUrl } from '@/lib/kakaoT';
 import { formatTransport, toManager, topReviewTagLabels } from '../model/mapper';
 import { STAGE_VIEW, getClientEscortCase, toClientEscortCase } from '../model/escort';
 import type { ClientEscortCase, ClientEscortStage } from '../types';
@@ -33,6 +34,15 @@ const BASE_STAGE: Record<ClientEscortStage, EscortStage> = {
   done: 'done',
 };
 
+/** 카카오 T 호출 방향: 병원 도착 전에는 집 → 병원, 도착한 뒤부터는 병원 → 집 */
+const GOING_HOME: Record<ClientEscortStage, boolean> = {
+  ready: false,
+  ongoing: false,
+  arrived: true,
+  finishing: true,
+  done: true,
+};
+
 /** 진행 요약 카드의 항목 (단계마다 조금씩 다릅니다) */
 function summaryRows(escort: ClientEscortCase): { label: string; value: string[] }[] {
   const rows = [
@@ -44,7 +54,7 @@ function summaryRows(escort: ClientEscortCase): { label: string; value: string[]
   }
   rows.push({ label: '이동수단', value: [escort.transport] });
   if (escort.stage === 'ready') {
-    rows.push({ label: '만남 장소', value: ['김가지님 댁 1층', '(서울특별시 강남구 OO아파트 OOO동)'] });
+    rows.push({ label: '만남 장소', value: [escort.meetingPlace] });
   }
   if (escort.stage === 'done') {
     rows.push({ label: '안내 사항', value: ['동행이 정상적으로 완료되었습니다.', '동행인 리뷰를 해주세요.'] });
@@ -148,6 +158,12 @@ export default function ClientTrackingPage() {
   const rows = summaryRows(escort);
   const base = `/client/escort/${escort.applicationId}`;
 
+  const [from, to] = GOING_HOME[escort.stage]
+    ? [escort.hospitalPoint, escort.pickupPoint]
+    : [escort.pickupPoint, escort.hospitalPoint];
+  const kakaoT = from && to ? { href: buildKakaoTCallUrl(from, to), label: `${from.name} → ${to.name}` } : undefined;
+  const hasStageButtons = escort.stage !== 'ready' && escort.stage !== 'ongoing';
+
   return (
     <AppShell>
       <section className="bg-white py-[50px]">
@@ -200,7 +216,7 @@ export default function ClientTrackingPage() {
                   ))}
                 </dl>
 
-                {escort.stage !== 'ready' && escort.stage !== 'ongoing' && (
+                {(hasStageButtons || kakaoT) && (
                   <div className="mt-5 flex flex-col gap-[5px]">
                     {/* TODO: 동행 종료 · 추가 결제 · 정산 API 연결 */}
                     {escort.stage === 'arrived' && (
@@ -225,6 +241,18 @@ export default function ClientTrackingPage() {
                           보고서 조회
                         </Link>
                       </>
+                    )}
+                    {kakaoT && (
+                      <a
+                        href={kakaoT.href}
+                        target="_blank"
+                        rel="noreferrer"
+                        aria-label={`카카오 T 호출하기 (${kakaoT.label})`}
+                        className={cn(BUTTON, GHOST)}
+                      >
+                        카카오 T 호출하기
+                        <span className="ml-2 text-sm font-medium text-[#6796db]">{kakaoT.label}</span>
+                      </a>
                     )}
                   </div>
                 )}

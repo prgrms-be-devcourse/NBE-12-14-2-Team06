@@ -6,7 +6,6 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum RideStatus {
-    PROCESSING("이동수단 선택 전"),
     ACCEPTED("이동수단 선택 완료"),
     IN_PROGRESS("이동 중"),
     COMPLETED("이동 완료");
