@@ -1,18 +1,69 @@
 'use client';
 
 import Image from 'next/image';
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { AppShell } from '@/components/layout';
 import { SectionHeading } from '@/components/ui';
+import { fetchMyApplications, type MyApplicationDto } from '@/features/application';
 import { useRequireAuth } from '@/features/auth';
 import { CardButton, PostCard } from '@/features/post';
 import { cn } from '@/lib/cn';
-import { APPLICATIONS, STATUS_INFO, STATUS_TABS, type StatusTab } from '../model';
-import type { Application } from '../types';
+import { STATUS_INFO, STATUS_TABS, type StatusTab } from '../model';
+import type { Application, ApplicationStatus } from '../types';
 import EmptyState from './EmptyState';
 import MyPageShell from './MyPageShell';
 
 type Sort = 'latest' | 'oldest';
+
+function toApplicationStatus(application: MyApplicationDto): ApplicationStatus {
+  if (application.applicationStatus === 'PENDING') {
+    return 'pending';
+  }
+
+  if (
+      application.applicationStatus === 'REJECTED' ||
+      application.applicationStatus === 'CANCELED' ||
+      application.applicationStatus === 'NO_SHOW'
+  ) {
+    return 'rejected';
+  }
+
+  switch (application.postStatus) {
+    case '동행 진행 중':
+      return 'inProgress';
+    case '동행 완료':
+      return 'completed';
+    case '매칭 완료':
+    default:
+      return 'matched';
+  }
+}
+
+function toApplication(dto: MyApplicationDto): Application {
+  const start = new Date(dto.escortStartAt);
+
+  return {
+    id: dto.applicationId,
+    postId: dto.postId,
+    title: dto.title,
+    hospitalName: dto.hospitalName,
+    location: dto.region,
+    dateLabel: start.toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      weekday: 'short',
+    }),
+    timeLabel: start.toLocaleTimeString('ko-KR', {
+      hour: '2-digit',
+      minute: '2-digit',
+    }),
+    durationLabel: `약 ${dto.escortHours}시간`,
+    payLabel: `시급 ${dto.hourlyPay.toLocaleString()}원`,
+    description: [dto.content],
+    status: toApplicationStatus(dto),
+  };
+}
 
 /** 상태별 카드 아래쪽 버튼 (Figma: 지원 취소 / 동행 보기 / 보고서 보기 / 지원불가) */
 function ApplicationActions({ application }: { application: Application }) {
@@ -55,7 +106,7 @@ function ApplicationActions({ application }: { application: Application }) {
 /**
  * 마이페이지 — 내가 신청한 공고 (Figma 525:5182 전체 · 529:7165 대기 중)
  *
- * ⚠️ 모의 데이터(model/applications.ts)를 보여줍니다. 신청 목록 API 가 아직 없습니다.
+ * GET /api/v1/applications/me 로 로그인한 동행 매니저의 지원 내역을 조회합니다.
  */
 export default function MyApplicationsPage() {
   const { loading, user } = useRequireAuth('ESCORT');
@@ -63,13 +114,47 @@ export default function MyApplicationsPage() {
   const [keywordInput, setKeywordInput] = useState('');
   const [keyword, setKeyword] = useState('');
   const [sort, setSort] = useState<Sort>('latest');
+  const [applicationData, setApplicationData] = useState<Application[]>([]);
+  const [applicationsLoading, setApplicationsLoading] = useState(true);
+  const [applicationsError, setApplicationsError] = useState<string>();
+
+  useEffect(() => {
+    if (!user) return;
+
+    let ignore = false;
+
+    fetchMyApplications()
+        .then((data) => {
+          if (ignore) return;
+
+          setApplicationData(data.map(toApplication));
+        })
+        .catch((error) => {
+          if (ignore) return;
+
+          setApplicationsError(
+              error instanceof Error
+                  ? error.message
+                  : '지원 목록을 불러오지 못했습니다.',
+          );
+        })
+        .finally(() => {
+          if (!ignore) {
+            setApplicationsLoading(false);
+          }
+        });
+
+    return () => {
+      ignore = true;
+    };
+  }, [user]);
 
   const handleSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setKeyword(keywordInput.trim());
   };
 
-  const filtered = APPLICATIONS.filter((application) => {
+  const filtered = applicationData.filter((application) => {
     if (tab !== 'all' && application.status !== tab) return false;
     if (!keyword) return true;
     return [application.title, application.hospitalName, application.location].some((text) =>
@@ -81,14 +166,25 @@ export default function MyApplicationsPage() {
 
   if (loading) {
     return (
-      <AppShell>
-        <section className="bg-white py-[100px] text-center">
-          <p className="text-xl font-semibold text-brand">불러오는 중입니다...</p>
-        </section>
-      </AppShell>
+        <AppShell>
+          <section className="bg-white py-[100px] text-center">
+            <p className="text-xl font-semibold text-brand">불러오는 중입니다...</p>
+          </section>
+        </AppShell>
     );
   }
+
   if (!user) return null;
+
+  if (applicationsLoading) {
+    return (
+        <AppShell>
+          <section className="bg-white py-[100px] text-center">
+            <p className="text-xl font-semibold text-brand">지원 내역을 불러오는 중입니다...</p>
+          </section>
+        </AppShell>
+    );
+  }
 
   return (
     <MyPageShell>
@@ -98,6 +194,15 @@ export default function MyApplicationsPage() {
           description="지원한 공고와 현재 상태를 확인할 수 있습니다."
           className="mb-8 lg:mb-6"
         />
+
+        {applicationsError && (
+            <p
+                role="alert"
+                className="mt-6 text-center text-sm font-medium text-[#b91d1d]"
+            >
+              {applicationsError}
+            </p>
+        )}
 
         {/* 상태 탭 */}
         <div
