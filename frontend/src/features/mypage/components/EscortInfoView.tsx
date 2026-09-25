@@ -1,7 +1,8 @@
 'use client';
 
 import Image from 'next/image';
-import { useEffect, useState, type FormEvent } from 'react';
+import Link from 'next/link';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import type { CurrentUser } from '@/features/auth';
 import { fetchMyProfile } from '@/features/auth';
 import { ApiError } from '@/lib/api';
@@ -179,14 +180,30 @@ function EscortProfileCard({ profile, onSaved }: { profile: EscortProfileDto | n
     return (
       <InfoCard title="추가 정보" action="수정하기" onAction={startEdit} paddingBottom="pb-6" className="lg:min-h-[300px]">
         <div className="mt-[9px] flex flex-col gap-[3px]">
-          {[
+          {([
             ['평점', profile.averageRating ? `${profile.averageRating.toFixed(1)}점` : '아직 없음'],
             ['완료 동행', `${profile.completedCount}회`],
-            ['신원 인증', profile.verified ? '완료' : '대기 중'],
+            // 신원 인증 = 교육 이수. 필수 교육 영상을 모두 시청하면 백엔드가 verified 로 바꿉니다.
+            [
+              '신원 인증',
+              profile.verified ? (
+                '완료'
+              ) : (
+                <span className="flex flex-wrap items-center gap-2.5">
+                  대기 중
+                  <Link
+                    href="/mypage/education"
+                    className="flex h-[27px] items-center rounded-[30px] bg-brand px-4 text-xs leading-4 font-semibold text-white transition-colors hover:bg-brand-hover"
+                  >
+                    교육 이수하기
+                  </Link>
+                </span>
+              ),
+            ],
             ['은행', profile.bankName || '-'],
             ['예금주', profile.accountHolder || '-'],
             ['계좌번호', profile.accountNumber || '-'],
-          ].map(([label, value]) => (
+          ] as [string, ReactNode][]).map(([label, value]) => (
             <div key={label} className="flex min-h-[40px] items-center gap-2.5">
               <dt className="w-[92px] shrink-0 px-4 text-sm font-semibold text-brand">{label}</dt>
               <dd className="min-w-0 flex-1 px-4 text-sm font-medium text-brand">{value}</dd>

@@ -1,10 +1,13 @@
 'use client';
 
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Container, SectionHeading } from '@/components/ui';
 import { applyToPost, fetchMyApplications } from '@/features/application';
 import { useCurrentUser } from '@/features/auth';
+// 배럴(@/features/education)로 가져오면 education 화면 → @/features/post → 이 파일로 순환 import 가 생겨서 api 모듈을 직접 가져옵니다.
+import { isEducationRequiredError } from '@/features/education/api';
 import { cn } from '@/lib/cn';
 import { fetchPosts, type PostPage } from '../api';
 import { DEFAULT_FILTERS, PAY_OPTIONS, PERIOD_OPTIONS, optionLabel } from '../model';
@@ -47,6 +50,7 @@ export default function PostListPage({
   // 지원은 동행 매니저(ESCORT)만 할 수 있어서, 의뢰인(CLIENT)에게는 버튼을 눌리지 않게 둡니다.
   const { user } = useCurrentUser();
   const isClient = user?.role === 'CLIENT';
+  const router = useRouter();
 
   const [filters, setFilters] = useState<PostFilters>(DEFAULT_FILTERS);
   const [keywordInput, setKeywordInput] = useState('');
@@ -124,6 +128,13 @@ export default function PostListPage({
         delete next[postId];
         return next;
       });
+      // 교육을 이수하지 않아 막혔으면 교육 영상 화면으로 안내합니다.
+      if (isEducationRequiredError(error)) {
+        if (window.confirm(`${error instanceof Error ? error.message : '교육 영상 시청을 완료한 후 지원할 수 있습니다.'}\n교육 영상 화면으로 이동할까요?`)) {
+          router.push('/mypage/education');
+        }
+        return;
+      }
       window.alert(error instanceof Error ? error.message : '지원에 실패했습니다.');
     }
   };

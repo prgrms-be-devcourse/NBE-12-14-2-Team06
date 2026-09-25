@@ -24,8 +24,8 @@ public class EducationController {
 
     private final EducationService educationService;
 
-    // 하트비트 (프론트에서 10초에 한번씩 요청 + 영상 끝나면 요청)
-    @Operation(summary = "시청 기록", description = "현재 재생 위치를 기록합니다. 재생 시작 시, 재생 중 10초마다, 영상 종료 시 호출합니다. 건너뛰기·배속 시청은 인정되지 않으며, 필수 영상을 모두 완료하면 교육 이수 처리됩니다.")
+    // 하트비트 (프론트에서 5초에 한번씩 요청 + 영상 끝나면 요청)
+    @Operation(summary = "시청 기록", description = "현재 재생 위치를 기록합니다. 재생 시작 시, 재생 중 5초마다, 영상 종료 시 호출합니다. 건너뛰기·배속 시청은 인정되지 않으며, 필수 영상을 모두 완료하면 교육 이수 처리됩니다.")
     @PostMapping("/{videoId}/watchlogs")
     public RsData<WatchProgressLogCreateResponse> createLog(
             @PathVariable Long videoId,
