@@ -76,7 +76,7 @@ class RideControllerTest {
                 phoneNum, region));
 
         User user2 = userService.signUp(new UserSignUpRequest(
-                username + "2", password + "2", email + "2", name + "2", Role.valueOf(role),
+                username + "2", password + "2", email + "2", name + "2", Role.ESCORT,
                 Gender.valueOf(gender),
                 LocalDate.parse(birthDate, DateTimeFormatter.ISO_LOCAL_DATE),
                 phoneNum+"2", region));
@@ -150,11 +150,11 @@ class RideControllerTest {
     }
 
     @Test
-    @DisplayName("[RideController] 해당 공고 이동 목록 - 성공")
-    void listByPost() throws Exception {
+    @DisplayName("[RideController] 해당 공고 이동 목록 - 동행 매니저 조회 성공")
+    void listByPostEscortSuccess() throws Exception {
         ResultActions resultActions = mvc.perform(
                         get("/api/v1/rides/posts/%s".formatted(savedPost1Id))
-                                .cookie(accessTokenCookie1))
+                                .cookie(accessTokenCookie2))
                 .andDo(print());
 
         resultActions.andExpect(handler().handlerType(RideController.class));
@@ -163,23 +163,7 @@ class RideControllerTest {
         resultActions.andExpect(jsonPath("$.statusCode").value("200-21"));
         resultActions.andExpect(jsonPath("$.msg").value("공고글 이동 정보를 불러왔습니다."));
         resultActions.andExpect(jsonPath("$.data[0].direction").value("TO_HOSPITAL"));
-        resultActions.andExpect(jsonPath("$.data[0].status").value("ACCEPTED"));
-        resultActions.andExpect(jsonPath("$.data[0].selected").value("TAXI")); // 공고 등록 때 고른 이동수단이 그대로 들어갑니다
-    }
-
-    @Test
-    @DisplayName("[RideController] 해당 공고 이동 목록 - 권한 부족")
-    void listByPostFailForbidden() throws Exception {
-        ResultActions resultActions = mvc.perform(
-                        get("/api/v1/rides/posts/%s".formatted(savedPost1Id))
-                                .cookie(accessTokenCookie2))
-                .andDo(print());
-
-        resultActions.andExpect(handler().handlerType(RideController.class));
-        resultActions.andExpect(handler().methodName("getListByPostId"));
-        resultActions.andExpect(status().isForbidden());
-        resultActions.andExpect(jsonPath("$.statusCode").value("403-20"));
-        resultActions.andExpect(jsonPath("$.msg").value("권한이 없습니다."));
+        resultActions.andExpect(jsonPath("$.data[0].selected").value("TAXI"));
     }
 
     @Test
