@@ -1,9 +1,6 @@
 package com.back.nbe12142team06.domain.application.service;
 
-import com.back.nbe12142team06.domain.application.dto.ApplicationAcceptResponse;
-import com.back.nbe12142team06.domain.application.dto.ApplicationApplyResponse;
-import com.back.nbe12142team06.domain.application.dto.ApplicationEscortProfileResponse;
-import com.back.nbe12142team06.domain.application.dto.ApplicationListResponse;
+import com.back.nbe12142team06.domain.application.dto.*;
 import com.back.nbe12142team06.domain.application.entity.Application;
 import com.back.nbe12142team06.domain.application.entity.EscortProgressLog;
 import com.back.nbe12142team06.domain.application.enums.ApplicationStatus;
@@ -326,5 +323,22 @@ public class ApplicationService {
                 escortProfile.getRatingCount(),
                 escortProfile.getNoShowCount()
         );
+    }
+
+    @Transactional(readOnly = true)
+    public List<MyApplicationResponse> getMyApplications(Long userId) {
+
+        User escort = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다."));
+
+        if (escort.getRole() != Role.ESCORT) {
+            throw new InvalidException("동행 매니저만 지원 내역을 조회할 수 있습니다.");
+        }
+
+        return applicationRepository
+                .findAllByEscortIdWithPost(userId)
+                .stream()
+                .map(MyApplicationResponse::new)
+                .toList();
     }
 }

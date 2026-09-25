@@ -6,7 +6,7 @@ import { usePathname, useParams, useRouter } from 'next/navigation';
 import { useEffect, useState, type ReactNode } from 'react';
 import { AppShell } from '@/components/layout';
 import { Container, InfoRow } from '@/components/ui';
-import { applyToPost } from '@/features/application';
+import { applyToPost, fetchMyApplications } from '@/features/application';
 import { useCurrentUser, useRequireAuth, type CurrentUser } from '@/features/auth';
 import { fetchPendingPayment, type PaymentDto } from '@/features/payment';
 import { cn } from '@/lib/cn';
@@ -101,6 +101,7 @@ function PostDetailPageBody({ viewer }: Props) {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string>();
   const [applyState, setApplyState] = useState<'idle' | 'applying' | 'applied'>('idle');
+  const [alreadyApplied, setAlreadyApplied] = useState(false);
   const [applyError, setApplyError] = useState<string>();
   // 동행이 끝난 뒤 남아 있는 미결제(추가 결제) 건. 공고 조회와 같은 방식으로 postId 를 같이 들고 있습니다.
   const [paymentResult, setPaymentResult] = useState<{ postId: number; data: PaymentDto | null }>();
@@ -114,6 +115,30 @@ function PostDetailPageBody({ viewer }: Props) {
       ignore = true;
     };
   }, [postId]);
+
+  useEffect(() => {
+    if (user?.role !== 'ESCORT') {
+      setAlreadyApplied(false);
+      return;
+    }
+    let ignore = false;
+    fetchMyApplications()
+        .then((applications) => {
+          if (ignore) return;
+
+          setAlreadyApplied(
+              applications.some((application) => application.postId === postId)
+          );
+        })
+        .catch(() => {
+          if (!ignore) {
+            setAlreadyApplied(false);
+          }
+        });
+    return () => {
+      ignore = true;
+    };
+  }, [postId, user?.role]);
 
   const loading = result?.postId !== postId;
   const post = loading ? undefined : result?.data;
@@ -175,6 +200,7 @@ function PostDetailPageBody({ viewer }: Props) {
     try {
       await applyToPost(postId);
       setApplyState('applied');
+      setAlreadyApplied(true);
     } catch (error) {
       setApplyState('idle');
       setApplyError(error instanceof Error ? error.message : '지원에 실패했습니다.');
@@ -205,15 +231,20 @@ function PostDetailPageBody({ viewer }: Props) {
   // 지원은 동행 매니저(ESCORT)만 할 수 있어서, 의뢰인(CLIENT)으로 로그인했으면 공개 화면에서도 누를 수 없게 둡니다.
   const applyBlockedByRole = user?.role === 'CLIENT';
   const applyLabel = applyBlockedByRole
-    ? '지원 불가'
-    : applyState === 'applied'
-      ? '지원 완료'
-      : applyState === 'applying'
-        ? '지원 중…'
-        : applyClosed
-          ? '지원 불가'
-          : '지원하기';
-  const applyDisabled = applyBlockedByRole || applyClosed || applyState !== 'idle';
+      ? '지원 불가'
+      : alreadyApplied || applyState === 'applied'
+          ? '지원완료'
+          : applyState === 'applying'
+              ? '지원 중…'
+              : applyClosed
+                  ? '지원 불가'
+                  : '지원하기';
+
+  const applyDisabled =
+      applyBlockedByRole ||
+      alreadyApplied ||
+      applyClosed ||
+      applyState !== 'idle';
 
   const editHref = `/client/posts/${post.id}/edit`;
 
