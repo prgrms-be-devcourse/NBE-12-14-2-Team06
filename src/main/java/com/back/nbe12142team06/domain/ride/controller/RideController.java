@@ -1,17 +1,18 @@
 package com.back.nbe12142team06.domain.ride.controller;
 
 import com.back.nbe12142team06.domain.ride.dto.RideResponse;
-import com.back.nbe12142team06.domain.ride.dto.RideUpdateRequest;
 import com.back.nbe12142team06.domain.ride.entity.Ride;
 import com.back.nbe12142team06.domain.ride.service.RideService;
 import com.back.nbe12142team06.global.response.RsData;
 import com.back.nbe12142team06.global.security.SecurityUser;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -42,14 +43,16 @@ public class RideController {
             description = "특정 공고에 등록된 이동수단 목록을 조회합니다."
     )
     @GetMapping("/posts/{postId}")
-    public RsData<List<RideResponse>> getListByPostId(@AuthenticationPrincipal SecurityUser actor,
-                                                      @PathVariable Long postId) {
-        Long userId = actor.getId();
+    public RsData<List<RideResponse>> getListByPostId(
+            @PathVariable Long postId
+    ) {
+        List<RideResponse> rides = rideService.getListByPostId(postId);
 
-        List<Ride> rides = rideService.getListByPostId(userId, postId);
-
-        return new RsData<>("200-21", "공고글 이동 정보를 불러왔습니다.",
-                rides.stream().map(RideResponse::new).toList());
+        return new RsData<>(
+                "200-21",
+                "공고글 이동 정보를 불러왔습니다.",
+                rides
+        );
     }
 
     @Operation(
