@@ -7,4 +7,6 @@ import java.util.List;
 
 public interface EducationVideoRepository extends JpaRepository<EducationVideo, Long> {
     List<EducationVideo> findAllByRequiredTrue();
+
+    long countByRequiredTrue();
 }

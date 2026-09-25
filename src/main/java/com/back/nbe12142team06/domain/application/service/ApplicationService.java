@@ -61,8 +61,12 @@ public class ApplicationService {
         }
 
         // 프로필이 존재하는 동행인만 지원 가능
-        if (!escortProfileRepository.existsById(userId)) {
-            throw new InvalidException("동행 매니저 프로필을 등록한 후 지원할 수 있습니다.");
+        EscortProfile escortProfile = escortProfileRepository.findById(userId)
+                .orElseThrow(() -> new InvalidException("동행 매니저 프로필을 등록한 후 지원할 수 있습니다."));
+
+        // 교육을 이수한 동행인만 지원 가능
+        if (!escortProfile.getVerified()) {
+            throw new ForbiddenException("교육 영상 시청을 완료한 후 지원할 수 있습니다.");
         }
 
         // 동일 공고 중복 지원 방지

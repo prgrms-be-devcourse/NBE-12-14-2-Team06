@@ -36,6 +36,7 @@ public class SecurityConfig {
                     .requestMatchers("/api/v1/users/profile/client").hasRole("CLIENT") // 의뢰인 프로필 생성, 조회, 수정
                     .requestMatchers("/api/v1/users/*/profile/escort").hasAnyRole("CLIENT")    // 동행인 프로필 타인 조회
                     .requestMatchers("/api/v1/users/profile/escort").hasRole("ESCORT") // 동행인 프로필 생성, 조회, 수정
+                    .requestMatchers("/api/v1/education-videos/**").hasRole("ESCORT")  // 교육 영상 목록, 단건, 시청 기록
                     .requestMatchers("/api/**").authenticated()
                     .anyRequest().permitAll()
             )

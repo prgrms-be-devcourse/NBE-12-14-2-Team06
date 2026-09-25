@@ -3,6 +3,7 @@ package com.back.nbe12142team06.domain.user.service;
 import com.back.nbe12142team06.domain.application.repository.ApplicationRepository;
 import com.back.nbe12142team06.domain.auth.entity.RefreshToken;
 import com.back.nbe12142team06.domain.auth.repository.RefreshTokenRepository;
+import com.back.nbe12142team06.domain.education.service.EducationService;
 import com.back.nbe12142team06.domain.user.dto.admin.AdminUserProfileUpdateRequest;
 import com.back.nbe12142team06.domain.user.dto.login.UserLoginRequest;
 import com.back.nbe12142team06.domain.user.dto.profile.ClientProfileModifyRequest;
@@ -47,6 +48,7 @@ public class UserService {
     private final EscortProfileRepository escortProfileRepository;
     private final ClientProfileRepository clientProfileRepository;
     private final ApplicationRepository applicationRepository;
+    private final EducationService educationService;
 
     // 프로필 삭제, 리프레시 토큰 폐기, 회원 정보 삭제
     private void withdraw(User user) {
@@ -54,7 +56,10 @@ public class UserService {
 
         switch (user.getRole()) {
             case CLIENT -> this.clientProfileRepository.deleteByUserId(userId);
-            case ESCORT -> this.escortProfileRepository.deleteByUserId(userId);
+            case ESCORT -> {
+                this.educationService.deleteProgresses(userId);
+                this.escortProfileRepository.deleteByUserId(userId);
+            }
         }
 
         List<RefreshToken> refreshTokens = this.refreshTokenRepository.findAllByUserIdAndRevokedAtIsNull(userId);
@@ -287,8 +292,12 @@ public class UserService {
 
         // 프로필 생성 및 회원 연결
         EscortProfile escortProfile = new EscortProfile(user, request.intro(), request.bankName(), request.accountHolder(), request.accountNumber());
+        EscortProfile savedProfile = this.escortProfileRepository.save(escortProfile);
 
-        return this.escortProfileRepository.save(escortProfile);
+        // 모든 교육 영상에 대한 진행 상황 생성
+        this.educationService.createProgresses(savedProfile);
+
+        return savedProfile;
     }
 
     // 동행인 프로필 조회

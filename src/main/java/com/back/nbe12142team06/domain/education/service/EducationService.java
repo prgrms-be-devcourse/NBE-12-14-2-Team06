@@ -1,7 +1,9 @@
 package com.back.nbe12142team06.domain.education.service;
 
+import com.back.nbe12142team06.domain.education.entity.EducationProgress;
 import com.back.nbe12142team06.domain.education.entity.EducationVideo;
 import com.back.nbe12142team06.domain.education.entity.WatchProgressLog;
+import com.back.nbe12142team06.domain.education.repository.EducationProgressRepository;
 import com.back.nbe12142team06.domain.education.repository.EducationVideoRepository;
 import com.back.nbe12142team06.domain.education.repository.WatchProgressLogRepository;
 import com.back.nbe12142team06.domain.user.entity.EscortProfile;
@@ -12,7 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -20,104 +21,90 @@ import java.util.List;
 @RequiredArgsConstructor
 public class EducationService {
 
-    // 하트비트 1회당 인정하는 최대 경과 시간
-    private static final long MAX_CREDIT_SEC = 15;
-
-    // 네트워크 지연 등을 고려한 허용 배율
-    private static final double RATE_TOLERANCE = 1.2;
-
-    // 추가 여유 시간
-    private static final double GRACE_SEC = 2;
-
-    // 영상 끝부분 허용 오차
-    private static final double END_TOLERANCE_SEC = 1;
-
-    private final EducationVideoRepository educationVideoRepository;
-    private final WatchProgressLogRepository watchProgressLogRepository;
     private final EscortProfileRepository escortProfileRepository;
+    private final EducationVideoRepository educationVideoRepository;
+    private final EducationProgressRepository educationProgressRepository;
+    private final WatchProgressLogRepository watchProgressLogRepository;
     private final Clock clock;
 
+    // 시청 기록
     @Transactional
-    public WatchLogResult recordWatchLog(Long id, Long videoId, Double positionSec) {
-        EscortProfile escortProfile = this.escortProfileRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("동행 매니저 프로필이 존재하지 않습니다."));
+    public EducationProgress recordProgress(Long userId, Long videoId, Double positionSec) {
+        EscortProfile escortProfile = this.escortProfileRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("동행인 프로필이 존재하지 않습니다."));
 
-        EducationVideo video = this.educationVideoRepository.findById(videoId)
-                .orElseThrow(() -> new NotFoundException("교육 영상이 존재하지 않습니다."));
+        EducationVideo educationVideo = this.educationVideoRepository.findById(videoId)
+                .orElseThrow(() -> new NotFoundException("존재하지않는 교육 영상입니다."));
+
+        EducationProgress progress = this.educationProgressRepository.findByEscortProfileAndEducationVideo(escortProfile, educationVideo)
+                .orElseThrow(() -> new NotFoundException("교육 진행 정보가 존재하지 않습니다."));
+
+        // 이미 이수한 경우 더 기록하지 않음
+        if (escortProfile.getVerified()) {
+            return progress;
+        }
 
         LocalDateTime now = LocalDateTime.now(clock);
 
-        // 이미 신원 인증이 완료된 동행인의 경우
-        if (escortProfile.getVerified()){
-            double maxWatchedSec = maxWatchedSec(findLogs(escortProfile, video));
-            return new WatchLogResult(maxWatchedSec, isCompleted(maxWatchedSec, video.getDurationSec()), true);
-        }
+        boolean accepted = progress.record(positionSec, now);
+        this.watchProgressLogRepository.save(new WatchProgressLog(progress, positionSec, now, accepted));
 
-        // 현재 요청에 대한 로그 생성
-        this.watchProgressLogRepository.save(new WatchProgressLog(
-                escortProfile,
-                video,
-                positionSec,
-                now
-                ));
-
-        double maxWatchedSec = maxWatchedSec(findLogs(escortProfile, video));
-        boolean isCompleted = isCompleted(maxWatchedSec, video.getDurationSec());
-
-        // 현재 영상 시청 완료 && 필수 영상 전체 시청 완료 시 프로필 신원 인증 처리
-        if (isCompleted && allRequiredCompleted(escortProfile)) {
+        // 필수 영상 전부 시청 시 동행인 프로필 신원인증 처리
+        if (progress.isCompleted() && isAllRequiredCompleted(escortProfile)) {
             escortProfile.verify(now);
         }
 
-        return new WatchLogResult(maxWatchedSec, isCompleted, true);
-
+        return progress;
     }
 
-
-
-
-    private List<WatchProgressLog> findLogs(EscortProfile escortProfile, EducationVideo video) {
-        return watchProgressLogRepository
-                .findByEscortProfileAndEducationVideoOrderByReceivedAtAscIdAsc(escortProfile, video);
-    }
-
-    // 필수 영상 전부 시청 여부
-    private boolean allRequiredCompleted(EscortProfile escortProfile) {
-        return educationVideoRepository.findAllByRequiredTrue().stream()
-                .allMatch(video -> isCompleted(
-                        maxWatchedSec(findLogs(escortProfile, video)),
-                        video.getDurationSec()
-                ));
-    }
-
-    // 정상 시청으로 인정된 재생 위치 (logs는 receivedAt 오름차순)
-    private static double maxWatchedSec(List<WatchProgressLog> logs) {
-        double maxWatchedSec = 0;
-        LocalDateTime prevReceivedAt = null;
-
-        for (WatchProgressLog log : logs) {
-            long credited = creditedSec(prevReceivedAt, log.getReceivedAt());
-            double allowedMax = maxWatchedSec + credited * RATE_TOLERANCE + GRACE_SEC;
-            double position = log.getPositionSec();
-
-            if (position >= 0 && position <= allowedMax) {
-                maxWatchedSec = Math.max(maxWatchedSec, position);
-            }
-            prevReceivedAt = log.getReceivedAt();
+    // 교육 영상 목록 + 진행 상황
+    @Transactional(readOnly = true)
+    public List<EducationProgress> getProgresses(Long userId) {
+        if (!this.escortProfileRepository.existsById(userId)) {
+            throw new NotFoundException("동행인 프로필이 존재하지 않습니다.");
         }
-        return maxWatchedSec;
+
+        return this.educationProgressRepository.findAllByEscortProfileUserIdOrderByEducationVideoIdAsc(userId);
     }
 
-    // 인정 위치가 영상 끝부분에 도달했는지
-    private static boolean isCompleted(double maxWatchedSec, int durationSec) {
-        return maxWatchedSec >= durationSec - END_TOLERANCE_SEC;
-    }
-
-    private static long creditedSec(LocalDateTime prev, LocalDateTime current) {
-        if (prev == null) {
-            return 0;
+    // 교육 영상 단건 + 진행 상황
+    @Transactional(readOnly = true)
+    public EducationProgress getProgress(Long userId, Long videoId) {
+        if (!this.escortProfileRepository.existsById(userId)) {
+            throw new NotFoundException("동행인 프로필이 존재하지 않습니다.");
         }
-        long elapsed = Duration.between(prev, current).toSeconds();
-        return Math.min(Math.max(elapsed, 0), MAX_CREDIT_SEC);
+
+        return this.educationProgressRepository.findByEscortProfileUserIdAndEducationVideoId(userId, videoId)
+                .orElseThrow(() -> new NotFoundException("존재하지않는 교육 영상입니다."));
+    }
+
+
+    // 동행 매니저 프로필 생성 시 모든 영상에 대한 진행 상황 생성
+    @Transactional
+    public void createProgresses(EscortProfile escortProfile) {
+        List<EducationProgress> progresses = this.educationVideoRepository.findAll().stream()
+                .map(video -> new EducationProgress(escortProfile, video))
+                .toList();
+
+        this.educationProgressRepository.saveAll(progresses);
+    }
+
+    // 동행 매니저 탈퇴 시 교육 데이터 삭제 (로그 → 진행 상황 순서)
+    @Transactional
+    public void deleteProgresses(Long userId) {
+        List<EducationProgress> progresses = this.educationProgressRepository.findAllByEscortProfileUserId(userId);
+
+        this.watchProgressLogRepository.deleteAllByEducationProgressIn(progresses);
+        this.educationProgressRepository.deleteAll(progresses);
+    }
+
+    // 필수 영상을 모두 완료했는지
+    private boolean isAllRequiredCompleted(EscortProfile escortProfile) {
+        // 필수 영상 중 시청 완료한 영상 수
+        long completedCount = this.educationProgressRepository.countByEscortProfileAndCompletedTrueAndEducationVideoRequiredTrue(escortProfile);
+        // 필수 영상 수
+        long requiredCount = this.educationVideoRepository.countByRequiredTrue();
+
+        return completedCount == requiredCount;
     }
 }

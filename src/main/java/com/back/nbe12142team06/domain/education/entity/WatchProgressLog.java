@@ -1,7 +1,5 @@
 package com.back.nbe12142team06.domain.education.entity;
 
-
-import com.back.nbe12142team06.domain.user.entity.EscortProfile;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -19,15 +17,10 @@ public class WatchProgressLog {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // 동행인 ID
+    // 교육 진행 상황
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "escort_profile_id", nullable = false)
-    private EscortProfile escortProfile;
-
-    // 영상 ID
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "education_video_id", nullable = false)
-    private EducationVideo educationVideo;
+    @JoinColumn(name = "education_progress_id", nullable = false)
+    private EducationProgress educationProgress;
 
     // 클라이언트가 보고한 재생 위치
     @Column(nullable = false)
@@ -37,16 +30,15 @@ public class WatchProgressLog {
     @Column(nullable = false)
     private LocalDateTime receivedAt;
 
+    // 정상 시청으로 인정됐는지
+    @Column(nullable = false)
+    private boolean accepted;
 
-    public WatchProgressLog(
-            EscortProfile escortProfile,
-            EducationVideo educationVideo,
-            double positionSec,
-            LocalDateTime receivedAt
-    ) {
-        this.escortProfile = escortProfile;
-        this.educationVideo = educationVideo;
+    public WatchProgressLog(EducationProgress educationProgress, double positionSec,
+                            LocalDateTime receivedAt, boolean accepted) {
+        this.educationProgress = educationProgress;
         this.positionSec = positionSec;
         this.receivedAt = receivedAt;
+        this.accepted = accepted;
     }
 }

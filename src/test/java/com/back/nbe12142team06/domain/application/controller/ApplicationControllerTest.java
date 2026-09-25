@@ -107,9 +107,10 @@ public class ApplicationControllerTest {
 
         userRepository.save(escort);
 
-        // 테스트용 동행인 프로필 생성
+        // 테스트용 동행인 프로필 생성 (교육 이수 완료 상태)
         EscortProfile escortProfile = new EscortProfile(escort, "ㅎㅎ", "은행은행", escort.getName(), "1234");
         escortProfileRepository.save(escortProfile);
+        escortProfile.verify(LocalDateTime.now());
 
         // 테스트용 공고
         Post post = Post.builder()
@@ -664,14 +665,15 @@ public class ApplicationControllerTest {
 
         userRepository.save(escort2);
 
-        // 동행 매니저 프로필 (프로필이 있어야 지원 가능)
-        escortProfileRepository.save(new EscortProfile(
+        // 동행 매니저 프로필 (프로필이 있고 교육을 이수해야 지원 가능)
+        EscortProfile escort2Profile = escortProfileRepository.save(new EscortProfile(
                 escort2,
                 "동행인2입니다.",
                 "오픈은행",
                 "동행인2",
                 "123-0000000-222"
         ));
+        escort2Profile.verify(LocalDateTime.now());
 
         Cookie escort2AccessTokenCookie = mvc.perform(
                         post("/api/v1/auth/login")
@@ -2119,5 +2121,53 @@ public class ApplicationControllerTest {
                 .andExpect(jsonPath("$.statusCode").value("404"))
                 .andExpect(jsonPath("$.msg")
                         .value("지원을 찾을 수 없습니다."));
+    }
+
+    @Test
+    @DisplayName("[ApplicationController] 지원하기 - 교육 미이수 동행인 지원 시 403 반환")
+    void t36() throws Exception {
+
+        // 교육을 이수하지 않은 동행인 생성
+        User unverifiedEscort = new User(
+                "escort9",
+                passwordEncoder.encode("testPassword"),
+                "escort9@test.com",
+                "미이수동행인",
+                Role.ESCORT,
+                Gender.MALE,
+                LocalDate.of(1995, 1, 1),
+                "010-9999-0009",
+                "수원"
+        );
+        userRepository.save(unverifiedEscort);
+        escortProfileRepository.save(new EscortProfile(
+                unverifiedEscort, "미이수", "오픈은행", "미이수동행인", "999-9999"
+        ));
+
+        Cookie unverifiedCookie = mvc.perform(
+                        post("/api/v1/auth/login")
+                                .contentType("application/json")
+                                .content("""
+                                {
+                                  "username": "escort9",
+                                  "password": "testPassword"
+                                }
+                                """)
+                )
+                .andReturn()
+                .getResponse()
+                .getCookie("accessToken");
+
+        ResultActions resultActions = mvc
+                .perform(post("/api/v1/applications/{postId}", testPostId)
+                        .cookie(unverifiedCookie))
+                .andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(ApplicationController.class))
+                .andExpect(handler().methodName("apply"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.statusCode").value("403"))
+                .andExpect(jsonPath("$.msg").value("교육 영상 시청을 완료한 후 지원할 수 있습니다."));
     }
 }
