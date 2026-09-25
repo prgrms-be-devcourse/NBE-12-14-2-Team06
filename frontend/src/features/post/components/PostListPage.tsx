@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { Container, SectionHeading } from '@/components/ui';
-import { applyToPost } from '@/features/application';
+import { applyToPost, fetchMyApplications } from '@/features/application';
 import { useCurrentUser } from '@/features/auth';
 import { cn } from '@/lib/cn';
 import { fetchPosts, type PostPage } from '../api';
@@ -53,6 +53,7 @@ export default function PostListPage({
   const [page, setPage] = useState(0);
   // 카드마다 다른 지원 상태를 기억합니다. (postId -> 'applying' | 'applied')
   const [applyStatus, setApplyStatus] = useState<Record<number, 'applying' | 'applied'>>({});
+  const [appliedPostIds, setAppliedPostIds] = useState<Set<number>>(new Set());
 
   // 조건(필터·페이지)이 바뀔 때마다 서버에서 다시 가져옵니다.
   // result.key 로 "어떤 조건의 결과인지" 기억해 두면, 조건이 바뀐 직후에는 loading 으로 판단할 수 있습니다.
@@ -68,6 +69,26 @@ export default function PostListPage({
       ignore = true;
     };
   }, [filters, page, requestKey]);
+
+  useEffect(() => {
+    if (user?.role !== 'ESCORT') return;
+    let ignore = false;
+    fetchMyApplications()
+        .then((applications) => {
+          if (ignore) return;
+          setAppliedPostIds(
+              new Set(applications.map((application) => application.postId))
+          );
+        })
+        .catch(() => {
+          if (!ignore) {
+            setAppliedPostIds(new Set());
+          }
+        });
+    return () => {
+      ignore = true;
+    };
+  }, [user?.role]);
 
   const loading = result?.key !== requestKey;
   const posts = (!loading && result?.data?.posts) || [];
@@ -92,6 +113,11 @@ export default function PostListPage({
     try {
       await applyToPost(postId);
       setApplyStatus((prev) => ({ ...prev, [postId]: 'applied' }));
+      setAppliedPostIds((prev) => {
+        const next = new Set(prev);
+        next.add(postId);
+        return next;
+      });
     } catch (error) {
       setApplyStatus((prev) => {
         const next = { ...prev };
@@ -190,8 +216,10 @@ export default function PostListPage({
               </p>
             ) : posts.length > 0 ? (
               <ul className="grid gap-x-4 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
-                {posts.map((post) => (
-                  <li key={post.id} className="flex justify-center">
+                {posts.map((post) => {
+                  const alreadyApplied = appliedPostIds.has(post.id);
+                  return (
+                      <li key={post.id} className="flex justify-center">
                     <PostCard
                       title={post.title}
                       hospitalName={post.hospitalName}
@@ -208,19 +236,20 @@ export default function PostListPage({
                         상세보기
                       </CardButton>
                       {isClient ? (
-                        <CardButton variant="disabled">지원 불가</CardButton>
+                          <CardButton variant="disabled">지원 불가</CardButton>
+                      ) : alreadyApplied || applyStatus[post.id] === 'applied' ? (
+                          <CardButton variant="disabled">지원완료</CardButton>
                       ) : post.badge === 'closed' ? (
-                        <CardButton variant="disabled">지원 불가</CardButton>
-                      ) : applyStatus[post.id] === 'applied' ? (
-                        <CardButton variant="disabled">지원 완료</CardButton>
+                          <CardButton variant="disabled">지원 불가</CardButton>
                       ) : (
-                        <CardButton variant="solid" onClick={() => handleApply(post.id)}>
-                          {applyStatus[post.id] === 'applying' ? '지원 중…' : '지원하기'}
-                        </CardButton>
+                          <CardButton variant="solid" onClick={() => handleApply(post.id)}>
+                            {applyStatus[post.id] === 'applying' ? '지원 중…' : '지원하기'}
+                          </CardButton>
                       )}
                     </PostCard>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             ) : (
               <p className="py-20 text-center text-base font-semibold text-brand-muted">
