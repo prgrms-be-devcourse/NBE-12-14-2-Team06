@@ -9,6 +9,7 @@ import { Container, InfoRow } from '@/components/ui';
 import { applyToPost } from '@/features/application';
 import { useCurrentUser, useRequireAuth, type CurrentUser } from '@/features/auth';
 import { fetchPendingPayment, type PaymentDto } from '@/features/payment';
+import { fetchRidesByPost, type RideDto } from '@/features/ride';
 import { cn } from '@/lib/cn';
 import { deletePost, fetchPost } from '../api';
 import { daysFromNow, formatFullDate } from '../lib/date';
@@ -102,6 +103,7 @@ function PostDetailPageBody({ viewer }: Props) {
   const [deleteError, setDeleteError] = useState<string>();
   const [applyState, setApplyState] = useState<'idle' | 'applying' | 'applied'>('idle');
   const [applyError, setApplyError] = useState<string>();
+  const [rides, setRides] = useState<RideDto[]>([]);
   // 동행이 끝난 뒤 남아 있는 미결제(추가 결제) 건. 공고 조회와 같은 방식으로 postId 를 같이 들고 있습니다.
   const [paymentResult, setPaymentResult] = useState<{ postId: number; data: PaymentDto | null }>();
 
@@ -110,6 +112,24 @@ function PostDetailPageBody({ viewer }: Props) {
     fetchPost(postId)
       .then((data) => !ignore && setResult({ postId, data }))
       .catch((error: Error) => !ignore && setResult({ postId, error: error.message }));
+    return () => {
+      ignore = true;
+    };
+  }, [postId]);
+
+  useEffect(() => {
+    let ignore = false;
+    fetchRidesByPost(postId)
+        .then((data) => {
+          if (!ignore) {
+            setRides(data);
+          }
+        })
+        .catch(() => {
+          if (!ignore) {
+            setRides([]);
+          }
+        });
     return () => {
       ignore = true;
     };
@@ -201,6 +221,24 @@ function PostDetailPageBody({ viewer }: Props) {
   const duration = `약 ${post.hours}시간`;
   const pay = `시급 ${post.hourlyPay.toLocaleString()}원`;
   const location = `${post.region} ${post.district}`;
+  const toHospitalRide = rides.find((ride) => ride.direction === 'TO_HOSPITAL');
+  const toHomeRide = rides.find((ride) => ride.direction === 'TO_HOME');
+
+  const rideLabel: Record<NonNullable<RideDto['selected']>, string> = {
+    WALK: '도보',
+    BUS: '대중교통',
+    TAXI: '택시',
+    OWN_CAR: '자가용',
+  };
+
+  const toHospitalTransport = toHospitalRide?.selected
+      ? rideLabel[toHospitalRide.selected]
+      : '미정';
+
+  const toHomeTransport = toHomeRide?.selected
+      ? rideLabel[toHomeRide.selected]
+      : '미정';
+
   const applyClosed = post.badge === 'closed';
   // 지원은 동행 매니저(ESCORT)만 할 수 있어서, 의뢰인(CLIENT)으로 로그인했으면 공개 화면에서도 누를 수 없게 둡니다.
   const applyBlockedByRole = user?.role === 'CLIENT';
@@ -277,6 +315,8 @@ function PostDetailPageBody({ viewer }: Props) {
                 <div className="flex flex-col gap-[3px]">
                   <InfoRow label="출발지" labelWidth={124}>{post.pickupAddress}</InfoRow>
                   <InfoRow label="예상 소요 시간" labelWidth={124}>{duration}</InfoRow>
+                  <InfoRow label="갈 때 이동수단" labelWidth={124}>{toHospitalTransport}</InfoRow>
+                  <InfoRow label="올 때 이동수단" labelWidth={124}>{toHomeTransport}</InfoRow>
                   <InfoRow label="지역" labelWidth={124}>{location}</InfoRow>
                   <InfoRow label="시급/보수" labelWidth={124}>{pay}</InfoRow>
                 </div>

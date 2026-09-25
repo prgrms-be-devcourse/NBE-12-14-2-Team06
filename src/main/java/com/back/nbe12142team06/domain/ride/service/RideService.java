@@ -1,6 +1,7 @@
 package com.back.nbe12142team06.domain.ride.service;
 
 import com.back.nbe12142team06.domain.post.entity.Post;
+import com.back.nbe12142team06.domain.ride.dto.RideResponse;
 import com.back.nbe12142team06.domain.ride.dto.RideUpdateRequest;
 import com.back.nbe12142team06.domain.ride.entity.Ride;
 import com.back.nbe12142team06.domain.ride.entity.RideDirection;
@@ -55,16 +56,11 @@ public class RideService {
     }
 
     // 공고로 목록 찾기
-    public List<Ride> getListByPostId(Long userId, Long postId) {
-        List<Ride> rides = rideRepository.findAllByPostId(postId);
-
-        rides.stream().forEach(r -> {
-            if (!validUser(r, userId)) {
-                throw new ForbiddenException(20, "권한이 없습니다.");
-            }
-        });
-
-        return rides;
+    public List<RideResponse> getListByPostId(Long postId) {
+        return rideRepository.findAllByPostId(postId)
+                .stream()
+                .map(RideResponse::new)
+                .toList();
     }
 
     // 유저 검증
