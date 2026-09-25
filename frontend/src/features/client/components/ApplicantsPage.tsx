@@ -131,9 +131,10 @@ export default function ApplicantsPage() {
           <section className="flex flex-col gap-6 rounded-[30px] border border-line-soft bg-white p-8 shadow-card lg:min-h-[145px] lg:flex-row lg:items-center lg:gap-[35px]">
             <div className="flex items-center gap-[35px]">
               <Image src="/icons/image-placeholder.svg" alt="" width={72} height={72} className="size-[71.6px] shrink-0" />
-              <div className="flex min-w-0 flex-col gap-[25px] text-brand lg:w-[177px]">
-                <p className="text-2xl leading-4 font-semibold">{post.title}</p>
-                <p className="text-base leading-[14px] font-semibold">{post.hospitalName}</p>
+              {/* 제목·병원명은 줄바꿈될 수 있어서 글자 크기보다 넉넉한 leading 을 줍니다. (줄 간격은 Figma 와 같아 보이도록 gap 으로 맞춤) */}
+              <div className="flex min-w-0 flex-col gap-[13px] text-brand lg:w-[177px]">
+                <p className="text-2xl leading-8 font-semibold">{post.title}</p>
+                <p className="text-base leading-[22px] font-semibold">{post.hospitalName}</p>
               </div>
             </div>
             <dl className="grid flex-1 grid-cols-2 gap-x-6 gap-y-5 text-brand lg:flex lg:items-stretch lg:gap-0">

@@ -2,9 +2,8 @@ package com.back.nbe12142team06.domain.ride.controller;
 
 import com.back.nbe12142team06.domain.post.dto.PostWriteRequest;
 import com.back.nbe12142team06.domain.post.dto.PostWriteResponse;
-import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.service.PostService;
-import com.back.nbe12142team06.domain.ride.dto.RideUpdateRequest;
+import com.back.nbe12142team06.domain.ride.entity.RideSelect;
 import com.back.nbe12142team06.domain.ride.service.RideService;
 import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpRequest;
 import com.back.nbe12142team06.domain.user.entity.User;
@@ -29,7 +28,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -99,7 +99,7 @@ class RideControllerTest {
         PostWriteRequest postWriteRequest1 = new PostWriteRequest(
                 title, content, postRegion, hospitalName, hospitalAddress, hospitalLat, hospitalLng,
                 pickupAddress, pickupLat, pickupLng, hourlyPay, recruitStartAt, recruitEndAt, escortStartAt, escortEndAt,
-                "", true
+                RideSelect.TAXI, RideSelect.TAXI, "", true
         );
 
         PostWriteResponse post1 = postService.write(user1.getId(), postWriteRequest1);
@@ -107,7 +107,7 @@ class RideControllerTest {
         PostWriteRequest postWriteRequest2 = new PostWriteRequest(
                 title + "2", content + "2", postRegion + "2", hospitalName + "2", hospitalAddress + "2",
                 hospitalLat, hospitalLng, pickupAddress + "2", pickupLat, pickupLng, hourlyPay, recruitStartAt, recruitEndAt, escortStartAt, escortEndAt,
-                "", true
+                RideSelect.TAXI, RideSelect.TAXI, "", true
         );
 
         PostWriteResponse post2 = postService.write(user1.getId(), postWriteRequest2);
@@ -150,137 +150,6 @@ class RideControllerTest {
     }
 
     @Test
-    @DisplayName("[RideController] 이동 수단 선택 - 성공 걷기")
-    void rideSelectWalk() throws Exception {
-        ResultActions resultActions = mvc.perform(
-                        put("/api/v1/rides/%s".formatted(savedRide1Id))
-                                .cookie(accessTokenCookie1)
-                                .param("userId", String.valueOf(savedUser1Id))
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content("""
-                                        {
-                                            "rideSelect": "WALK"
-                                        }
-                                        """))
-                .andDo(print());
-
-        resultActions.andExpect(handler().handlerType(RideController.class));
-        resultActions.andExpect(handler().methodName("updateRide"));
-        resultActions.andExpect(status().isOk());
-        resultActions.andExpect(jsonPath("$.statusCode").value("200-20"));
-        resultActions.andExpect(jsonPath("$.msg").value("이동수단이 변경되었습니다."));
-        resultActions.andExpect(jsonPath("$.data.selected").value("WALK"));
-    }
-
-    @Test
-    @DisplayName("[RideController] 이동 수단 선택 - 성공 버스")
-    void rideSelectBus() throws Exception {
-        ResultActions resultActions = mvc.perform(
-                        put("/api/v1/rides/%s".formatted(savedRide1Id))
-                                .cookie(accessTokenCookie1)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content("""
-                                        {
-                                            "rideSelect": "BUS"
-                                        }
-                                        """))
-                .andDo(print());
-
-        resultActions.andExpect(handler().handlerType(RideController.class));
-        resultActions.andExpect(handler().methodName("updateRide"));
-        resultActions.andExpect(status().isOk());
-        resultActions.andExpect(jsonPath("$.statusCode").value("200-20"));
-        resultActions.andExpect(jsonPath("$.msg").value("이동수단이 변경되었습니다."));
-        resultActions.andExpect(jsonPath("$.data.selected").value("BUS"));
-    }
-
-    @Test
-    @DisplayName("[RideController] 이동 수단 선택 - 성공 택시")
-    void rideSelectTaxi() throws Exception {
-        ResultActions resultActions = mvc.perform(
-                        put("/api/v1/rides/%s".formatted(savedRide1Id))
-                                .cookie(accessTokenCookie1)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content("""
-                                        {
-                                            "rideSelect": "TAXI"
-                                        }
-                                        """))
-                .andDo(print());
-
-        resultActions.andExpect(handler().handlerType(RideController.class));
-        resultActions.andExpect(handler().methodName("updateRide"));
-        resultActions.andExpect(status().isOk());
-        resultActions.andExpect(jsonPath("$.statusCode").value("200-20"));
-        resultActions.andExpect(jsonPath("$.msg").value("이동수단이 변경되었습니다."));
-        resultActions.andExpect(jsonPath("$.data.selected").value("TAXI"));
-    }
-
-    @Test
-    @DisplayName("[RideController] 이동 수단 선택 - 성공 자차")
-    void rideSelectOwnCar() throws Exception {
-        ResultActions resultActions = mvc.perform(
-                        put("/api/v1/rides/%s".formatted(savedRide1Id))
-                                .cookie(accessTokenCookie1)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content("""
-                                        {
-                                            "rideSelect": "OWN_CAR"
-                                        }
-                                        """))
-                .andDo(print());
-
-        resultActions.andExpect(handler().handlerType(RideController.class));
-        resultActions.andExpect(handler().methodName("updateRide"));
-        resultActions.andExpect(status().isOk());
-        resultActions.andExpect(jsonPath("$.statusCode").value("200-20"));
-        resultActions.andExpect(jsonPath("$.msg").value("이동수단이 변경되었습니다."));
-        resultActions.andExpect(jsonPath("$.data.selected").value("OWN_CAR"));
-    }
-
-    @Test
-    @DisplayName("[RideController] 이동 수단 선택 - 이동 정보 없음")
-    void rideSelectFailNotFound() throws Exception {
-        ResultActions resultActions = mvc.perform(
-                        put("/api/v1/rides/%s".formatted("10000"))
-                                .cookie(accessTokenCookie1)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content("""
-                                        {
-                                            "rideSelect": "WALK"
-                                        }
-                                        """))
-                .andDo(print());
-
-        resultActions.andExpect(handler().handlerType(RideController.class));
-        resultActions.andExpect(handler().methodName("updateRide"));
-        resultActions.andExpect(status().isNotFound());
-        resultActions.andExpect(jsonPath("$.statusCode").value("404-20"));
-        resultActions.andExpect(jsonPath("$.msg").value("찾으시는 이동 정보가 없습니다."));
-    }
-
-    @Test
-    @DisplayName("[RideController] 이동 수단 선택 - 권한 부족")
-    void rideSelectFailForbidden() throws Exception {
-        ResultActions resultActions = mvc.perform(
-                        put("/api/v1/rides/%s".formatted(savedRide1Id))
-                                .cookie(accessTokenCookie2)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content("""
-                                        {
-                                            "rideSelect": "WALK"
-                                        }
-                                        """))
-                .andDo(print());
-
-        resultActions.andExpect(handler().handlerType(RideController.class));
-        resultActions.andExpect(handler().methodName("updateRide"));
-        resultActions.andExpect(status().isForbidden());
-        resultActions.andExpect(jsonPath("$.statusCode").value("403-20"));
-        resultActions.andExpect(jsonPath("$.msg").value("권한이 없습니다."));
-    }
-
-    @Test
     @DisplayName("[RideController] 해당 공고 이동 목록 - 성공")
     void listByPost() throws Exception {
         ResultActions resultActions = mvc.perform(
@@ -294,8 +163,8 @@ class RideControllerTest {
         resultActions.andExpect(jsonPath("$.statusCode").value("200-21"));
         resultActions.andExpect(jsonPath("$.msg").value("공고글 이동 정보를 불러왔습니다."));
         resultActions.andExpect(jsonPath("$.data[0].direction").value("TO_HOSPITAL"));
-        resultActions.andExpect(jsonPath("$.data[0].status").value("PROCESSING"));
-        resultActions.andExpect(jsonPath("$.data[0].selected").isEmpty());
+        resultActions.andExpect(jsonPath("$.data[0].status").value("ACCEPTED"));
+        resultActions.andExpect(jsonPath("$.data[0].selected").value("TAXI")); // 공고 등록 때 고른 이동수단이 그대로 들어갑니다
     }
 
     @Test
@@ -327,8 +196,8 @@ class RideControllerTest {
         resultActions.andExpect(jsonPath("$.statusCode").value("200-22"));
         resultActions.andExpect(jsonPath("$.msg").value("이동 정보를 불러왔습니다."));
         resultActions.andExpect(jsonPath("$.data.direction").value("TO_HOSPITAL"));
-        resultActions.andExpect(jsonPath("$.data.status").value("PROCESSING"));
-        resultActions.andExpect(jsonPath("$.data.selected").isEmpty());
+        resultActions.andExpect(jsonPath("$.data.status").value("ACCEPTED"));
+        resultActions.andExpect(jsonPath("$.data.selected").value("TAXI")); // 공고 등록 때 고른 이동수단이 그대로 들어갑니다
     }
 
     @Test
@@ -359,92 +228,5 @@ class RideControllerTest {
         resultActions.andExpect(status().isForbidden());
         resultActions.andExpect(jsonPath("$.statusCode").value("403-20"));
         resultActions.andExpect(jsonPath("$.msg").value("권한이 없습니다."));
-    }
-
-    @Test
-    @DisplayName("[RideController] 이동 수단 변경 - 성공 \"도보 -> 택시\"")
-    void updateRide() throws Exception {
-        Long rideId = savedRide1Id;
-        Long userId = savedUser1Id;
-        // 현재 이동 수단은 도보
-        rideService.updateRide(userId, rideId, new RideUpdateRequest("WALK"));
-
-        ResultActions resultActions = mvc.perform(
-                        put("/api/v1/rides/%s".formatted(rideId))
-                                .cookie(accessTokenCookie1)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content("""
-                                        {
-                                            "rideSelect": "TAXI"
-                                        }
-                                        """))
-                .andDo(print());
-
-        resultActions.andExpect(handler().handlerType(RideController.class));
-        resultActions.andExpect(handler().methodName("updateRide"));
-        resultActions.andExpect(status().isOk());
-        resultActions.andExpect(jsonPath("$.statusCode").value("200-20"));
-        resultActions.andExpect(jsonPath("$.msg").value("이동수단이 변경되었습니다."));
-        resultActions.andExpect(jsonPath("$.data.direction").value("TO_HOSPITAL"));
-        resultActions.andExpect(jsonPath("$.data.status").value("ACCEPTED"));
-        resultActions.andExpect(jsonPath("$.data.selected").value("TAXI"));
-    }
-
-    @Test
-    @DisplayName("[RideController] 이동 수단 변경 - \"이동 중\" 상태")
-    void updateRideFailMoveStatus() throws Exception {
-        Long rideId = savedRide1Id;
-        Long userId = savedUser1Id;
-        // 현재 이동 수단은 도보
-        rideService.updateRide(userId, rideId, new RideUpdateRequest("WALK"));
-
-        // 이동 중 상태로 변경
-        rideService.move(userId, rideId);
-
-        ResultActions resultActions = mvc.perform(
-                        put("/api/v1/rides/%s".formatted(rideId))
-                                .cookie(accessTokenCookie1)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content("""
-                                        {
-                                            "rideSelect": "TAXI"
-                                        }
-                                        """))
-                .andDo(print());
-
-        resultActions.andExpect(handler().handlerType(RideController.class));
-        resultActions.andExpect(handler().methodName("updateRide"));
-        resultActions.andExpect(status().isBadRequest());
-        resultActions.andExpect(jsonPath("$.statusCode").value("400-20"));
-        resultActions.andExpect(jsonPath("$.msg").value("이미 이동 중이거나 이동 완료이므로 수정이 불가능합니다."));
-    }
-
-    @Test
-    @DisplayName("[RideController] 이동 수단 변경 - \"이동 완료\" 상태")
-    void updateRideFailArriveStatus() throws Exception {
-        Long rideId = savedRide1Id;
-        Long userId = savedUser1Id;
-        // 현재 이동 수단은 도보
-        rideService.updateRide(userId, rideId, new RideUpdateRequest("WALK"));
-
-        // 이동 완료 상태로 변경
-        rideService.arrive(userId, rideId);
-
-        ResultActions resultActions = mvc.perform(
-                        put("/api/v1/rides/%s".formatted(rideId))
-                                .cookie(accessTokenCookie1)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content("""
-                                        {
-                                            "rideSelect": "TAXI"
-                                        }
-                                        """))
-                .andDo(print());
-
-        resultActions.andExpect(handler().handlerType(RideController.class));
-        resultActions.andExpect(handler().methodName("updateRide"));
-        resultActions.andExpect(status().isBadRequest());
-        resultActions.andExpect(jsonPath("$.statusCode").value("400-20"));
-        resultActions.andExpect(jsonPath("$.msg").value("이미 이동 중이거나 이동 완료이므로 수정이 불가능합니다."));
     }
 }

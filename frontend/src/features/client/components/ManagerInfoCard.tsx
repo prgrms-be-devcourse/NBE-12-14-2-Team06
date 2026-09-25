@@ -11,7 +11,10 @@ type Props = {
 
 const CARD = 'rounded-[30px] border border-line bg-white px-6 py-8 shadow-card';
 
-/** "동행 정보 / 동행 매니저 정보" 카드: 프로필 + 프로필 보기·연락하기 버튼 */
+/**
+ * "동행 정보 / 동행 매니저 정보" 카드: 프로필 + 연락하기 버튼
+ * 소개글이 버튼 바로 위에 이미 나와서 "프로필 보기" 버튼은 두지 않습니다.
+ */
 export default function ManagerInfoCard({ manager, size, title }: Props) {
   const large = size === 'lg';
   const button = cn(
@@ -22,13 +25,11 @@ export default function ManagerInfoCard({ manager, size, title }: Props) {
   return (
     <section className={CARD}>
       <h2 className="mb-[3px] text-2xl leading-6 font-semibold text-brand">{title}</h2>
-      <div className={cn('flex flex-col', large ? 'gap-3 px-[25px] pt-[27px] pb-1' : 'mt-3 gap-[15px]')}>
+      {/* 소개글과 버튼이 붙어 보이지 않도록 이 gap 으로 사이를 띄웁니다. */}
+      <div className={cn('flex flex-col', large ? 'gap-[22px] px-[25px] pt-[27px] pb-1' : 'mt-3 gap-[25px]')}>
         <ManagerProfile manager={manager} size={size} />
         <div className={cn('flex gap-[4.25px]', large ? 'flex-col gap-2.5 sm:flex-row' : 'flex-col')}>
-          {/* TODO: 프로필 보기 · 연락하기(메시지) 기능 연결 */}
-          <button type="button" className={button}>
-            프로필 보기
-          </button>
+          {/* TODO: 연락하기(메시지) 기능 연결 */}
           <button type="button" className={button}>
             연락하기
           </button>

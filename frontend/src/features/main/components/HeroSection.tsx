@@ -35,7 +35,7 @@ export default function HeroSection() {
         </div>
 
         <div className="w-full min-w-0 lg:flex-[1_1_598px]">
-          <Image src="/images/hero.jpeg" alt="휠체어에 앉아 손을 든 어르신 일러스트" width={598} height={494} priority className="h-auto w-full rounded-card object-contain" />
+          <Image src="/images/signup/role-escort.png" alt="휠체어에 앉은 가지를 끌어주는 사람 일러스트" width={598} height={494} priority className="h-auto w-full rounded-card object-contain" />
         </div>
       </Container>
     </section>

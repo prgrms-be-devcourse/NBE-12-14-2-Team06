@@ -70,7 +70,7 @@ export default function AdminMembersPage() {
         <div
           role="tablist"
           aria-label="회원 역할"
-          className="flex w-full max-w-[429px] justify-between gap-2 rounded-[50px] border border-line-soft bg-white max-lg:overflow-x-auto lg:gap-[30px]"
+          className="flex w-full max-w-[360px] rounded-[50px] border border-line-soft bg-white max-lg:overflow-x-auto"
         >
           {ROLE_TABS.map((item) => {
             const selected = item.value === tab;
@@ -85,8 +85,8 @@ export default function AdminMembersPage() {
                   setPage(0);
                 }}
                 className={cn(
-                  'h-[35px] w-[123px] shrink-0 rounded-[30px] px-3 text-base leading-[18px] font-semibold whitespace-nowrap transition-colors',
-                  selected ? 'bg-brand text-white' : 'text-brand hover:bg-line-soft',
+                    'h-[35px] flex-1 rounded-[30px] px-3 text-base leading-[18px] font-semibold whitespace-nowrap transition-colors',
+                    selected ? 'bg-brand text-white' : 'text-brand hover:bg-line-soft',
                 )}
               >
                 {item.label}

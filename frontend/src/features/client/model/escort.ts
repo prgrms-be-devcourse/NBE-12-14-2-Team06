@@ -48,6 +48,8 @@ const COMMON = {
   endAt: '2026.09.22(화) 오후 12:00',
   transport: '택시(우버)',
   meetingPlace: '김가지님 댁 1층 (서울특별시 강남구 OO아파트 OOO동)',
+  pickupPoint: { name: '집', lat: 37.4979, lng: 127.0276 },
+  hospitalPoint: { name: '삼성서울병원', lat: 37.4881, lng: 127.0857 },
   updatedAt: '9:00',
   manager: MANAGER,
 };
@@ -133,6 +135,8 @@ export function toClientEscortCase(post: PostDto, applicationId: number, manager
     endAt: formatDotDateTime(post.escortEndAt),
     transport,
     meetingPlace: post.pickupAddress,
+    pickupPoint: { name: '집', lat: post.pickupLat, lng: post.pickupLng },
+    hospitalPoint: { name: post.hospitalName, lat: post.hospitalLat, lng: post.hospitalLng },
     updatedAt: TIMES[STAGE_DONE_COUNT[stage] - 1] || '9:00',
     manager,
     timeline: timeline(STAGE_DONE_COUNT[stage], TIMES),

@@ -23,21 +23,19 @@ public class RideController {
 
     private final RideService rideService;
 
-    @Operation(
-            summary = "이동수단 변경",
-            description = "특정 이동수단 정보를 변경합니다."
-    )
-    @PutMapping("/{rideId}")
-    public RsData<RideResponse> updateRide(@AuthenticationPrincipal SecurityUser actor,
-                                           @PathVariable Long rideId,
-                                           @Valid @RequestBody RideUpdateRequest request) {
-        Long userId = actor.getId();
-
-        Ride ride = rideService.updateRide(userId, rideId, request);
-
-        return new RsData<>("200-20", "이동수단이 변경되었습니다.",
-                new RideResponse(ride));
-    }
+//    @Operation(
+//            summary = "이동수단 변경",
+//            description = "특정 이동수단 정보를 변경합니다."
+//    )
+//    @PutMapping("/posts/{postId}")
+//    public RsData<List<RideResponse>> updateRide(@AuthenticationPrincipal SecurityUser actor,
+//                                           @PathVariable Long postId,
+//                                           @Valid @RequestBody RideUpdateRequest request) {
+//        List<Ride> rides = rideService.updateRide(postId, request);
+//
+//        return new RsData<>("200-20", "이동수단이 변경되었습니다.",
+//                rides.stream().map(RideResponse::new).toList());
+//    }
 
     @Operation(
             summary = "공고별 이동수단 목록 조회",
