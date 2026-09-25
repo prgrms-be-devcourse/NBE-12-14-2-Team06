@@ -1,5 +1,6 @@
 package com.back.nbe12142team06.global.initData;
 
+import com.back.nbe12142team06.domain.education.entity.EducationVideo;
 import com.back.nbe12142team06.domain.payment.entity.Payment;
 import com.back.nbe12142team06.domain.payment.entity.PaymentStatus;
 import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
@@ -9,6 +10,7 @@ import com.back.nbe12142team06.domain.post.repository.PostRepository;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Gender;
 import com.back.nbe12142team06.domain.user.enums.Role;
+import com.back.nbe12142team06.domain.education.repository.EducationVideoRepository;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -53,6 +55,7 @@ public class BaseInitData {
     private final PaymentRepository paymentRepository;
     private final PasswordEncoder passwordEncoder;
     private final PlatformTransactionManager transactionManager;
+    private final EducationVideoRepository educationVideoRepository;
 
     @PersistenceContext
     private EntityManager em;
@@ -64,6 +67,11 @@ public class BaseInitData {
                     new TransactionTemplate(transactionManager);
 
             transactionTemplate.executeWithoutResult(status -> initPosts());
+
+            transactionTemplate.executeWithoutResult(status -> {
+                initPosts();
+                initEducationVideos();
+            });
         };
     }
 
@@ -309,6 +317,14 @@ public class BaseInitData {
                         .executeUpdate();
             }
         }
+    }
+
+    void initEducationVideos() {
+        if (educationVideoRepository.count() > 0) return;
+
+        educationVideoRepository.save(
+                new EducationVideo("동행 서비스 기본 교육", "/videos/sample_video.mp4", 60, true)
+        );
     }
 
     private User createClient(String username, String name, String phoneNum, String region) {
