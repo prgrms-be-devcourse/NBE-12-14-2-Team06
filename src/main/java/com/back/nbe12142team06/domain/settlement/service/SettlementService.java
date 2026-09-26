@@ -1,6 +1,8 @@
 package com.back.nbe12142team06.domain.settlement.service;
 
 import com.back.nbe12142team06.domain.application.entity.Application;
+import com.back.nbe12142team06.domain.penalty.entity.NoShowPenalty;
+import com.back.nbe12142team06.domain.penalty.service.NoShowPenaltyService;
 import com.back.nbe12142team06.domain.settlement.client.SettlementClient;
 import com.back.nbe12142team06.domain.settlement.client.SettlementClientRequest;
 import com.back.nbe12142team06.domain.settlement.client.SettlementClientResponse;
@@ -22,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -30,6 +33,7 @@ public class SettlementService {
 
     private final SettlementPersistenceService settlementPersistenceService;
     private final SettlementRepository settlementRepository;
+    private final NoShowPenaltyService noShowPenaltyService;
 
     // 정산 API
     private final SettlementClient settlementClient;
@@ -118,18 +122,37 @@ public class SettlementService {
     }
 
     @Transactional
-    public Settlement createSettlement(int amount, Application application, User escort, LocalDate settledDate) {
-        int payoutAmount = (int) (amount * 0.9);
-        int platformFee = amount - payoutAmount;
+    public Settlement createSettlement(int payoutAmount, Application application, User escort, LocalDate settledDate) {
+        int settlementAmount = (int) (payoutAmount * 0.9);
+        int platformFee = payoutAmount - settlementAmount;
+
+        // 패널티 적용해야 하는지 확인
+        Optional<NoShowPenalty> noShowPenalty = noShowPenaltyService.getNoShowPenalty(escort.getId());
+
+        // 패널티 적용 시 정산 금액 차감
+        int penaltyAmount = 0;
+        if (noShowPenalty.isPresent()) {
+            penaltyAmount = (int) (settlementAmount * 0.1);
+            settlementAmount -= penaltyAmount;
+        }
 
         Settlement settlement = Settlement.builder()
-                .payoutAmount(payoutAmount)
+                .payoutAmount(settlementAmount)
                 .platformFee(platformFee)
+                .penaltyAmount(penaltyAmount)
                 .settledDate(settledDate)
                 .application(application)
                 .escort(escort)
                 .build();
 
-        return settlementRepository.save(settlement);
+        Settlement savedSettlement = settlementRepository.save(settlement);
+
+        // 패널티 데이터 업데이트
+        if (noShowPenalty.isPresent()) {
+            noShowPenaltyService.applyPenalty(escort.getId(), penaltyAmount,
+                    settlementAmount + penaltyAmount, settlement, noShowPenalty.get());
+        }
+
+        return savedSettlement;
     }
 }

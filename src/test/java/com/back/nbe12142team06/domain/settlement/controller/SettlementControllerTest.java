@@ -110,7 +110,7 @@ class SettlementControllerTest {
                 "010-9999-9991", region));
 
         savedUser3 = userService.signUp(new UserSignUpRequest(
-                username+"3", password+"3", email+"3", name+"3", Role.valueOf(roleEscort),
+                username + "3", password + "3", email + "3", name + "3", Role.valueOf(roleEscort),
                 Gender.valueOf(gender),
                 LocalDate.parse(birthDate, DateTimeFormatter.ISO_LOCAL_DATE),
                 "010-9999-9992", region));
@@ -119,7 +119,7 @@ class SettlementControllerTest {
         escortProfileRepository.save(escortProfile1);
         escortProfile1.verify(LocalDateTime.now()); // 교육 이수 처리 (지원 가능 상태)
 
-        EscortProfile escortProfile2 = new EscortProfile(savedUser3,"으악", "오픈은행", savedUser3.getName(), "111-7654321-111");
+        EscortProfile escortProfile2 = new EscortProfile(savedUser3, "으악", "오픈은행", savedUser3.getName(), "111-7654321-111");
         escortProfileRepository.save(escortProfile2);
 
 
@@ -161,7 +161,6 @@ class SettlementControllerTest {
 
         savedSettlement1 = settlementService.createSettlement(savedPost1.getTotalPay().intValue(), application1, savedUser2, LocalDate.now().plusDays(1));
         savedSettlement1Id = savedSettlement1.getId();
-
 
 
         // user로 로그인해 인증 쿠키 확보

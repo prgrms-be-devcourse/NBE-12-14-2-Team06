@@ -9,8 +9,12 @@ import com.back.nbe12142team06.domain.payment.dto.TossConfirmResponse;
 import com.back.nbe12142team06.domain.payment.entity.Payment;
 import com.back.nbe12142team06.domain.payment.entity.PaymentStatus;
 import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
+import com.back.nbe12142team06.domain.penalty.entity.NoShowPenalty;
+import com.back.nbe12142team06.domain.penalty.service.NoShowPenaltyService;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.settlement.service.SettlementService;
+import com.back.nbe12142team06.domain.user.entity.User;
+import com.back.nbe12142team06.domain.user.service.UserService;
 import com.back.nbe12142team06.global.exception.InternalServerErrorException;
 import com.back.nbe12142team06.global.exception.InvalidException;
 import com.back.nbe12142team06.global.exception.NotFoundException;
@@ -22,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -160,8 +165,6 @@ public class PaymentService {
 
         // 정산 데이터 생성
         settlementService.createSettlement(payoutAmount, application, application.getEscort(), settledDate);
-
-        // 사용자에게 결제 요청
     }
 
     public Payment createPayment(Post post) {
