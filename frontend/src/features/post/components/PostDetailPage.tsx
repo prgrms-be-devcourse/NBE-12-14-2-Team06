@@ -8,6 +8,8 @@ import { AppShell } from '@/components/layout';
 import { Container, InfoRow } from '@/components/ui';
 import { applyToPost, fetchMyApplications } from '@/features/application';
 import { useCurrentUser, useRequireAuth, type CurrentUser } from '@/features/auth';
+// 배럴(@/features/education)로 가져오면 education 화면 → @/features/post → 이 파일로 순환 import 가 생겨서 api 모듈을 직접 가져옵니다.
+import { isEducationRequiredError } from '@/features/education/api';
 import { fetchPendingPayment, type PaymentDto } from '@/features/payment';
 import { fetchRidesByPost, type RideDto } from '@/features/ride';
 import { cn } from '@/lib/cn';
@@ -105,6 +107,8 @@ function PostDetailPageBody({ viewer }: Props) {
   const [applyState, setApplyState] = useState<'idle' | 'applying' | 'applied'>('idle');
   const [alreadyApplied, setAlreadyApplied] = useState(false);
   const [applyError, setApplyError] = useState<string>();
+  /** 교육 미이수로 지원이 막혔는지 (에러 문구 옆에 교육 영상 링크를 보여줍니다) */
+  const [educationRequired, setEducationRequired] = useState(false);
   const [rides, setRides] = useState<RideDto[]>([]);
   // 동행이 끝난 뒤 남아 있는 미결제(추가 결제) 건. 공고 조회와 같은 방식으로 postId 를 같이 들고 있습니다.
   const [paymentResult, setPaymentResult] = useState<{ postId: number; data: PaymentDto | null }>();
@@ -223,6 +227,7 @@ function PostDetailPageBody({ viewer }: Props) {
     // TODO: 지원 API(POST /api/v1/applications/{postId})는 동행 매니저(ESCORT) 로그인 쿠키가 있어야 합니다.
     setApplyState('applying');
     setApplyError(undefined);
+    setEducationRequired(false);
     try {
       await applyToPost(postId);
       setApplyState('applied');
@@ -230,6 +235,7 @@ function PostDetailPageBody({ viewer }: Props) {
     } catch (error) {
       setApplyState('idle');
       setApplyError(error instanceof Error ? error.message : '지원에 실패했습니다.');
+      setEducationRequired(isEducationRequiredError(error));
     }
   };
 
@@ -429,6 +435,11 @@ function PostDetailPageBody({ viewer }: Props) {
               <p role="alert" className="px-2 text-sm font-medium text-[#b91d1d]">
                 {deleteError || applyError}
               </p>
+            )}
+            {!deleteError && educationRequired && (
+              <Link href="/mypage/education" className={cn(BUTTON, 'h-14 w-full bg-brand text-xl text-white hover:bg-brand-hover')}>
+                교육 영상 보러 가기
+              </Link>
             )}
             <div className="flex gap-[15px]">
               <Link href={listHref} className={cn(BUTTON, 'h-14 flex-1 border border-line bg-white text-xl text-brand hover:bg-line-soft')}>

@@ -79,7 +79,7 @@ public class BaseInitData {
     }
 
     void initPosts() {
-        if (userRepository.count() > 0) return; // 이미 데이터가 있으면 다시 만들지 않음 (안전장치)
+        if (userRepository.count() > 0 || this.escortProfileRepository.count() > 0) return; // 이미 데이터가 있으면 다시 만들지 않음 (안전장치)
 
         List<User> clients = List.of(
                 createClient("client01", "김의뢰", "010-1000-0001", "서울"),
