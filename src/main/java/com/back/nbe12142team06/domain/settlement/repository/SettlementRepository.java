@@ -23,12 +23,12 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long> {
             "where s.id=:settlementId and (s.settlementStatus='PENDING' or s.settlementStatus='FAILED')")
     Optional<Settlement> findByIdAndState(@Param("settlementId") Long settlementId);
 
-    // TODO: 날짜 비교 아래처럼 하지 말고 between으로 고치기
     @Query("select s " +
             "from Settlement s " +
-            "join User u on s.escort=u " +
-            "join fetch Post p on s.application.post=p " +
-            "where u.id=:userId and p.escortStartAt >= :startDate and p.escortStartAt <= :endDate")
+            "join fetch User u on s.escort=u " +
+            "join fetch Application a on s.application=a " +
+            "join fetch Post p on a.post=p " +
+            "where u.id=:userId and p.escortStartAt between :startDate and :endDate")
     Page<Settlement> findAllByUserIdAndDate(@Param("userId") Long userId,
                                             @Param("startDate") LocalDateTime startDate,
                                             @Param("endDate") LocalDateTime endDate,

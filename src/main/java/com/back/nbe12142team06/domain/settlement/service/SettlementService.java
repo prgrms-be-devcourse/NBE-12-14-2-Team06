@@ -1,10 +1,13 @@
 package com.back.nbe12142team06.domain.settlement.service;
 
 import com.back.nbe12142team06.domain.application.entity.Application;
+import com.back.nbe12142team06.domain.penalty.entity.NoShowPenalty;
+import com.back.nbe12142team06.domain.penalty.service.NoShowPenaltyService;
 import com.back.nbe12142team06.domain.settlement.client.SettlementClient;
 import com.back.nbe12142team06.domain.settlement.client.SettlementClientRequest;
 import com.back.nbe12142team06.domain.settlement.client.SettlementClientResponse;
 import com.back.nbe12142team06.domain.settlement.dto.AccountDto;
+import com.back.nbe12142team06.domain.settlement.dto.SettlementResponse;
 import com.back.nbe12142team06.domain.settlement.entity.Settlement;
 import com.back.nbe12142team06.domain.settlement.entity.SettlementStatus;
 import com.back.nbe12142team06.domain.settlement.repository.SettlementRepository;
@@ -22,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -30,6 +34,7 @@ public class SettlementService {
 
     private final SettlementPersistenceService settlementPersistenceService;
     private final SettlementRepository settlementRepository;
+    private final NoShowPenaltyService noShowPenaltyService;
 
     // 정산 API
     private final SettlementClient settlementClient;
@@ -61,12 +66,12 @@ public class SettlementService {
 
     // 정산 외부 API 로직(목으로 대체)
     @Transactional(readOnly = true)
-    public Page<Settlement> findAll(Long userId, LocalDateTime startDate, LocalDateTime endDate, Pageable pageable) {
-        return settlementRepository.findAllByUserIdAndDate(userId, startDate, endDate, pageable);
+    public Page<SettlementResponse> findAll(Long userId, LocalDateTime startDate, LocalDateTime endDate, Pageable pageable) {
+        return settlementRepository.findAllByUserIdAndDate(userId, startDate, endDate, pageable).map(SettlementResponse::new);
     }
 
     @Transactional(readOnly = true)
-    public Settlement findSettlement(Long userId, Long settlementId) {
+    public SettlementResponse findSettlement(Long userId, Long settlementId) {
         Settlement settlement = settlementRepository.findById(settlementId)
                 .orElseThrow(() -> new NotFoundException(30, "찾으시는 정산 데이터가 없습니다."));
 
@@ -74,7 +79,7 @@ public class SettlementService {
             throw new ForbiddenException(30, "정산 요청할 권한이 없습니다.");
         }
 
-        return settlement;
+        return new SettlementResponse(settlement);
     }
 
     // 정산 스캐줄링
@@ -118,18 +123,38 @@ public class SettlementService {
     }
 
     @Transactional
-    public Settlement createSettlement(int amount, Application application, User escort, LocalDate settledDate) {
-        int payoutAmount = (int) (amount * 0.9);
-        int platformFee = amount - payoutAmount;
+    public Settlement createSettlement(int payoutAmount, Application application, User escort, LocalDate settledDate) {
+        int settlementAmount = (int) (payoutAmount * 0.9);
+        int platformFee = payoutAmount - settlementAmount;
+
+        // 패널티 적용해야 하는지 확인
+
+        Optional<NoShowPenalty> noShowPenalty = noShowPenaltyService.getNoShowPenalty(escort.getId());
+
+        // 패널티 적용 시 정산 금액 차감
+        int penaltyAmount = 0;
+        if (noShowPenalty.isPresent()) {
+            penaltyAmount = (int) (settlementAmount * 0.1);
+            settlementAmount -= penaltyAmount;
+        }
 
         Settlement settlement = Settlement.builder()
-                .payoutAmount(payoutAmount)
+                .payoutAmount(settlementAmount)
                 .platformFee(platformFee)
+                .penaltyAmount(penaltyAmount)
                 .settledDate(settledDate)
                 .application(application)
                 .escort(escort)
                 .build();
 
-        return settlementRepository.save(settlement);
+        Settlement savedSettlement = settlementRepository.save(settlement);
+
+        // 패널티 데이터 업데이트
+        if (noShowPenalty.isPresent()) {
+            noShowPenaltyService.applyPenalty(escort.getId(), penaltyAmount,
+                    settlementAmount + penaltyAmount, settlement, noShowPenalty.get());
+        }
+
+        return savedSettlement;
     }
 }

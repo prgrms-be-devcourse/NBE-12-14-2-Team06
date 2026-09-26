@@ -54,11 +54,11 @@ public class SettlementController {
         startDate = startDate == null ? LocalDateTime.now().minusMonths(1) : startDate;
         endDate = endDate == null ? LocalDateTime.now() : endDate;
 
-        Page<Settlement> settlements = settlementService.findAll(userId, startDate, endDate, PageRequest.of(page, size,
+        Page<SettlementResponse> response = settlementService.findAll(userId, startDate, endDate, PageRequest.of(page, size,
                 Sort.by(sort, "application.post.escortStartAt")));
 
         return new RsData<>("200-31", "정산 목록을 가져왔습니다.",
-                settlements.map(SettlementResponse::new));
+                response);
     }
 
     @Operation(
@@ -71,9 +71,9 @@ public class SettlementController {
 
         Long userId = actor.getId();
 
-        Settlement settlement = settlementService.findSettlement(userId, settlementId);
+        SettlementResponse response = settlementService.findSettlement(userId, settlementId);
 
         return new RsData<>("200-32", "정산 상세 데이터를 조회했습니다.",
-                new SettlementResponse(settlement));
+                response);
     }
 }

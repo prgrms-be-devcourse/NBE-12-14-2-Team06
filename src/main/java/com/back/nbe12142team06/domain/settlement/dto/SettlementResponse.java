@@ -11,6 +11,7 @@ public record SettlementResponse(
         Long id,
         int payoutAmount,
         int platformFee,
+        int penaltyAmount,
         SettlementStatus status,
         LocalDate settledAt,
         PostDto post
@@ -20,6 +21,7 @@ public record SettlementResponse(
                 settlement.getId(),
                 settlement.getPayoutAmount(),
                 settlement.getPlatformFee(),
+                settlement.getPenaltyAmount(),
                 settlement.getSettlementStatus(),
                 settlement.getSettledDate(),
                 new PostDto(settlement.getApplication().getPost())

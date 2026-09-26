@@ -14,6 +14,7 @@ export const MYPAGE_MENUS: Record<MyPageRole, MyPageMenuItem[]> = {
     { label: '내가 신청한 공고', href: '/mypage/applications' },
     { label: '내 정산', href: '/mypage/settlements' },
     { label: '받은 리뷰', href: '/mypage/reviews' },
+    { label: '교육 영상', href: '/mypage/education' },
     { label: '설정', href: '#' },
   ],
   client: [
