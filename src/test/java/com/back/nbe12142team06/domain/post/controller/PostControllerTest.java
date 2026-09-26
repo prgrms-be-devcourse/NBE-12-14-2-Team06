@@ -612,7 +612,7 @@ public class PostControllerTest {
                 .andExpect(jsonPath("$.statusCode").value("401-16"));
     }
     @Test
-    @DisplayName("[PostController] 공고 취소 - 동행인(ESCORT) 역할은 취소 권한 없음 401 반환")
+    @DisplayName("[PostController] 공고 취소 - 동행인(ESCORT) 역할은 취소 권한 없음 403 반환")
     void t15() throws Exception {
         Long postId = registerPost();
         Post post = postRepository.findById(postId).orElseThrow();
@@ -635,8 +635,8 @@ public class PostControllerTest {
                 .andDo(print());
 
         resultActions
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.statusCode").value("401-15"));
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.statusCode").value("403-1"));
     }
     @Test
     @DisplayName("[PostController] 공고 목록 조회 - 결제 취소된 공고는 제외")
@@ -916,7 +916,7 @@ public class PostControllerTest {
                 .andExpect(jsonPath("$.statusCode").value("401-16"));
     }
     @Test
-    @DisplayName("[PostController] 동행완료 처리 - 동행인(ESCORT) 역할은 권한 없음 401")
+    @DisplayName("[PostController] 동행완료 처리 - 동행인(ESCORT) 역할은 권한 없음 403")
     void t27() throws Exception {
         Long postId = setUpInProgressPost();
 
@@ -936,8 +936,8 @@ public class PostControllerTest {
                 .andDo(print());
 
         resultActions
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.statusCode").value("401-15"));
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.statusCode").value("403-1"));
     }
 
     @Test

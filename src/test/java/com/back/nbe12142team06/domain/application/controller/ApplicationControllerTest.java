@@ -222,7 +222,7 @@ public class ApplicationControllerTest {
     }
 
     @Test
-    @DisplayName("[ApplicationController] 지원하기 - CLIENT가 지원 시 400 반환")
+    @DisplayName("[ApplicationController] 지원하기 - CLIENT가 지원 시 403 반환 (SecurityConfig 에서 ESCORT 만 허용)")
     void t3() throws Exception {
 
         ResultActions resultActions = mvc
@@ -230,13 +230,11 @@ public class ApplicationControllerTest {
                         .cookie(clientAccessTokenCookie))
                 .andDo(print());
 
+        // 컨트롤러에 도달하기 전에 URL 권한 규칙에서 막히므로 handler 검증은 없다.
         resultActions
-                .andExpect(handler().handlerType(ApplicationController.class))
-                .andExpect(handler().methodName("apply"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.statusCode").value("400"))
-                .andExpect(jsonPath("$.msg")
-                        .value("동행인만 공고에 지원할 수 있습니다."));
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.statusCode").value("403-1"))
+                .andExpect(jsonPath("$.msg").value("권한이 없습니다."));
     }
 
     @Test
