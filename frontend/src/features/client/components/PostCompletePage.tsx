@@ -46,13 +46,15 @@ export default function PostCompletePage() {
           <Image src="/icons/escort/report-done-check.svg" alt="" width={126} height={126} className="mb-[30px]" />
           <SectionHeading title="공고 등록 완료" description="공고가 등록되었습니다." className="mb-[30px]" />
 
-          <dl className="mb-[30px] flex flex-col gap-2.5 text-xl text-brand lg:text-2xl">
-            {rows.map((row) => (
-              <div key={row.label} className="grid h-[45px] grid-cols-[100px_150px] items-center gap-x-10 sm:gap-x-[180px]">
-                <dt className="font-semibold">{row.label}</dt>
-                <dd className="font-medium">{row.value}</dd>
-              </div>
-            ))}
+          <dl className="mb-[30px] w-full max-w-[600px] rounded-[20px] border border-line bg-white px-12 py-7 text-xl text-brand shadow-card lg:text-2xl">
+            <div className="mx-auto grid w-fit grid-cols-[max-content_max-content] items-center gap-x-24 gap-y-3">
+              {rows.map((row) => (
+                  <div key={row.label} className="contents">
+                    <dt className="font-semibold">{row.label}</dt>
+                    <dd className="font-medium">{row.value}</dd>
+                  </div>
+              ))}
+            </div>
           </dl>
 
           <div className="flex w-full max-w-[600px] gap-2.5">

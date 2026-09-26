@@ -45,18 +45,18 @@ function toApplicationStatus(application: MyApplicationDto): ApplicationStatus {
 function toApplication(dto: MyApplicationDto): Application {
   const start = new Date(dto.escortStartAt);
 
+  const year = start.getFullYear();
+  const month = String(start.getMonth() + 1).padStart(2, '0');
+  const day = String(start.getDate()).padStart(2, '0');
+  const weekday = ['일', '월', '화', '수', '목', '금', '토'][start.getDay()];
+
   return {
     id: dto.applicationId,
     postId: dto.postId,
     title: dto.title,
     hospitalName: dto.hospitalName,
     location: dto.region,
-    dateLabel: start.toLocaleDateString('ko-KR', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      weekday: 'short',
-    }),
+    dateLabel: `${year}.${month}.${day}.(${weekday})`,
     timeLabel: start.toLocaleTimeString('ko-KR', {
       hour: '2-digit',
       minute: '2-digit',
@@ -213,6 +213,31 @@ export default function MyApplicationsPage() {
   const applications = sort === 'latest' ? filtered : [...filtered].reverse();
   const tabLabel = STATUS_TABS.find((item) => item.value === tab)?.label ?? '';
 
+  const emptyStateText = {
+    all: {
+      title: '아직 지원한 공고가 없습니다.',
+      description: '관심 있는 병원 동행 공고를 찾아 지원해보세요.',
+    },
+    pending: {
+      title: '대기 중인 공고가 없습니다.',
+    },
+    matched: {
+      title: '매칭 완료된 공고가 없습니다.',
+    },
+    inProgress: {
+      title: '진행 중인 공고가 없습니다.',
+    },
+    completed: {
+      title: '완료된 공고가 없습니다.',
+    },
+    rejected: {
+      title: '거절된 지원이 없습니다.',
+    },
+    canceled: {
+      title: '취소한 지원이 없습니다.',
+    },
+  }[tab];
+
   if (loading) {
     return (
         <AppShell>
@@ -353,11 +378,13 @@ export default function MyApplicationsPage() {
             })}
           </ul>
         ) : (
-          <EmptyState
-            title="아직 지원한 공고가 없습니다."
-            description="관심 있는 병원 동행 공고를 찾아 지원해보세요."
-            action={{ label: '공고 찾기', href: '/posts' }}
-          />
+            <div className="mx-auto w-full max-w-[952px]">
+              <EmptyState
+                  title={emptyStateText.title}
+                  description={emptyStateText.description}
+                  action={tab === 'all' ? { label: '공고 찾기', href: '/posts' } : undefined}
+              />
+            </div>
         )}
       </div>
     </MyPageShell>
