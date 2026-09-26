@@ -7,6 +7,7 @@ import com.back.nbe12142team06.domain.application.enums.ApplicationStatus;
 import com.back.nbe12142team06.domain.application.enums.EscortProgress;
 import com.back.nbe12142team06.domain.application.repository.ApplicationRepository;
 import com.back.nbe12142team06.domain.application.repository.EscortProgressLogRepository;
+import com.back.nbe12142team06.domain.penalty.service.NoShowPenaltyService;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.entity.PostStatus;
 import com.back.nbe12142team06.domain.post.repository.PostRepository;
@@ -36,6 +37,7 @@ public class ApplicationService {
     private final UserRepository userRepository;
     private final EscortProfileRepository escortProfileRepository;
     private final EscortProgressLogRepository escortProgressLogRepository;
+    private final NoShowPenaltyService noShowPenaltyService;
 
     @Transactional
     public ApplicationApplyResponse apply(Long postId, Long userId) {
@@ -223,6 +225,9 @@ public class ApplicationService {
 
             application.noShow();
             escortProfile.increaseNoShowCount();
+
+            // 노쇼 데이터 생성
+            noShowPenaltyService.noShow(application);
 
             // 모집 마감 전이면 다시 동행인을 모집
             if (LocalDateTime.now().isBefore(post.getRecruitEndAt())) {

@@ -62,6 +62,22 @@ function SettlementCard({ settlement, onRequested }: { settlement: SettlementDto
     }
   };
 
+  const rows: { term: string; value: string; tone?: string }[] = [
+    { term: '동행일', value: formatDate(settlement.post.escortStartAt) },
+    { term: '소요 시간', value: `약 ${settlement.post.escortHours}시간` },
+    { term: '정산 완료일', value: settlement.settledAt ? formatDate(settlement.settledAt) : '-' },
+    { term: '정산금액', value: `${settlement.payoutAmount.toLocaleString()}원` },
+  ];
+
+  // 노쇼 패널티는 차감이 있을 때만 보여줍니다. payoutAmount 는 이미 차감된 금액입니다.
+  if (settlement.penaltyAmount > 0) {
+    rows.push({
+      term: '패널티',
+      value: `-${settlement.penaltyAmount.toLocaleString()}원`,
+      tone: 'text-[#b91d1d]',
+    });
+  }
+
   return (
     <article className="flex min-h-[271px] flex-col gap-2.5 rounded-[30px] border-[0.68px] border-line bg-white px-[22px] py-5 shadow-[0_0.68px_2.7px_rgba(25,33,61,0.08)]">
       <span className={cn('inline-flex h-6 w-fit items-center rounded-full px-4 text-sm leading-[18px] font-semibold', badge.className)}>
@@ -79,15 +95,10 @@ function SettlementCard({ settlement, onRequested }: { settlement: SettlementDto
         </div>
       </div>
       <dl className="grid grid-cols-2 gap-x-6 gap-y-2 py-2 text-xs leading-4 text-brand">
-        {[
-          ['동행일', formatDate(settlement.post.escortStartAt)],
-          ['소요 시간', `약 ${settlement.post.escortHours}시간`],
-          ['정산 완료일', settlement.settledAt ? formatDate(settlement.settledAt) : '-'],
-          ['정산금액', `${settlement.payoutAmount.toLocaleString()}원`],
-        ].map(([term, value]) => (
+        {rows.map(({ term, value, tone }) => (
           <div key={term} className="flex gap-3">
             <dt className="w-[72px] shrink-0 font-semibold">{term}</dt>
-            <dd className="font-medium">{value}</dd>
+            <dd className={cn('font-medium', tone)}>{value}</dd>
           </div>
         ))}
       </dl>

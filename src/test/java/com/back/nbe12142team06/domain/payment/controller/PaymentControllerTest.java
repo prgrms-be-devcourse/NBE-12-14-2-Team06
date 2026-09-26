@@ -11,7 +11,6 @@ import com.back.nbe12142team06.domain.payment.service.PaymentPersistenceService;
 import com.back.nbe12142team06.domain.payment.service.PaymentService;
 import com.back.nbe12142team06.domain.post.dto.PostWriteRequest;
 import com.back.nbe12142team06.domain.post.dto.PostWriteResponse;
-import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.service.PostService;
 import com.back.nbe12142team06.domain.ride.entity.RideSelect;
 import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpRequest;

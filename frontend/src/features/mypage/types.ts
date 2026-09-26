@@ -36,8 +36,11 @@ export type SettlementPost = {
 /** 백엔드 GET /api/v1/settlements 응답 한 줄 (SettlementResponse) */
 export type SettlementDto = {
   id: number;
+  /** 실지급액. 패널티가 이미 차감된 금액입니다. */
   payoutAmount: number;
   platformFee: number;
+  /** 노쇼 패널티로 차감된 금액. 차감이 없으면 0 */
+  penaltyAmount: number;
   status: SettlementStatus;
   /** 정산 완료된 날짜. 아직 정산 전이면 null */
   settledAt: string | null;

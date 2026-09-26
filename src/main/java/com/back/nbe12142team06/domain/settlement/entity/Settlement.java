@@ -39,6 +39,14 @@ public class Settlement extends BaseSoftDeleteTimeEntity {
     @Builder.Default
     private int platformFee = 0;
 
+    // 패널티 금액, 최소 0원 이상이어야 함
+    @Column(
+            nullable = false,
+            check = @CheckConstraint(name = "chk_penalty_amount", constraint = "penalty_amount >= 0")
+    )
+    @Builder.Default
+    private int penaltyAmount = 0;
+
     // 정산 상태
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
