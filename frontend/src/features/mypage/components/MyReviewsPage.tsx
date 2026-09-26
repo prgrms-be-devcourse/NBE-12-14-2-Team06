@@ -97,13 +97,15 @@ export default function MyReviewsPage() {
           ]}
         />
 
-        <DateRangeFilter
-          from={fromInput}
-          to={toInput}
-          onFromChange={setFromInput}
-          onToChange={setToInput}
-          onSearch={() => setRange({ from: fromInput, to: toInput })}
-        />
+        <div className="w-full max-w-[910px]">
+          <DateRangeFilter
+              from={fromInput}
+              to={toInput}
+              onFromChange={setFromInput}
+              onToChange={setToInput}
+              onSearch={() => setRange({ from: fromInput, to: toInput })}
+          />
+        </div>
 
         {reviews.length > 0 ? (
           <ul className="grid w-full max-w-[910px] gap-4 sm:grid-cols-2">
@@ -138,7 +140,12 @@ export default function MyReviewsPage() {
             })}
           </ul>
         ) : (
-          <EmptyState title="받은 리뷰가 없습니다." description="동행을 마치면 의뢰인이 남긴 리뷰가 이곳에 표시됩니다." />
+            <div className="w-full max-w-[910px]">
+              <EmptyState
+                  title="받은 리뷰가 없습니다."
+                  description="동행을 마치면 의뢰인이 남긴 리뷰가 이곳에 표시됩니다."
+              />
+            </div>
         )}
       </div>
     </MyPageShell>

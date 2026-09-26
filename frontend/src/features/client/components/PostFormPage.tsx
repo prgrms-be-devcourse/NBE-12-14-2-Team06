@@ -502,7 +502,7 @@ function PostFormFields({ postId, initial, sample }: FormFieldsProps) {
 
               <FormSection title="요청 조건">
                 <FormRow label="시급(금액)*" htmlFor="post-pay">
-                  <div className="relative min-w-0 sm:max-w-[389px]">
+                  <div className="relative min-w-0">
                     <input
                       id="post-pay"
                       name="hourlyPay"
@@ -674,7 +674,7 @@ function PostFormFields({ postId, initial, sample }: FormFieldsProps) {
                 </section>
               )}
 
-              <section className="rounded-[30px] border border-line bg-white px-6 pt-8 pb-6 shadow-card lg:min-h-[232px]">
+              <section className="rounded-[30px] border border-line bg-white px-6 pt-8 pb-6 shadow-card">
                 <h2 className={CARD_TITLE}>
                   <Image src="/icons/escort/warning.svg" alt="" width={31} height={31} className="size-7" />
                   결제 예상 금액

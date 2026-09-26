@@ -156,7 +156,11 @@ function PostDetailPageBody({ viewer }: Props) {
           if (ignore) return;
 
           setAlreadyApplied(
-              applications.some((application) => application.postId === postId)
+              applications.some(
+                  (application) =>
+                      application.postId === postId &&
+                      application.applicationStatus !== 'CANCELED'
+              )
           );
         })
         .catch(() => {
@@ -169,7 +173,6 @@ function PostDetailPageBody({ viewer }: Props) {
       ignore = true;
     };
   }, [postId, user?.role]);
-
   const loading = result?.postId !== postId;
   const post = loading ? undefined : result?.data;
   const loadError = loading ? undefined : result?.error;
@@ -349,10 +352,11 @@ function PostDetailPageBody({ viewer }: Props) {
             <Section title="기본 정보" titleGap="mb-[21px]" className="lg:min-h-[290px] lg:px-6 lg:pb-4">
               <dl className="grid gap-x-[22px] lg:grid-cols-[1fr_1px_1fr]">
                 <div className="flex flex-col gap-[3px]">
-                  <InfoRow label="병원명" labelWidth={90}>{post.hospitalName}</InfoRow>
-                  <InfoRow label="병원 주소" labelWidth={90}>{post.hospitalAddress}</InfoRow>
-                  <InfoRow label="날짜" labelWidth={90}>{date}</InfoRow>
-                  <InfoRow label="시간" labelWidth={92}>{post.startTime}</InfoRow>
+                  <InfoRow label="병원명" labelWidth={110}>{post.hospitalName}</InfoRow>
+                  <InfoRow label="병원 주소" labelWidth={110}>{post.hospitalAddress}</InfoRow>
+                  <InfoRow label="날짜" labelWidth={110}>{date}</InfoRow>
+                  <InfoRow label="시간" labelWidth={110}>{post.startTime}</InfoRow>
+                  <InfoRow label="시급" labelWidth={110}>{pay}</InfoRow>
                 </div>
                 <div aria-hidden="true" className="hidden self-center bg-[#e6e8ec] opacity-50 lg:block lg:h-40" />
                 <div className="flex flex-col gap-[3px]">
@@ -361,13 +365,12 @@ function PostDetailPageBody({ viewer }: Props) {
                   <InfoRow label="갈 때 이동수단" labelWidth={124}>{toHospitalTransport}</InfoRow>
                   <InfoRow label="올 때 이동수단" labelWidth={124}>{toHomeTransport}</InfoRow>
                   <InfoRow label="지역" labelWidth={124}>{location}</InfoRow>
-                  <InfoRow label="시급/보수" labelWidth={124}>{pay}</InfoRow>
                 </div>
               </dl>
             </Section>
 
             {/* 공고 설명 */}
-            <Section title="공고 설명" className="lg:min-h-[195px]">
+            <Section title="공고 설명">
               <div className="text-base leading-6 font-semibold text-brand">
                 {post.details.map((line) => (
                   <p key={line}>{line}</p>
@@ -377,7 +380,7 @@ function PostDetailPageBody({ viewer }: Props) {
 
             {/* 환자 특이사항 (작성하지 않았으면 섹션 자체를 생략) */}
             {post.patientNote.length > 0 && (
-              <Section title="환자 특이사항" titleGap="mb-[26px]" className="lg:min-h-[239px]">
+                <Section title="환자 특이사항" titleGap="mb-[26px]">
                 <ul className="flex flex-col gap-[7px] px-0.5">
                   {post.patientNote.map((note) => (
                     <li key={note} className="flex items-center gap-[15px] text-base leading-5 font-semibold text-brand">

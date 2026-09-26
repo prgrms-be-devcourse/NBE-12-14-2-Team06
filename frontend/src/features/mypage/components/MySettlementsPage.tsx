@@ -216,13 +216,15 @@ export default function MySettlementsPage() {
           ]}
         />
 
-        <DateRangeFilter
-          from={fromInput}
-          to={toInput}
-          onFromChange={setFromInput}
-          onToChange={setToInput}
-          onSearch={() => setRange({ from: fromInput, to: toInput })}
-        />
+        <div className="w-full max-w-[910px]">
+          <DateRangeFilter
+              from={fromInput}
+              to={toInput}
+              onFromChange={setFromInput}
+              onToChange={setToInput}
+              onSearch={() => setRange({ from: fromInput, to: toInput })}
+          />
+        </div>
 
         {loading ? (
           <p className="py-10 text-center text-base font-semibold text-brand-muted">불러오는 중입니다.</p>
@@ -237,11 +239,13 @@ export default function MySettlementsPage() {
             ))}
           </ul>
         ) : (
-          <EmptyState
-            title="아직 정산된 공고가 없습니다."
-            description="관심 있는 병원 동행 공고를 찾아 지원해보세요."
-            action={{ label: '공고 찾기', href: '/posts' }}
-          />
+            <div className="w-full max-w-[910px]">
+              <EmptyState
+                  title="아직 정산된 공고가 없습니다."
+                  description="관심 있는 병원 동행 공고를 찾아 지원해보세요."
+                  action={{ label: '공고 찾기', href: '/posts' }}
+              />
+            </div>
         )}
       </div>
     </MyPageShell>

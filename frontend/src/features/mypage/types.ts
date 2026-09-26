@@ -1,7 +1,7 @@
 /** 내가 신청한 공고의 진행 상태 */
-export type ApplicationStatus = 'pending' | 'matched' | 'inProgress' | 'completed' | 'rejected';
+export type ApplicationStatus = 'pending' | 'matched' | 'inProgress' | 'completed' | 'rejected' | 'canceled';
 
-/** 신청 카드 한 장 (모의 데이터용 모양) */
+/** 마이페이지 신청 카드 한 장 */
 export type Application = {
   id: number;
   /** 상세보기로 이동할 공고 번호 */
