@@ -29,15 +29,18 @@ public class SecurityConfig {
                     .requestMatchers(HttpMethod.GET, "/api/v1/users/username").permitAll()  // username 중복 검사
                     .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()  // 로그인
                     .requestMatchers(HttpMethod.POST, "/api/v1/auth/refresh").permitAll()   // access 토큰 재발급
-                    .requestMatchers(HttpMethod.GET, "/api/v1/posts", "/api/v1/posts/**").permitAll() //공고
-                    .requestMatchers(HttpMethod.POST,"/api/v1/posts").hasAnyRole("CLIENT","ADMIN") //공고 생성
-                    .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll() //swagger
+                    // swagger
+                    .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
+                    // 프로필
                     .requestMatchers("/api/v1/users/*/profile/client").hasAnyRole("ADMIN", "ESCORT")    // 의뢰인 프로필 타인 조회, 수정
                     .requestMatchers("/api/v1/users/profile/client").hasRole("CLIENT") // 의뢰인 프로필 생성, 조회, 수정
                     .requestMatchers("/api/v1/users/*/profile/escort").hasAnyRole("CLIENT")    // 동행인 프로필 타인 조회
                     .requestMatchers("/api/v1/users/profile/escort").hasRole("ESCORT") // 동행인 프로필 생성, 조회, 수정
+                    // 교육영상
                     .requestMatchers("/api/v1/education-videos/**").hasRole("ESCORT")  // 교육 영상 목록, 단건, 시청 기록
-                    // 공고 수정, 삭제, 매칭 취소, 동행 완료 (GET·POST 는 위에서 처리)
+                    // 공고
+                    .requestMatchers(HttpMethod.GET, "/api/v1/posts", "/api/v1/posts/**").permitAll() //공고
+                    .requestMatchers(HttpMethod.POST,"/api/v1/posts").hasAnyRole("CLIENT","ADMIN") //공고 생성
                     .requestMatchers(HttpMethod.PUT, "/api/v1/posts/*").hasAnyRole("CLIENT", "ADMIN")
                     .requestMatchers(HttpMethod.DELETE, "/api/v1/posts/*").hasAnyRole("CLIENT", "ADMIN")
                     .requestMatchers(HttpMethod.PATCH, "/api/v1/posts/*/matchedCancel", "/api/v1/posts/*/escortComplete")
