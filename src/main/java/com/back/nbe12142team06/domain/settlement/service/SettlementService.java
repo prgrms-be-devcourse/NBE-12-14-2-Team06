@@ -7,6 +7,7 @@ import com.back.nbe12142team06.domain.settlement.client.SettlementClient;
 import com.back.nbe12142team06.domain.settlement.client.SettlementClientRequest;
 import com.back.nbe12142team06.domain.settlement.client.SettlementClientResponse;
 import com.back.nbe12142team06.domain.settlement.dto.AccountDto;
+import com.back.nbe12142team06.domain.settlement.dto.SettlementResponse;
 import com.back.nbe12142team06.domain.settlement.entity.Settlement;
 import com.back.nbe12142team06.domain.settlement.entity.SettlementStatus;
 import com.back.nbe12142team06.domain.settlement.repository.SettlementRepository;
@@ -65,12 +66,12 @@ public class SettlementService {
 
     // 정산 외부 API 로직(목으로 대체)
     @Transactional(readOnly = true)
-    public Page<Settlement> findAll(Long userId, LocalDateTime startDate, LocalDateTime endDate, Pageable pageable) {
-        return settlementRepository.findAllByUserIdAndDate(userId, startDate, endDate, pageable);
+    public Page<SettlementResponse> findAll(Long userId, LocalDateTime startDate, LocalDateTime endDate, Pageable pageable) {
+        return settlementRepository.findAllByUserIdAndDate(userId, startDate, endDate, pageable).map(SettlementResponse::new);
     }
 
     @Transactional(readOnly = true)
-    public Settlement findSettlement(Long userId, Long settlementId) {
+    public SettlementResponse findSettlement(Long userId, Long settlementId) {
         Settlement settlement = settlementRepository.findById(settlementId)
                 .orElseThrow(() -> new NotFoundException(30, "찾으시는 정산 데이터가 없습니다."));
 
@@ -78,7 +79,7 @@ public class SettlementService {
             throw new ForbiddenException(30, "정산 요청할 권한이 없습니다.");
         }
 
-        return settlement;
+        return new SettlementResponse(settlement);
     }
 
     // 정산 스캐줄링
