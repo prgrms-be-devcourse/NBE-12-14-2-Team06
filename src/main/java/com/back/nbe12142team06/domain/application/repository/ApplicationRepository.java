@@ -18,21 +18,23 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
 
     // 공고별 지원 목록 조회
     @Query("""
-        SELECT a
-        FROM Application a
-        JOIN FETCH a.escort
-        WHERE a.post.id = :postId
-        """)
+    SELECT a
+    FROM Application a
+    JOIN FETCH a.escort
+    WHERE a.post.id = :postId
+      AND a.status <> com.back.nbe12142team06.domain.application.enums.ApplicationStatus.CANCELED
+    """)
     List<Application> findAllByPostIdWithEscort(@Param("postId") Long postId);
 
     // 페이징 조회용
     @Query("""
-        SELECT a
-        FROM Application a
-        JOIN FETCH a.escort
-        WHERE a.post.id = :postId
-        ORDER BY a.id DESC
-        """)
+    SELECT a
+    FROM Application a
+    JOIN FETCH a.escort
+    WHERE a.post.id = :postId
+      AND a.status <> com.back.nbe12142team06.domain.application.enums.ApplicationStatus.CANCELED
+    ORDER BY a.id DESC
+    """)
     Page<Application> findAllByPostIdWithEscort(
             @Param("postId") Long postId,
             Pageable pageable
