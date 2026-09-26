@@ -2,6 +2,7 @@ package com.back.nbe12142team06.domain.payment.repository;
 
 import com.back.nbe12142team06.domain.payment.entity.Payment;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -38,4 +39,8 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
             "join fetch post.client c " +
             "where pay.id=:paymentId")
     Optional<Payment> findByIdFetchJoin(@Param("paymentId") Long paymentId);
+
+    @Modifying
+    @Query("update Payment p set p.paymentStatus='DONE' where p.post.id=:postId")
+    void testStatusDone(@Param("postId") Long postId);
 }

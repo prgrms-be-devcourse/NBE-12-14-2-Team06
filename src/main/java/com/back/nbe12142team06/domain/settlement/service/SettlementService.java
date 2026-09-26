@@ -127,6 +127,7 @@ public class SettlementService {
         int platformFee = payoutAmount - settlementAmount;
 
         // 패널티 적용해야 하는지 확인
+
         Optional<NoShowPenalty> noShowPenalty = noShowPenaltyService.getNoShowPenalty(escort.getId());
 
         // 패널티 적용 시 정산 금액 차감
