@@ -68,7 +68,7 @@ export default function PostCard({
       <div className={DIVIDER} />
 
       <div className="flex h-[31.8px] items-center justify-center gap-[16.9px] px-2">
-        <p className="w-[74px] text-center text-[10.83px] leading-[13.5px] font-semibold text-brand">
+        <p className="w-[90px] whitespace-nowrap text-center text-[10.83px] leading-[13.5px] font-semibold text-brand">
           {dateLabel}
           <br />
           {timeLabel}
