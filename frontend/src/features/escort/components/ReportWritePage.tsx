@@ -9,8 +9,9 @@ import { Container, InfoRow, SectionHeading } from '@/components/ui';
 import { useRequireAuth } from '@/features/auth';
 import { cn } from '@/lib/cn';
 import { writeReport } from '@/features/report';
-import { getEscortCase } from '../model/cases';
+import { fetchReportTarget } from '../api';
 import { DEPARTMENTS } from '../model/departments';
+import type { ReportTarget } from '../types';
 
 const MAX_PHOTOS = 4;
 const GUIDES = [
@@ -41,9 +42,16 @@ function SectionTitle({ children }: { children: ReactNode }) {
   return <h2 className="mb-2 text-2xl leading-6 font-semibold text-brand">{children}</h2>;
 }
 
+type TargetResult =
+  | { status: 'notFound' }
+  | { status: 'error'; message: string }
+  | { status: 'ready'; target: ReportTarget };
+
 /**
  * 동행 보고서 작성 — Figma 동행 매니저_보고서 작성 화면 61:1269
  *
+ * 기본 정보는 내 지원 목록·공고에서 가져오고(api.ts 의 fetchReportTarget),
+ * 제출은 POST /api/v1/applications/{applicationId}/report 입니다.
  * 형식 검사는 브라우저 기본 검사(required)를 씁니다.
  * 첨부 사진은 서버에 업로드 API 가 없어 미리보기만 보여주고 전송하지 않습니다.
  */
@@ -51,14 +59,38 @@ export default function ReportWritePage() {
   const { loading: authLoading, user } = useRequireAuth('ESCORT');
   const params = useParams<{ applicationId: string }>();
   const router = useRouter();
-  const escort = getEscortCase(Number(params.applicationId));
+  const applicationId = Number(params.applicationId);
 
+  const [result, setResult] = useState<{ key?: number; data?: TargetResult }>({});
   const [photos, setPhotos] = useState<{ name: string; url: string }[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
 
   // 미리보기 주소는 화면을 떠날 때 정리합니다.
   useEffect(() => () => photos.forEach((photo) => URL.revokeObjectURL(photo.url)), [photos]);
+
+  useEffect(() => {
+    if (!Number.isFinite(applicationId)) return;
+    let ignore = false;
+
+    fetchReportTarget(applicationId)
+      .then((target) => {
+        if (!ignore) setResult({ key: applicationId, data: target ? { status: 'ready', target } : { status: 'notFound' } });
+      })
+      .catch((error: unknown) => {
+        if (ignore) return;
+        setResult({
+          key: applicationId,
+          data: { status: 'error', message: error instanceof Error ? error.message : '동행 정보를 불러오지 못했습니다.' },
+        });
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [applicationId]);
+
+  const state = result.key === applicationId ? result.data : undefined;
 
   if (authLoading) {
     return (
@@ -71,13 +103,27 @@ export default function ReportWritePage() {
   }
   if (!user) return null;
 
-  if (!escort) {
+  if (!state) {
     return (
       <AppShell>
-        <section className="bg-white py-[100px] text-center text-xl font-semibold text-brand">동행 정보를 찾을 수 없습니다.</section>
+        <section className="bg-white py-[100px] text-center">
+          <p className="text-xl font-semibold text-brand">동행 정보를 불러오는 중입니다.</p>
+        </section>
       </AppShell>
     );
   }
+
+  if (state.status !== 'ready') {
+    return (
+      <AppShell>
+        <section className="bg-white py-[100px] text-center text-xl font-semibold text-brand">
+          {state.status === 'notFound' ? '동행 정보를 찾을 수 없습니다.' : state.message}
+        </section>
+      </AppShell>
+    );
+  }
+
+  const escort = state.target;
 
   const handlePhotos = (event: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files ?? []).slice(0, MAX_PHOTOS - photos.length);
@@ -130,8 +176,8 @@ export default function ReportWritePage() {
                       <InfoRow label="동행시간" labelWidth={92}>{escort.workTime}</InfoRow>
                     </div>
                     <div aria-hidden="true" className="hidden self-center bg-white opacity-50 lg:block lg:h-40" />
+                    {/* ⚠️ 의뢰인명은 백엔드 응답에 없어서 뺐습니다 (model/mapper.ts 주석 참고). */}
                     <div className="flex flex-col gap-[3px]">
-                      <InfoRow label="의뢰인명" labelWidth={92}>{escort.clientName}</InfoRow>
                       <InfoRow label="병원 주소" labelWidth={92}>{escort.hospitalAddress}</InfoRow>
                       <InfoRow label="특이사항" labelWidth={92}>{escort.note}</InfoRow>
                     </div>
