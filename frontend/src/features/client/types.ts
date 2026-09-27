@@ -1,5 +1,6 @@
 import type { TimelineStep } from '@/features/escort';
 import type { PostStatusKey } from '@/features/post';
+import type { EscortGrade } from '@/features/application';
 import type { RoutePoint } from '@/lib/kakaoT';
 
 /**
@@ -38,6 +39,7 @@ export type Manager = {
   name: string;
   rating: number;
   completedCount: number;
+  grade?: EscortGrade;
   /** "서울 강남구". 값이 없으면 화면에서 이 줄을 생략합니다. */
   region?: string;
   tags?: string[];
