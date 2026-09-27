@@ -1,5 +1,7 @@
 package com.back.nbe12142team06.domain.application.service;
 
+import com.back.nbe12142team06.domain.application.entity.Application;
+import com.back.nbe12142team06.domain.application.enums.ApplicationStatus;
 import com.back.nbe12142team06.domain.application.repository.ApplicationRepository;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.repository.PostRepository;
@@ -50,6 +52,7 @@ class ApplicationConcurrencyTest {
 
     private Long postId;
     private Long escortId;
+    private Long clientId;
 
     @BeforeEach
     void setUp() {
@@ -69,6 +72,7 @@ class ApplicationConcurrencyTest {
         );
 
         client = userRepository.save(client);
+        clientId = client.getId();
 
         User escort = new User(
                 "concurrencyEscort",
@@ -178,6 +182,155 @@ class ApplicationConcurrencyTest {
         System.out.println("저장된 지원 개수 = " + count);
 
         assertEquals(1, count);
+
+        executorService.shutdown();
+    }
+
+    @Test
+    @DisplayName("같은 공고의 서로 다른 지원자를 동시에 승인")
+    void concurrentAccept() throws InterruptedException {
+
+        // 두 번째 동행인 생성
+        User escort2 = new User(
+                "concurrencyEscort2",
+                passwordEncoder.encode("testPassword"),
+                "concurrencyEscort2@test.com",
+                "동행인2",
+                Role.ESCORT,
+                Gender.MALE,
+                LocalDate.of(1996, 1, 1),
+                "010-3333-3333",
+                "수원"
+        );
+
+        escort2 = userRepository.save(escort2);
+
+        // 두 번째 동행인 프로필 생성
+        EscortProfile escortProfile2 = new EscortProfile(
+                escort2,
+                "동행인2 소개",
+                "테스트은행",
+                escort2.getName(),
+                "5678"
+        );
+
+        escortProfile2.verify(LocalDateTime.now());
+        escortProfileRepository.save(escortProfile2);
+
+        // 기존 동행인 조회
+        User escort1 = userRepository.findById(escortId)
+                .orElseThrow();
+
+        Post post = postRepository.findById(postId)
+                .orElseThrow();
+
+        // 같은 공고에 서로 다른 동행인 2명이 지원한 상태 생성
+        Application application1 = Application.builder()
+                .post(post)
+                .escort(escort1)
+                .build();
+
+        Application application2 = Application.builder()
+                .post(post)
+                .escort(escort2)
+                .build();
+
+        application1 = applicationRepository.save(application1);
+        application2 = applicationRepository.save(application2);
+
+        Long applicationId1 = application1.getId();
+        Long applicationId2 = application2.getId();
+
+        ExecutorService executorService =
+                Executors.newFixedThreadPool(2);
+
+        CountDownLatch readyLatch =
+                new CountDownLatch(2);
+
+        CountDownLatch startLatch =
+                new CountDownLatch(1);
+
+        CountDownLatch doneLatch =
+                new CountDownLatch(2);
+
+        // 지원자 1 승인
+        executorService.submit(() -> {
+
+            readyLatch.countDown();
+
+            try {
+                startLatch.await();
+
+                applicationService.accept(
+                        applicationId1,
+                        clientId
+                );
+
+            } catch (Exception e) {
+                System.out.println(
+                        Thread.currentThread().getName()
+                                + " 승인 실패: "
+                                + e.getClass().getSimpleName()
+                                + " / "
+                                + e.getMessage()
+                );
+            } finally {
+                doneLatch.countDown();
+            }
+        });
+
+        // 지원자 2 승인
+        executorService.submit(() -> {
+
+            readyLatch.countDown();
+
+            try {
+                startLatch.await();
+
+                applicationService.accept(
+                        applicationId2,
+                        clientId
+                );
+
+            } catch (Exception e) {
+                System.out.println(
+                        Thread.currentThread().getName()
+                                + " 승인 실패: "
+                                + e.getClass().getSimpleName()
+                                + " / "
+                                + e.getMessage()
+                );
+            } finally {
+                doneLatch.countDown();
+            }
+        });
+
+        // 두 스레드 준비
+        readyLatch.await();
+
+        // 동시에 승인 시작
+        startLatch.countDown();
+
+        // 둘 다 종료될 때까지 기다림
+        doneLatch.await();
+
+        // 최종 DB 상태 확인
+        Post resultPost = postRepository.findById(postId)
+                .orElseThrow();
+
+        long acceptedCount =
+                applicationRepository
+                        .findAllByPostAndStatus(
+                                resultPost,
+                                ApplicationStatus.ACCEPTED
+                        )
+                        .size();
+
+        System.out.println(
+                "최종 승인된 지원자 수 = " + acceptedCount
+        );
+
+        assertEquals(1, acceptedCount);
 
         executorService.shutdown();
     }

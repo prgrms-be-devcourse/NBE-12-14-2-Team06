@@ -103,7 +103,11 @@ public class ApplicationService {
         Application application = applicationRepository.findById(applicationId).orElseThrow(
                 () -> new NotFoundException("지원을 찾을 수 없습니다."));
 
-        Post post = application.getPost();
+        Long postId = application.getPost().getId();
+
+        Post post = postRepository.findByIdWithLock(postId).orElseThrow(
+                () -> new NotFoundException("공고를 찾을 수 없습니다."));
+
         User escort = application.getEscort();
 
         // 본인 공고에 들어온 지원만 승인 가능
