@@ -97,9 +97,9 @@ class UserConcurrencyTest {
         }
 
         assertThat(finished).isTrue();
-        assertThat(unexpected).as("예상하지 못한 예외: %s", unexpected).isEmpty();
-        assertThat(success.get()).isEqualTo(1);
-        assertThat(duplicated.get()).isEqualTo(THREAD_COUNT - 1);
-        assertThat(userRepository.count()).isEqualTo(1);
+        assertThat(unexpected).as("예상하지 못한 예외", unexpected).isEmpty();  // 10개 중 0개의 예상치 못한 예외
+        assertThat(success.get()).isEqualTo(1);     // 전체 요청 중 1개 성공
+        assertThat(duplicated.get()).isEqualTo(THREAD_COUNT - 1);   // 전체 요청 중 1개를 제외히고는 전부 중복 예외
+        assertThat(userRepository.count()).isEqualTo(1);    // 실제 저장된 데이터는 1개의 행 뿐
     }
 }
