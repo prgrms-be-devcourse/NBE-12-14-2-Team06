@@ -13,6 +13,7 @@ export const MANAGER: Manager = {
   name: '나알바',
   rating: 4.8,
   completedCount: 52,
+  grade: 'EGGPLANT',
   region: '서울 강남구',
   tags: ['태그1', '태그2', '태그3'],
   intro: ['늘 진심으로 함께하는 동행 매니저 나알바입니다.', '작은 부분도 놓치지 않고 세심하게 챙기겠습니다.'],
