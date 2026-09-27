@@ -129,7 +129,7 @@ export default function ReportDetailPage() {
       <AppShell>
         <section className="bg-white py-[100px] text-center">
           <p className="text-xl font-semibold text-brand">아직 보고서가 작성되지 않았습니다.</p>
-          <Link href={`/escort/${applicationId}`} className={cn(MENU_BUTTON, 'mx-auto mt-8 h-14 w-60')}>동행 내역으로 돌아가기</Link>
+          <Link href={`/escort/${applicationId}`} className={cn(MENU_BUTTON, 'mx-auto mt-8 h-14 max-w-60')}>동행 내역으로 돌아가기</Link>
         </section>
       </AppShell>
     );
