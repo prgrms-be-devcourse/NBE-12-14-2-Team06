@@ -115,6 +115,7 @@ public class UserService {
     }
 
     // 로그인
+    @Transactional(readOnly = true)
     public User login(UserLoginRequest request) {
         Optional<User> opUser = this.userRepository.findByUsername(request.username());
 
@@ -130,17 +131,20 @@ public class UserService {
     }
 
     // 상세정보 조회
+    @Transactional(readOnly = true)
     public User myProfile(Long id) {
         return this.userRepository.findById(id)
                 .orElseThrow(() -> new UnauthorizedException("회원 정보를 찾을 수 없습니다. 다시 로그인해주세요."));
     }
 
     // username 중복 검사
+    @Transactional(readOnly = true)
     public boolean isUsernameAvailable(String username) {
         return !this.userRepository.existsByUsername(username);
     }
 
     // access token 생성
+    @Transactional(readOnly = true)
     public String genAccessToken(User user) {
         return this.authTokenService.genAccessToken(user);
     }

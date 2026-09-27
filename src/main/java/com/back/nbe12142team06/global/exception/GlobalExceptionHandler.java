@@ -1,6 +1,7 @@
 package com.back.nbe12142team06.global.exception;
 
 import com.back.nbe12142team06.global.response.RsData;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -57,5 +58,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler
     public RsData<?> ForbiddenExceptionHandler(ForbiddenException e) {
         return new RsData<>(e.statusCode, e.getMessage());
+    }
+
+    // 같은 데이터를 동시에 수정해 낙관적 락(@Version) 충돌이 난 경우
+    @ExceptionHandler
+    public RsData<?> concurrentUpdateHandler(OptimisticLockingFailureException e) {
+        return new RsData<>("409-8", "다른 요청과 충돌했습니다. 다시 시도해주세요.");
     }
 }
