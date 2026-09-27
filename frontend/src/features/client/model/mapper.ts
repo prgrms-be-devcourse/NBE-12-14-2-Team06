@@ -1,6 +1,5 @@
 import type { EscortProfileDto } from '@/features/application';
 import { REVIEW_TAG_ROWS, type ReviewDto } from '@/features/review';
-import type { RideDto } from '@/features/ride';
 import type { Manager } from '../types';
 
 const TAG_LABELS = new Map(REVIEW_TAG_ROWS.flat().map((tag) => [tag.value, tag.label]));
@@ -32,16 +31,4 @@ export function toManager(profile: EscortProfileDto, tags: string[]): Manager {
     tags,
     intro: profile.intro ? [profile.intro] : ['자기소개를 아직 작성하지 않았습니다.'],
   };
-}
-
-/** 공고 작성 폼의 이동수단 선택지(model/postForm.ts)와 같은 문구를 씁니다. */
-const RIDE_SELECT_LABELS: Record<string, string> = { WALK: '도보', BUS: '대중교통', TAXI: '택시', OWN_CAR: '자가용' };
-
-/** 갈 때(TO_HOSPITAL)·올 때(TO_HOME) 이동수단을 한 줄로 합칩니다. 아직 선택 전이면 "미정"으로 표시합니다. */
-export function formatTransport(rides: RideDto[]): string {
-  const label = (direction: 'TO_HOSPITAL' | 'TO_HOME') => {
-    const ride = rides.find((item) => item.direction === direction);
-    return ride?.selected ? (RIDE_SELECT_LABELS[ride.selected] ?? ride.selected) : '미정';
-  };
-  return `갈 때 ${label('TO_HOSPITAL')} · 올 때 ${label('TO_HOME')}`;
 }

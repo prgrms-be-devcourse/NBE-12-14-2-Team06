@@ -16,12 +16,17 @@ export function formatDotDate(value: string): string {
   return `${date.getFullYear()}.${mm}.${dd}(${WEEKDAYS[date.getDay()]})`;
 }
 
-/** "2026.09.22(화) 오후 12:30" */
-export function formatDateTime(value: string): string {
+/** "오전 9:00" · "오후 12:30" */
+export function formatTime(value: string): string {
   const date = parseDateTime(value);
   const hour = date.getHours();
   const minute = String(date.getMinutes()).padStart(2, '0');
-  return `${formatDotDate(value)} ${hour < 12 ? '오전' : '오후'} ${hour % 12 || 12}:${minute}`;
+  return `${hour < 12 ? '오전' : '오후'} ${hour % 12 || 12}:${minute}`;
+}
+
+/** "2026.09.22(화) 오후 12:30" */
+export function formatDateTime(value: string): string {
+  return `${formatDotDate(value)} ${formatTime(value)}`;
 }
 
 /** "9:00 ~ 12:10" (동행 시간대) */

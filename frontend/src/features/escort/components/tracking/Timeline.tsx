@@ -1,10 +1,10 @@
 import Image from 'next/image';
 import { cn } from '@/lib/cn';
-import type { EscortCase } from '../../types';
+import type { TimelineStep } from '../../types';
 import { CARD, CARD_TITLE } from './tracking';
 
 /** 오른쪽 아래 "실시간 현황" 타임라인. compact 는 의뢰인 화면의 촘촘한 간격 (Figma 단계 간격 38px) */
-export default function Timeline({ steps, compact }: { steps: EscortCase['timeline']; compact?: boolean }) {
+export default function Timeline({ steps, compact }: { steps: TimelineStep[]; compact?: boolean }) {
   return (
     <section className={cn(CARD, 'py-8', compact ? 'px-[35px]' : 'px-6')}>
       <h2 className={cn(CARD_TITLE, compact ? 'mb-5' : 'mb-6')}>실시간 현황</h2>

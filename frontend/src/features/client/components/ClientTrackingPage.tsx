@@ -10,11 +10,11 @@ import { fetchEscortProfile } from '@/features/application';
 import { useRequireAuth } from '@/features/auth';
 import { MapCard, StageBar, Timeline, type EscortStage } from '@/features/escort';
 import { fetchPostRaw, StatusLabel } from '@/features/post';
-import { fetchRidesByPost } from '@/features/ride';
+import { fetchRidesByPost, formatTransport } from '@/features/ride';
 import { fetchUserReviews } from '@/features/review';
 import { cn } from '@/lib/cn';
 import { buildKakaoTCallUrl } from '@/lib/kakaoT';
-import { formatTransport, toManager, topReviewTagLabels } from '../model/mapper';
+import { toManager, topReviewTagLabels } from '../model/mapper';
 import { STAGE_VIEW, getClientEscortCase, toClientEscortCase } from '../model/escort';
 import type { ClientEscortCase, ClientEscortStage } from '../types';
 import ManagerInfoCard from './ManagerInfoCard';
@@ -54,7 +54,7 @@ function summaryRows(escort: ClientEscortCase): { label: string; value: string[]
   }
   rows.push({ label: '이동수단', value: [escort.transport] });
   if (escort.stage === 'ready') {
-    rows.push({ label: '만남 장소', value: [escort.meetingPlace] });
+    rows.push({ label: '만날 장소', value: [escort.meetingPlace] });
   }
   if (escort.stage === 'done') {
     rows.push({ label: '안내 사항', value: ['동행이 정상적으로 완료되었습니다.', '동행인 리뷰를 해주세요.'] });
