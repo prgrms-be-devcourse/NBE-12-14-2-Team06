@@ -2,14 +2,16 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
-import { useState, type FormEvent } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState, type FormEvent } from 'react';
 import { AppShell } from '@/components/layout';
 import { Container, SectionHeading } from '@/components/ui';
 import { useRequireAuth } from '@/features/auth';
 import { MAX_TAGS, REVIEW_TAG_ROWS, writeReview } from '@/features/review';
 import { cn } from '@/lib/cn';
-import { STAGE_VIEW, getClientEscortCase } from '../model/escort';
+import { fetchClientEscortCase } from '../api';
+import { STAGE_VIEW } from '../model/escort';
+import type { ClientEscortCase } from '../types';
 import ManagerInfoCard from './ManagerInfoCard';
 import TripSummary from './TripSummary';
 
@@ -47,20 +49,42 @@ function Star({ filled }: { filled: boolean }) {
  * 동행 매니저 리뷰 작성 — Figma 의뢰인_리뷰 작성 459:3023
  *
  * 리뷰는 POST /api/v1/applications/{applicationId}/reviews 로 등록합니다.
+ * 동행 정보·매니저 정보는 api.ts 의 fetchClientEscortCase 로 채웁니다 — postId 쿼리가 있어야 합니다.
  */
 export default function ClientReviewPage() {
   const { loading: authLoading, user } = useRequireAuth('CLIENT');
-  const { applicationId } = useParams<{ applicationId: string }>();
+  const params = useParams<{ applicationId: string }>();
+  const searchParams = useSearchParams();
   const router = useRouter();
-  const escort = getClientEscortCase(Number(applicationId));
+  const applicationId = Number(params.applicationId);
+  const postIdParam = searchParams.get('postId');
+  const postId = postIdParam ? Number(postIdParam) : undefined;
 
+  const [live, setLive] = useState<{ key?: number; escort?: ClientEscortCase }>({});
   const [rating, setRating] = useState(0);
   const [tags, setTags] = useState<string[]>([]);
   const [showError, setShowError] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
 
-  if (authLoading) {
+  useEffect(() => {
+    if (postId === undefined) return;
+    let ignore = false;
+
+    fetchClientEscortCase(postId, applicationId)
+      .then((escort) => !ignore && setLive({ key: postId, escort }))
+      // 동행 정보를 못 불러오면 아래 "동행 정보를 찾을 수 없습니다" 로 떨어집니다.
+      .catch(() => !ignore && setLive({ key: postId }));
+
+    return () => {
+      ignore = true;
+    };
+  }, [postId, applicationId]);
+
+  const escortLoading = postId !== undefined && live.key !== postId;
+  const escort = live.key === postId ? live.escort : undefined;
+
+  if (authLoading || escortLoading) {
     return (
       <AppShell>
         <section className="bg-white py-[100px] text-center">

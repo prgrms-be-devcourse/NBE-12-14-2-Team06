@@ -2,14 +2,16 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { AppShell } from '@/components/layout';
 import { Container, InfoRow, SectionHeading } from '@/components/ui';
 import { useRequireAuth } from '@/features/auth';
 import { aiSummaryItems, fetchReport, isReportNotFoundError, parseAiSummary, type ReportDto } from '@/features/report';
 import { cn } from '@/lib/cn';
-import { STAGE_VIEW, getClientEscortCase } from '../model/escort';
+import { fetchClientEscortCase } from '../api';
+import { STAGE_VIEW } from '../model/escort';
+import type { ClientEscortCase } from '../types';
 import ManagerInfoCard from './ManagerInfoCard';
 import TripSummary from './TripSummary';
 
@@ -31,28 +33,45 @@ function lines(text: string): string[] {
  * 진료 보고서 (의뢰인이 보는 화면) — Figma 의뢰인_보고서 조회 459:3004
  *
  * 진료 내용은 GET /api/v1/applications/{applicationId}/report 로 가져옵니다(동행인 화면과 같은 API).
- * 동행 정보·매니저 정보는 아직 연결 전이라 모의 데이터(model/escort.ts)를 그대로 씁니다.
+ * 동행 정보·매니저 정보는 api.ts 의 fetchClientEscortCase 로 채웁니다 — postId 쿼리가 있어야 합니다.
  */
 export default function ClientReportPage() {
   const { loading: authLoading, user } = useRequireAuth('CLIENT');
-  const { applicationId } = useParams<{ applicationId: string }>();
-  const escort = getClientEscortCase(Number(applicationId));
-  const targetApplicationId = escort?.applicationId;
+  const params = useParams<{ applicationId: string }>();
+  const searchParams = useSearchParams();
+  const applicationId = Number(params.applicationId);
+  const postIdParam = searchParams.get('postId');
+  const postId = postIdParam ? Number(postIdParam) : undefined;
 
+  const [live, setLive] = useState<{ key?: number; escort?: ClientEscortCase }>({});
   const [result, setResult] = useState<{ key?: number; data?: ReportResult }>({});
 
   useEffect(() => {
-    if (targetApplicationId === undefined) return;
+    if (postId === undefined) return;
     let ignore = false;
 
-    fetchReport(targetApplicationId)
+    fetchClientEscortCase(postId, applicationId)
+      .then((escort) => !ignore && setLive({ key: postId, escort }))
+      // 동행 정보를 못 불러오면 아래 "동행 정보를 찾을 수 없습니다" 로 떨어집니다.
+      .catch(() => !ignore && setLive({ key: postId }));
+
+    return () => {
+      ignore = true;
+    };
+  }, [postId, applicationId]);
+
+  useEffect(() => {
+    if (!Number.isFinite(applicationId)) return;
+    let ignore = false;
+
+    fetchReport(applicationId)
       .then((report) => {
-        if (!ignore) setResult({ key: targetApplicationId, data: { status: 'ready', report } });
+        if (!ignore) setResult({ key: applicationId, data: { status: 'ready', report } });
       })
       .catch((error: unknown) => {
         if (ignore) return;
         setResult({
-          key: targetApplicationId,
+          key: applicationId,
           data: isReportNotFoundError(error)
             ? { status: 'notFound' }
             : { status: 'error', message: error instanceof Error ? error.message : '보고서를 불러오지 못했습니다.' },
@@ -62,9 +81,11 @@ export default function ClientReportPage() {
     return () => {
       ignore = true;
     };
-  }, [targetApplicationId]);
+  }, [applicationId]);
 
-  const state = result.key === targetApplicationId ? result.data : undefined;
+  const escortLoading = postId !== undefined && live.key !== postId;
+  const escort = live.key === postId ? live.escort : undefined;
+  const state = result.key === applicationId ? result.data : undefined;
 
   if (authLoading) {
     return (
@@ -76,6 +97,16 @@ export default function ClientReportPage() {
     );
   }
   if (!user) return null;
+
+  if (escortLoading) {
+    return (
+      <AppShell>
+        <section className="bg-white py-[100px] text-center">
+          <p className="text-xl font-semibold text-brand">동행 정보를 불러오는 중입니다.</p>
+        </section>
+      </AppShell>
+    );
+  }
 
   if (!escort) {
     return (
@@ -198,7 +229,8 @@ export default function ClientReportPage() {
               <section className="rounded-[30px] border border-line bg-white px-5 py-8 shadow-card">
                 <h2 className={cn(TITLE, 'mb-6')}>관련 메뉴</h2>
                 <div className="flex flex-col gap-2.5">
-                  <Link href={`/client/escort/${escort.applicationId}/review`} className={cn(MENU_BUTTON, 'border-brand bg-brand text-white hover:bg-brand-hover')}>
+                  {/* 리뷰 화면도 공고 정보가 필요해 postId 를 함께 넘깁니다. */}
+                  <Link href={`/client/escort/${escort.applicationId}/review?postId=${escort.postId}`} className={cn(MENU_BUTTON, 'border-brand bg-brand text-white hover:bg-brand-hover')}>
                     리뷰 작성하기
                   </Link>
                   <Link href="/client/posts" className={MENU_BUTTON}>

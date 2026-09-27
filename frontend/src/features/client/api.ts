@@ -1,9 +1,34 @@
-import { fetchApplicants } from '@/features/application';
+import { fetchApplicants, fetchEscortProfile } from '@/features/application';
 import { fetchMyProfile } from '@/features/auth';
-import { fetchPosts, type PostFilters } from '@/features/post';
+import { fetchPostRaw, fetchPosts, type PostFilters } from '@/features/post';
+import { fetchUserReviews } from '@/features/review';
+import { fetchRidesByPost, formatTransport } from '@/features/ride';
 import { api, apiPatch } from '@/lib/api';
+import { toClientEscortCase } from './model/escort';
+import { toManager, topReviewTagLabels } from './model/mapper';
 import { toClientPost } from './model/posts';
-import type { ClientPost } from './types';
+import type { ClientEscortCase, ClientPost } from './types';
+
+/**
+ * 의뢰인 화면(동행 현황·보고서·리뷰)이 함께 쓰는 동행 한 건.
+ * 공고·매니저·이동수단을 한 번에 모읍니다.
+ *
+ * ⚠️ postId 는 화면이 쿼리(?postId=)로 받아 넘깁니다. 백엔드에 "신청 상세 조회"(GET /applications/{id})가
+ *    없어서 applicationId 만으로는 공고를 찾을 수 없기 때문입니다. 그 API 가 생기면 쿼리 의존을 걷어내세요.
+ */
+export async function fetchClientEscortCase(postId: number, applicationId: number): Promise<ClientEscortCase> {
+  const [post, profile, rides] = await Promise.all([
+    fetchPostRaw(postId),
+    fetchEscortProfile(applicationId),
+    fetchRidesByPost(postId),
+  ]);
+
+  // 리뷰는 매니저 카드의 태그 계산용이라, 실패해도 나머지 화면은 그대로 보여줍니다.
+  const reviews = await fetchUserReviews(profile.escortId).catch(() => []);
+  const manager = toManager(profile, topReviewTagLabels(reviews));
+
+  return toClientEscortCase(post, applicationId, manager, formatTransport(rides));
+}
 
 /**
  * 결제를 요청하기 전에 orderId·금액을 서버 세션에 저장합니다.

@@ -6,18 +6,14 @@ import { useParams, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { AppShell } from '@/components/layout';
 import { Container, InfoRow, SectionHeading } from '@/components/ui';
-import { fetchEscortProfile } from '@/features/application';
 import { useRequireAuth } from '@/features/auth';
 import { MapCard, StageBar, Timeline, type EscortStage } from '@/features/escort';
 import { fetchPendingPayment, type PaymentDto } from '@/features/payment';
-import { fetchPostRaw, StatusLabel } from '@/features/post';
-import { fetchRidesByPost, formatTransport } from '@/features/ride';
-import { fetchUserReviews } from '@/features/review';
+import { StatusLabel } from '@/features/post';
 import { cn } from '@/lib/cn';
 import { buildKakaoTCallUrl } from '@/lib/kakaoT';
-import { completeEscort } from '../api';
-import { toManager, topReviewTagLabels } from '../model/mapper';
-import { STAGE_VIEW, toClientEscortCase } from '../model/escort';
+import { completeEscort, fetchClientEscortCase } from '../api';
+import { STAGE_VIEW } from '../model/escort';
 import type { ClientEscortCase, ClientEscortStage } from '../types';
 import ManagerInfoCard from './ManagerInfoCard';
 import TripSummary from './TripSummary';
@@ -92,13 +88,9 @@ export default function ClientTrackingPage() {
     if (postId === undefined) return;
     let ignore = false;
 
-    Promise.all([fetchPostRaw(postId), fetchEscortProfile(applicationId), fetchRidesByPost(postId)])
-      .then(async ([post, profile, rides]) => {
-        // 리뷰는 매니저 카드의 태그 계산용이라, 실패해도 나머지 화면은 그대로 보여줍니다.
-        const reviews = await fetchUserReviews(profile.escortId).catch(() => []);
-        if (ignore) return;
-        const manager = toManager(profile, topReviewTagLabels(reviews));
-        setLive({ key: postId, escort: toClientEscortCase(post, applicationId, manager, formatTransport(rides)) });
+    fetchClientEscortCase(postId, applicationId)
+      .then((escort) => {
+        if (!ignore) setLive({ key: postId, escort });
       })
       .catch((error: unknown) => {
         if (!ignore) setLive({ key: postId, error: error instanceof Error ? error.message : '동행 현황을 불러오지 못했습니다.' });
@@ -312,10 +304,11 @@ export default function ClientTrackingPage() {
                             정산하기
                           </button>
                         )}
-                        <Link href={`${base}/review`} className={cn(BUTTON, GHOST)}>
+                        {/* 두 화면도 공고 정보가 필요한데 applicationId 만으로는 찾을 수 없어 postId 를 함께 넘깁니다. */}
+                        <Link href={`${base}/review?postId=${escort.postId}`} className={cn(BUTTON, GHOST)}>
                           리뷰 작성
                         </Link>
-                        <Link href={`${base}/report`} className={cn(BUTTON, GHOST)}>
+                        <Link href={`${base}/report?postId=${escort.postId}`} className={cn(BUTTON, GHOST)}>
                           보고서 조회
                         </Link>
                       </>
