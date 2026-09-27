@@ -9,6 +9,7 @@ import { Container, InfoRow, SectionHeading } from '@/components/ui';
 import { fetchEscortProfile } from '@/features/application';
 import { useRequireAuth } from '@/features/auth';
 import { MapCard, StageBar, Timeline, type EscortStage } from '@/features/escort';
+import { fetchPendingPayment, type PaymentDto } from '@/features/payment';
 import { fetchPostRaw, StatusLabel } from '@/features/post';
 import { fetchRidesByPost, formatTransport } from '@/features/ride';
 import { fetchUserReviews } from '@/features/review';
@@ -81,10 +82,11 @@ export default function ClientTrackingPage() {
   const postId = postIdParam ? Number(postIdParam) : undefined;
 
   const [live, setLive] = useState<{ key?: number; escort?: ClientEscortCase; error?: string }>({});
-  // 동행 완료 처리 뒤 공고 상태를 다시 받아오려고 올립니다.
+  // 동행 완료 처리 뒤 공고 상태·미결제 건을 다시 받아오려고 올립니다.
   const [reloadKey, setReloadKey] = useState(0);
   const [completing, setCompleting] = useState(false);
   const [completeError, setCompleteError] = useState<string>();
+  const [paymentResult, setPaymentResult] = useState<{ key?: number; data: PaymentDto | null }>({ data: null });
 
   useEffect(() => {
     if (postId === undefined) return;
@@ -106,6 +108,26 @@ export default function ClientTrackingPage() {
       ignore = true;
     };
   }, [postId, applicationId, reloadKey]);
+
+  // 동행이 끝나야 "추가 결제"가 생깁니다. 완료 전의 READY 결제는 아직 안 낸 최초 결제라 물어보면 안 됩니다.
+  const completed = live.key === postId && live.escort?.stage === 'done';
+
+  useEffect(() => {
+    if (postId === undefined || !completed) return;
+    let ignore = false;
+
+    fetchPendingPayment(postId)
+      .then((payment) => !ignore && setPaymentResult({ key: postId, data: payment }))
+      // 조회에 실패해도 동행 현황 자체는 보여 줍니다. (추가 결제 버튼만 안 뜹니다)
+      .catch(() => !ignore && setPaymentResult({ key: postId, data: null }));
+
+    return () => {
+      ignore = true;
+    };
+  }, [postId, completed, reloadKey]);
+
+  // 다른 공고로 이동한 직후에는 이전 공고의 결제 정보를 쓰지 않습니다.
+  const pendingPayment = completed && paymentResult.key === postId ? paymentResult.data : null;
 
   const liveLoading = postId !== undefined && live.key !== postId;
   // postId 가 없으면 불러올 방법이 없어 아래 "동행 정보를 찾을 수 없습니다" 로 떨어집니다.
@@ -169,6 +191,20 @@ export default function ClientTrackingPage() {
     : [escort.pickupPoint, escort.hospitalPoint];
   const kakaoT = from && to ? { href: buildKakaoTCallUrl(from, to), label: `${from.name} → ${to.name}` } : undefined;
   const hasStageButtons = escort.stage !== 'ready';
+
+  /**
+   * 추가 결제도 공고 등록 때와 같은 결제 화면(토스 위젯)을 씁니다.
+   * flow=extra 는 결제 후 공고 등록 완료 화면으로 가지 않기 위한 표시입니다. 본보기: post/components/PostDetailPage.tsx
+   */
+  const extraPaymentHref = pendingPayment
+    ? `/client/posts/new/payment?${new URLSearchParams({
+        postId: String(escort.postId),
+        paymentId: String(pendingPayment.id),
+        amount: String(pendingPayment.amount),
+        pay: String(pendingPayment.hourlyPaySnapshot),
+        flow: 'extra',
+      })}`
+    : '';
 
   /**
    * 동행 완료 처리. 동행인이 "귀가 완료"를 찍어야 서버가 받아주므로,
@@ -259,10 +295,10 @@ export default function ClientTrackingPage() {
                         동행 종료
                       </button>
                     )}
-                    {escort.stage === 'finishing' && (
-                      <button type="button" className={cn(BUTTON, SOLID)}>
-                        추가 결제
-                      </button>
+                    {pendingPayment && (
+                      <Link href={extraPaymentHref} className={cn(BUTTON, SOLID)}>
+                        {`${pendingPayment.amount.toLocaleString()}원 추가 결제`}
+                      </Link>
                     )}
                     {escort.stage === 'done' && (
                       <>
