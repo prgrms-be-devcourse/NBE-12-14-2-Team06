@@ -28,6 +28,7 @@ import java.time.LocalDateTime;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -61,20 +62,24 @@ class ApplicationConcurrencyTest {
     private Long escortId;
     private Long clientId;
 
+    private static final AtomicInteger TEST_SEQUENCE = new AtomicInteger();
+
     @BeforeEach
     void setUp() {
 
         applicationRepository.deleteAll();
 
+        int seq = TEST_SEQUENCE.incrementAndGet();
+
         User client = new User(
-                "concurrencyClient",
+                "concurrencyClient" + seq,
                 passwordEncoder.encode("testPassword"),
-                "concurrencyClient@test.com",
+                "concurrencyClient" + seq + "@test.com",
                 "의뢰인",
                 Role.CLIENT,
                 Gender.MALE,
                 LocalDate.of(1990, 1, 1),
-                "010-1111-1111",
+                String.format("010-1111-%04d", seq),
                 "수원"
         );
 
@@ -82,14 +87,14 @@ class ApplicationConcurrencyTest {
         clientId = client.getId();
 
         User escort = new User(
-                "concurrencyEscort",
+                "concurrencyEscort" + seq,
                 passwordEncoder.encode("testPassword"),
-                "concurrencyEscort@test.com",
+                "concurrencyEscort" + seq + "@test.com",
                 "동행인",
                 Role.ESCORT,
                 Gender.FEMALE,
                 LocalDate.of(1995, 1, 1),
-                "010-2222-2222",
+                String.format("010-2222-%04d", seq),
                 "수원"
         );
 
@@ -197,22 +202,22 @@ class ApplicationConcurrencyTest {
     @DisplayName("같은 공고의 서로 다른 지원자를 동시에 승인")
     void concurrentAccept() throws InterruptedException {
 
-        // 두 번째 동행인 생성
+        int seq = TEST_SEQUENCE.incrementAndGet();
+
         User escort2 = new User(
-                "concurrencyEscort2",
+                "concurrencyEscort2_" + seq,
                 passwordEncoder.encode("testPassword"),
-                "concurrencyEscort2@test.com",
+                "concurrencyEscort2_" + seq + "@test.com",
                 "동행인2",
                 Role.ESCORT,
                 Gender.MALE,
                 LocalDate.of(1996, 1, 1),
-                "010-3333-3333",
+                String.format("010-3333-%04d", seq),
                 "수원"
         );
 
         escort2 = userRepository.save(escort2);
 
-        // 두 번째 동행인 프로필 생성
         EscortProfile escortProfile2 = new EscortProfile(
                 escort2,
                 "동행인2 소개",
