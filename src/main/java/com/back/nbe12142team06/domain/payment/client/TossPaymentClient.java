@@ -43,7 +43,9 @@ public class TossPaymentClient {
             throw new InvalidException(11, "결제 승인에 실패했습니다.");
         }
 
-        log.info("토스 결제 승인 요청 성공 tossPaymentKey: %s | tossOrderId: %s | amount: %s".formatted(tossPaymentKey, tossOrderId, amount));
+        // [로그 정리] tossPaymentKey(결제 조회·취소에 쓰는 키)가 로그에 남아서 주석 처리하고, 아래에서는 키를 뺀 정보만 남김
+        // log.info("토스 결제 승인 요청 성공 tossPaymentKey: %s | tossOrderId: %s | amount: %s".formatted(tossPaymentKey, tossOrderId, amount));
+        log.info("토스 결제 승인 요청 성공 - tossOrderId: {}, amount: {}", tossOrderId, amount);
 
         return response;
     }
@@ -72,7 +74,9 @@ public class TossPaymentClient {
         }
 
 
-        log.info("토스 결제 취소 요청 성공 tossPaymentKey: %s | cancelReason: %s | amount: %s".formatted(tossPaymentKey, cancelReason, amount));
+        // [로그 정리] tossPaymentKey(결제 조회·취소에 쓰는 키)가 로그에 남아서 주석 처리하고, 아래에서는 키를 뺀 정보만 남김
+        // log.info("토스 결제 취소 요청 성공 tossPaymentKey: %s | cancelReason: %s | amount: %s".formatted(tossPaymentKey, cancelReason, amount));
+        log.info("토스 결제 취소 요청 성공 - cancelReason: {}, amount: {}", cancelReason, amount);
 
         return response;
     }

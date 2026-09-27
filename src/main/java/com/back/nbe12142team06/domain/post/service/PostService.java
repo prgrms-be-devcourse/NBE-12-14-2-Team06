@@ -25,6 +25,7 @@ import com.back.nbe12142team06.global.exception.NotFoundException;
 import com.back.nbe12142team06.global.exception.UnauthorizedException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -32,6 +33,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -111,6 +113,7 @@ public class PostService {
         // 이동수단 데이터 생성
         rideService.createRide(savedPost, request.rideSelectToHospital(), request.rideSelectToHome());
 
+        log.info("[공고 등록] postId={}, clientId={}", savedPost.getId(), userId);
         return new PostWriteResponse(savedPost, payment.getId());
     }
 
@@ -151,6 +154,7 @@ public class PostService {
 
         // 이동 수단 변경
         rideService.updateRide(postId, new RideUpdateRequest(request.rideSelectToHospital(), request.rideSelectToHome()));
+        log.info("[공고 수정] postId={}, userId={}", postId, userId);
     }
     @Transactional
     public void delete(Long postId, Long userId) {
@@ -169,6 +173,7 @@ public class PostService {
             }
         }
         postRepository.deleteById(postId);
+        log.info("[공고 삭제] postId={}, userId={}", postId, userId);
     }
     @Transactional
     public void matchedCancel(Long postId, Long userId) {
@@ -190,6 +195,7 @@ public class PostService {
         }
 
         post.matchedCancel();
+        log.info("[공고 매칭 취소] postId={}, userId={}", postId, userId);
     }
     @Transactional
     public void expireOverduePosts() {
@@ -198,6 +204,11 @@ public class PostService {
 
         targets.forEach(post -> post.expire());
         // 변경 감지(더티체킹)로 트랜잭션 끝날 때 자동으로 UPDATE 쿼리 나감
+
+        // 1분마다 도는 스케줄러라서 처리한 공고가 있을 때만 남긴다(안 그러면 하루 1,440줄이 쌓임)
+        if (!targets.isEmpty()) {
+            log.info("[공고 만료 처리] {}건, postIds={}", targets.size(), targets.stream().map(Post::getId).toList());
+        }
     }
 
     public Page<Post> search(PostSearchConditionDto condition, Pageable pageable) {
@@ -260,5 +271,6 @@ public class PostService {
 
         // 재결제 로직
         paymentService.validPayment(userId, post, application, post.getEscortEndAt().plusDays(1).toLocalDate());
+        log.info("[동행 완료] postId={}, escortId={}, userId={}", postId, application.getEscort().getId(), userId);
     }
 }

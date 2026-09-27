@@ -7,6 +7,7 @@ import com.back.nbe12142team06.domain.user.service.UserService;
 import com.back.nbe12142team06.global.exception.UnauthorizedException;
 import com.back.nbe12142team06.global.security.RefreshTokenGenerator;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RefreshTokenService {
@@ -44,6 +46,7 @@ public class RefreshTokenService {
 
         // 빈 토큰 검사
         if (rawToken.isBlank()) {
+            log.warn("[토큰 재발급 실패] 리프레시 토큰 없음");
             throw new UnauthorizedException(4, "리프레시 토큰이 없습니다");
         }
 
@@ -53,6 +56,7 @@ public class RefreshTokenService {
 
         // 유효성 검증
         if(opRefreshToken.isEmpty()) {
+            log.warn("[토큰 재발급 실패] 알 수 없는 리프레시 토큰");
             throw new UnauthorizedException(5, "유효하지 않은 토큰입니다.");
         }
 
@@ -60,11 +64,13 @@ public class RefreshTokenService {
 
         // 폐기된 토큰인지 검증
         if (refreshToken.isRevoked()){
+            log.warn("[토큰 재발급 실패] 폐기된 토큰 userId={}", refreshToken.getUser().getId());
             throw new UnauthorizedException(6, "유효하지 않은 토큰입니다.");
         }
 
         // 만료된 토큰인지 검증
         if (refreshToken.isExpired()){
+            log.warn("[토큰 재발급 실패] 만료된 토큰 userId={}", refreshToken.getUser().getId());
             throw new UnauthorizedException(7, "만료된 토큰입니다. 다시 로그인해주세요.");
         }
 
