@@ -9,12 +9,14 @@ import com.back.nbe12142team06.global.exception.DuplicatedException;
 import com.back.nbe12142team06.global.exception.ForbiddenException;
 import com.back.nbe12142team06.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true) // 기본은 읽기 전용 트랜잭션으로 설정
@@ -41,7 +43,7 @@ public class ReportService {
             throw new DuplicatedException(1, "이미 보고서가 작성된 동행 건입니다.");
         }
 
-        return reportRepository.save(
+        Report savedReport = reportRepository.save(
                 Report.builder()
                         .application(application)
                         .title(generateTitle(request))
@@ -51,6 +53,8 @@ public class ReportService {
                         .notes(request.notes())
                         .build()
         );
+        log.info("[보고서 작성] reportId={}, applicationId={}, escortId={}", savedReport.getId(), applicationId, actorId);
+        return savedReport;
     }
 
     /**
