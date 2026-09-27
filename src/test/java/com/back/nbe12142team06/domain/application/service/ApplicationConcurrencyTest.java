@@ -4,6 +4,7 @@ import com.back.nbe12142team06.domain.application.entity.Application;
 import com.back.nbe12142team06.domain.application.enums.ApplicationStatus;
 import com.back.nbe12142team06.domain.application.repository.ApplicationRepository;
 import com.back.nbe12142team06.domain.post.entity.Post;
+import com.back.nbe12142team06.domain.post.entity.PostStatus;
 import com.back.nbe12142team06.domain.post.repository.PostRepository;
 import com.back.nbe12142team06.domain.user.entity.EscortProfile;
 import com.back.nbe12142team06.domain.user.entity.User;
@@ -27,6 +28,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -331,6 +333,148 @@ class ApplicationConcurrencyTest {
         );
 
         assertEquals(1, acceptedCount);
+
+        executorService.shutdown();
+    }
+
+    @Test
+    @DisplayName("같은 지원에 승인과 취소가 동시에 요청")
+    void concurrentAcceptAndCancel() throws InterruptedException {
+
+        // 테스트용 지원 1건 생성
+        User escort = userRepository.findById(escortId)
+                .orElseThrow();
+
+        Post post = postRepository.findById(postId)
+                .orElseThrow();
+
+        Application application = Application.builder()
+                .post(post)
+                .escort(escort)
+                .build();
+
+        application = applicationRepository.save(application);
+
+        Long applicationId = application.getId();
+
+        ExecutorService executorService =
+                Executors.newFixedThreadPool(2);
+
+        CountDownLatch readyLatch =
+                new CountDownLatch(2);
+
+        CountDownLatch startLatch =
+                new CountDownLatch(1);
+
+        CountDownLatch doneLatch =
+                new CountDownLatch(2);
+
+        // 승인 요청
+        executorService.submit(() -> {
+
+            readyLatch.countDown();
+
+            try {
+                startLatch.await();
+
+                applicationService.accept(
+                        applicationId,
+                        clientId
+                );
+
+            } catch (Exception e) {
+                System.out.println(
+                        Thread.currentThread().getName()
+                                + " 승인 실패: "
+                                + e.getClass().getSimpleName()
+                                + " / "
+                                + e.getMessage()
+                );
+            } finally {
+                doneLatch.countDown();
+            }
+        });
+
+        // 취소 요청
+        executorService.submit(() -> {
+
+            readyLatch.countDown();
+
+            try {
+                startLatch.await();
+
+                applicationService.cancel(
+                        applicationId,
+                        escortId
+                );
+
+            } catch (Exception e) {
+                System.out.println(
+                        Thread.currentThread().getName()
+                                + " 취소 실패: "
+                                + e.getClass().getSimpleName()
+                                + " / "
+                                + e.getMessage()
+                );
+            } finally {
+                doneLatch.countDown();
+            }
+        });
+
+        readyLatch.await();
+
+        startLatch.countDown();
+
+        doneLatch.await();
+
+        Application resultApplication =
+                applicationRepository.findById(applicationId)
+                        .orElseThrow();
+
+        Post resultPost =
+                postRepository.findById(postId)
+                        .orElseThrow();
+
+        System.out.println(
+                "최종 지원 상태 = "
+                        + resultApplication.getStatus()
+        );
+
+        System.out.println(
+                "최종 공고 상태 = "
+                        + resultPost.getPostStatus()
+        );
+
+        /*
+         * 정상적으로 가능한 조합인지 확인
+         *
+         * 1. 취소가 먼저 처리됨
+         *    Application = CANCELED
+         *    Post = OPEN
+         *
+         * 2. 승인이 먼저 처리되고 이후 취소됨
+         *    Application = NO_SHOW
+         *    Post = OPEN
+         *
+         * 3. 승인이 완료되고 취소 요청이 실패
+         *    Application = ACCEPTED
+         *    Post = MATCHED
+         */
+
+        boolean validState =
+                (resultApplication.getStatus() == ApplicationStatus.CANCELED
+                        && resultPost.getPostStatus() == PostStatus.OPEN)
+
+                        || (resultApplication.getStatus() == ApplicationStatus.NO_SHOW
+                        && resultPost.getPostStatus() == PostStatus.OPEN)
+
+                        || (resultApplication.getStatus() == ApplicationStatus.ACCEPTED
+                        && resultPost.getPostStatus() == PostStatus.MATCHED);
+
+        assertTrue(
+                validState,
+                "지원 상태와 공고 상태가 일치하지 않습니다."
+        );
 
         executorService.shutdown();
     }
