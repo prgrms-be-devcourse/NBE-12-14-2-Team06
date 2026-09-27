@@ -89,7 +89,7 @@ export default function ReportDetailPage() {
       <AppShell>
         <section className="bg-white py-[100px] text-center">
           <p className="text-xl font-semibold text-brand">동행 정보를 찾을 수 없습니다.</p>
-          <Link href="/mypage/applications" className={cn(MENU_BUTTON, 'mx-auto mt-8 h-14 w-60')}>신청 목록으로</Link>
+          <Link href="/mypage/applications" className={cn(MENU_BUTTON, 'mx-auto mt-8 h-14 max-w-60')}>신청 목록으로</Link>
         </section>
       </AppShell>
     );
