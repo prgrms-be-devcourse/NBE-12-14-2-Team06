@@ -61,7 +61,7 @@ class UserConcurrencyTest {
     }
 
     @Test
-    @DisplayName("[UserService] 회원가입 - 같은 username으로 동시에 가입하면 1명만 가입되고 나머지는 DuplicatedException으로 거절")
+    @DisplayName("[UserConcurrencyTest] 회원가입 - 같은 username으로 동시에 가입하면 1명만 가입되고 나머지는 DuplicatedException으로 거절")
     void t1() throws InterruptedException {
         // given
         String username = "concurrent_user";
@@ -102,14 +102,14 @@ class UserConcurrencyTest {
         }
 
         assertThat(finished).isTrue();
-        assertThat(unexpected).as("예상하지 못한 예외", unexpected).isEmpty();  // 10개 중 0개의 예상치 못한 예외
+        assertThat(unexpected).as("예상하지 못한 예외").isEmpty();  // 10개 중 0개의 예상치 못한 예외
         assertThat(success.get()).isEqualTo(1);     // 전체 요청 중 1개 성공
         assertThat(duplicated.get()).isEqualTo(THREAD_COUNT - 1);   // 전체 요청 중 1개를 제외히고는 전부 중복 예외
         assertThat(userRepository.count()).isEqualTo(1);    // 실제 저장된 데이터는 1개의 행 뿐
     }
 
     @Test
-    @DisplayName("[UserService] 탈퇴와 수정 - 탈퇴 요청과 수정 요청이 동시에 실행돼도 탈퇴 시 마스킹 유지")
+    @DisplayName("[UserConcurrencyTest] 탈퇴와 수정 - 탈퇴 요청과 수정 요청이 동시에 실행돼도 탈퇴 시 마스킹 유지")
     void t2() throws InterruptedException {
         Long userId = this.userService.signUp(createRequest("user1", 0)).getId();
 
@@ -170,7 +170,7 @@ class UserConcurrencyTest {
 
         assertThat(finished).as("제한 시간 내 종료").isTrue();
 
-        assertThat(unexpected).as("예상하지 못한 예외", unexpected).isEmpty();
+        assertThat(unexpected).as("예상하지 못한 예외").isEmpty();
 
         User result = this.userRepository.findByIdIncludingDeleted(userId)
                 .orElseThrow();
