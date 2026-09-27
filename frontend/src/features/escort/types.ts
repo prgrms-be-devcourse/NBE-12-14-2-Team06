@@ -22,8 +22,9 @@ export type EscortReport = {
 };
 
 /**
- * 보고서 작성 화면 "기본 정보" 카드에 들어가는 값 (실제 API 로 채웁니다 — model/mapper.ts).
- * 의뢰인명은 백엔드 응답에 없어서 빠져 있습니다.
+ * 보고서 작성·조회 화면 "기본 정보" 카드에 들어가는 값 (실제 API 로 채웁니다 — model/mapper.ts).
+ * 의뢰인명은 여기 없습니다. 내 지원 목록(MyApplicationDto)·공고(PostDto) 어느 쪽도 의뢰인 이름을
+ * 내려주지 않아서, 조회 화면에서만 보고서 응답의 ReportDto.clientName 을 씁니다.
  */
 export type ReportTarget = {
   applicationId: number;
