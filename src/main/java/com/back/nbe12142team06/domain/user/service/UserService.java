@@ -149,7 +149,6 @@ public class UserService {
     }
 
     // access token 생성
-    @Transactional(readOnly = true)
     public String genAccessToken(User user) {
         return this.authTokenService.genAccessToken(user);
     }
