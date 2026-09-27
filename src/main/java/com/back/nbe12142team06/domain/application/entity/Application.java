@@ -10,6 +10,10 @@ import lombok.*;
 @Builder
 @Getter
 @Entity
+// (post_id, escort_id) 만 unique 로 걸면 취소 후 재지원이 막힌다.
+// status 를 포함해야 "같은 공고에 같은 동행인의 진행 중인 지원은 하나뿐" 이라는
+// 정책만 강제하면서, CANCELED 로 끝난 지원과는 별개로 재지원(새 PENDING 행 생성)이 가능하다.
+@Table(name = "application", uniqueConstraints = @UniqueConstraint(columnNames = {"post_id", "escort_id", "status"}))
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class Application extends BaseTimeEntity {

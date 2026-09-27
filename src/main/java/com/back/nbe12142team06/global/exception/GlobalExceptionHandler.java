@@ -1,6 +1,7 @@
 package com.back.nbe12142team06.global.exception;
 
 import com.back.nbe12142team06.global.response.RsData;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -57,5 +58,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler
     public RsData<?> ForbiddenExceptionHandler(ForbiddenException e) {
         return new RsData<>(e.statusCode, e.getMessage());
+    }
+
+    // 서비스 계층에서 미처 잡지 못한 DB 유니크 제약 위반이 여기까지 새어나왔을 때의
+    // 최후 방어선. 동시 요청 경쟁 등으로 발생하며, 원문 메시지에는 제약 이름·테이블
+    // 구조가 그대로 들어있어 그대로 응답에 담으면 내부 스키마가 노출된다.
+    @ExceptionHandler
+    public RsData<?> dataIntegrityViolationExceptionHandler(DataIntegrityViolationException e) {
+        return new RsData<>("409", "이미 처리된 요청입니다.");
     }
 }

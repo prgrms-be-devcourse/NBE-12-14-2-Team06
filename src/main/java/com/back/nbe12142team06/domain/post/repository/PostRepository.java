@@ -2,8 +2,10 @@ package com.back.nbe12142team06.domain.post.repository;
 
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.entity.PostStatus;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -58,5 +60,12 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     Optional<Post> findByIdWithClient(@Param("id") Long id);
     //상태코드 만료처리
     List<Post> findAllByPostStatusAndRecruitEndAtBefore(PostStatus postStatus, LocalDateTime dateTime);
+
+    // 지원 승인(매칭) 처리 중 같은 공고에 대한 동시 승인 요청을 직렬화하기 위한 비관적 쓰기 락 조회.
+    // 두 번째 요청은 첫 번째 트랜잭션이 커밋될 때까지 이 조회에서 대기하고,
+    // 커밋 후에는 갱신된 PostStatus(MATCHED)를 보고 정상적인 InvalidException 을 던지게 된다.
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select p from Post p where p.id = :id")
+    Optional<Post> findByIdForUpdate(@Param("id") Long id);
 
 }
