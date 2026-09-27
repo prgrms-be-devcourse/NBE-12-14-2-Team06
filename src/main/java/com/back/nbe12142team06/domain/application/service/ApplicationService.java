@@ -43,7 +43,7 @@ public class ApplicationService {
     public ApplicationApplyResponse apply(Long postId, Long userId) {
 
 
-        Post post = postRepository.findById(postId).orElseThrow(
+        Post post = postRepository.findByIdWithLock(postId).orElseThrow(
                 () -> new NotFoundException("공고를 찾을 수 없습니다."));
 
         // 모집 중인 공고만 지원 가능
