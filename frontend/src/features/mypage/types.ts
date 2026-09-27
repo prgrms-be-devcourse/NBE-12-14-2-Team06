@@ -1,3 +1,5 @@
+import type { EscortGrade } from '@/features/application';
+
 /** 내가 신청한 공고의 진행 상태 */
 export type ApplicationStatus = 'pending' | 'matched' | 'inProgress' | 'completed' | 'rejected' | 'canceled';
 
@@ -92,6 +94,7 @@ export type EscortProfileDto = {
   intro: string | null;
   averageRating: number | null;
   completedCount: number;
+  grade: EscortGrade;
   verified: boolean;
   bankName: string | null;
   accountHolder: string | null;
