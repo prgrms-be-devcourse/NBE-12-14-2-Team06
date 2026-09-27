@@ -189,7 +189,11 @@ export default function ClientTrackingPage() {
   const [from, to] = GOING_HOME[escort.stage]
     ? [escort.hospitalPoint, escort.pickupPoint]
     : [escort.pickupPoint, escort.hospitalPoint];
-  const kakaoT = from && to ? { href: buildKakaoTCallUrl(from, to), label: `${from.name} → ${to.name}` } : undefined;
+  // 동행이 끝나면 부를 택시가 없으므로 호출 버튼도 숨깁니다.
+  const kakaoT =
+    escort.stage !== 'done' && from && to
+      ? { href: buildKakaoTCallUrl(from, to), label: `${from.name} → ${to.name}` }
+      : undefined;
   const hasStageButtons = escort.stage !== 'ready';
 
   /**
@@ -302,9 +306,12 @@ export default function ClientTrackingPage() {
                     )}
                     {escort.stage === 'done' && (
                       <>
-                        <button type="button" className={cn(BUTTON, SOLID)}>
-                          정산하기
-                        </button>
+                        {/* 추가 결제가 남아 있으면 정산부터 할 수 없어서 그때는 숨깁니다. */}
+                        {!pendingPayment && (
+                          <button type="button" className={cn(BUTTON, SOLID)}>
+                            정산하기
+                          </button>
+                        )}
                         <Link href={`${base}/review`} className={cn(BUTTON, GHOST)}>
                           리뷰 작성
                         </Link>
