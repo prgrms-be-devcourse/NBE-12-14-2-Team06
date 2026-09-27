@@ -14,8 +14,9 @@ import { fetchRidesByPost, formatTransport } from '@/features/ride';
 import { fetchUserReviews } from '@/features/review';
 import { cn } from '@/lib/cn';
 import { buildKakaoTCallUrl } from '@/lib/kakaoT';
+import { completeEscort } from '../api';
 import { toManager, topReviewTagLabels } from '../model/mapper';
-import { STAGE_VIEW, getClientEscortCase, toClientEscortCase } from '../model/escort';
+import { STAGE_VIEW, toClientEscortCase } from '../model/escort';
 import type { ClientEscortCase, ClientEscortStage } from '../types';
 import ManagerInfoCard from './ManagerInfoCard';
 import TripSummary from './TripSummary';
@@ -80,6 +81,10 @@ export default function ClientTrackingPage() {
   const postId = postIdParam ? Number(postIdParam) : undefined;
 
   const [live, setLive] = useState<{ key?: number; escort?: ClientEscortCase; error?: string }>({});
+  // 동행 완료 처리 뒤 공고 상태를 다시 받아오려고 올립니다.
+  const [reloadKey, setReloadKey] = useState(0);
+  const [completing, setCompleting] = useState(false);
+  const [completeError, setCompleteError] = useState<string>();
 
   useEffect(() => {
     if (postId === undefined) return;
@@ -100,11 +105,12 @@ export default function ClientTrackingPage() {
     return () => {
       ignore = true;
     };
-  }, [postId, applicationId]);
+  }, [postId, applicationId, reloadKey]);
 
   const liveLoading = postId !== undefined && live.key !== postId;
-  const liveError = postId !== undefined && live.key === postId ? live.error : undefined;
-  const escort = postId !== undefined ? (live.key === postId ? live.escort : undefined) : getClientEscortCase(applicationId);
+  // postId 가 없으면 불러올 방법이 없어 아래 "동행 정보를 찾을 수 없습니다" 로 떨어집니다.
+  const liveError = live.key === postId ? live.error : undefined;
+  const escort = live.key === postId ? live.escort : undefined;
 
   if (authLoading) {
     return (
@@ -162,7 +168,25 @@ export default function ClientTrackingPage() {
     ? [escort.hospitalPoint, escort.pickupPoint]
     : [escort.pickupPoint, escort.hospitalPoint];
   const kakaoT = from && to ? { href: buildKakaoTCallUrl(from, to), label: `${from.name} → ${to.name}` } : undefined;
-  const hasStageButtons = escort.stage !== 'ready' && escort.stage !== 'ongoing';
+  const hasStageButtons = escort.stage !== 'ready';
+
+  /**
+   * 동행 완료 처리. 동행인이 "귀가 완료"를 찍어야 서버가 받아주므로,
+   * 아직이면 서버 메시지("귀가완료 기록이 없습니다")를 그대로 보여줍니다.
+   */
+  const handleComplete = async () => {
+    if (postId === undefined) return;
+    setCompleting(true);
+    setCompleteError(undefined);
+    try {
+      await completeEscort(postId);
+      setReloadKey((key) => key + 1);
+    } catch (error) {
+      setCompleteError(error instanceof Error ? error.message : '동행 완료 처리에 실패했습니다.');
+    } finally {
+      setCompleting(false);
+    }
+  };
 
   return (
     <AppShell>
@@ -216,9 +240,20 @@ export default function ClientTrackingPage() {
                   ))}
                 </dl>
 
+                {completeError && (
+                  <p role="alert" className="mt-3 text-sm leading-5 font-medium text-[#b91d1d]">
+                    {completeError}
+                  </p>
+                )}
+
                 {(hasStageButtons || kakaoT) && (
                   <div className="mt-5 flex flex-col gap-[5px]">
-                    {/* TODO: 동행 종료 · 추가 결제 · 정산 API 연결 */}
+                    {/* TODO: 추가 결제 · 정산 API 연결 */}
+                    {escort.stage === 'ongoing' && (
+                      <button type="button" onClick={handleComplete} disabled={completing} className={cn(BUTTON, SOLID, 'disabled:cursor-not-allowed disabled:opacity-60')}>
+                        {completing ? '처리 중...' : '동행 완료 처리'}
+                      </button>
+                    )}
                     {escort.stage === 'arrived' && (
                       <button type="button" className={cn(BUTTON, SOLID)}>
                         동행 종료

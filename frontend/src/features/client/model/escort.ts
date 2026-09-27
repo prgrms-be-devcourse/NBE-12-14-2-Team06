@@ -118,7 +118,8 @@ function toClientEscortStage(postStatus: string): 'ready' | 'ongoing' | 'done' {
 
 /**
  * 실제 API 로 만든 의뢰인 동행 현황.
- * ⚠️ 타임라인 단계별 "시각"과 지도의 실시간 위치는 API 가 없어 모의 값을 그대로 씁니다.
+ * ⚠️ 타임라인 단계별 "시각"과 지도의 "최근 업데이트"는 EscortProgress 를 읽는 API 가 없어 비워 둡니다
+ *    (예전엔 모의 값을 넣었습니다). 지도의 실시간 위치도 API 가 없어 MapCard 의 정적 이미지입니다.
  */
 export function toClientEscortCase(post: PostDto, applicationId: number, manager: Manager, transport: string): ClientEscortCase {
   const stage = toClientEscortStage(post.postStatus);
@@ -138,9 +139,8 @@ export function toClientEscortCase(post: PostDto, applicationId: number, manager
     meetingPlace: post.pickupAddress,
     pickupPoint: { name: '집', lat: post.pickupLat, lng: post.pickupLng },
     hospitalPoint: { name: post.hospitalName, lat: post.hospitalLat, lng: post.hospitalLng },
-    updatedAt: TIMES[STAGE_DONE_COUNT[stage] - 1] || '9:00',
     manager,
-    timeline: timeline(STAGE_DONE_COUNT[stage], TIMES),
+    timeline: TIMELINE_BASE.map((step, index) => ({ ...step, done: index < STAGE_DONE_COUNT[stage] })),
   };
 }
 

@@ -3,8 +3,11 @@ import { cn } from '@/lib/cn';
 import type { EscortStage } from '../../types';
 import { CARD, CARD_TITLE } from './tracking';
 
-/** 지도 + 마커 (Figma 실시간 위치). 마커·경로 위치는 화면용 임시 값입니다. updatedAt 은 "최근 업데이트" 시각 */
-export default function MapCard({ stage, updatedAt = '9:00' }: { stage: EscortStage; updatedAt?: string }) {
+/**
+ * 지도 + 마커 (Figma 실시간 위치). 실시간 위치 API 가 없어 마커·경로는 화면용 임시 값입니다.
+ * updatedAt("최근 업데이트" 시각)은 넘겨줄 데이터가 있을 때만 표시합니다.
+ */
+export default function MapCard({ stage, updatedAt }: { stage: EscortStage; updatedAt?: string }) {
   const status =
     stage === 'ready' ? (
       <span className="text-base leading-5 font-semibold text-[#c0c0c2]">위치 공유 대기중</span>
@@ -14,7 +17,7 @@ export default function MapCard({ stage, updatedAt = '9:00' }: { stage: EscortSt
           <span aria-hidden="true" className="size-2 rounded-full bg-[#209d37]" />
           위치 공유중
         </span>
-        <span className="text-[#c0c0c2]">최근 업데이트 {updatedAt}</span>
+        {updatedAt && <span className="text-[#c0c0c2]">최근 업데이트 {updatedAt}</span>}
       </span>
     ) : (
       <span className="text-base leading-5 font-semibold text-[#c0c0c2]">위치 공유 종료</span>

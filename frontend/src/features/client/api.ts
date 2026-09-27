@@ -1,7 +1,7 @@
 import { fetchApplicants } from '@/features/application';
 import { fetchMyProfile } from '@/features/auth';
 import { fetchPosts, type PostFilters } from '@/features/post';
-import { api } from '@/lib/api';
+import { api, apiPatch } from '@/lib/api';
 import { toClientPost } from './model/posts';
 import type { ClientPost } from './types';
 
@@ -37,6 +37,17 @@ export async function fetchConfirmPayment(paymentId: number, request: PaymentCon
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(request),
     });
+}
+
+/**
+ * 동행 완료 처리 — PATCH /api/v1/posts/{postId}/escortComplete (공고를 쓴 의뢰인 본인만)
+ *
+ * 서버가 진행 로그의 출발·귀가 완료 시각으로 공고의 실제 동행 시간을 채우고 상태를 "동행 완료"로 바꾼 뒤,
+ * 동행 매니저의 완료 건수 증가와 정산·재결제까지 이어서 처리합니다.
+ * 동행인이 아직 "귀가 완료"를 찍지 않았으면 404 "귀가완료 기록이 없습니다" 로 거절합니다.
+ */
+export function completeEscort(postId: number): Promise<void> {
+  return apiPatch<void>(`/api/v1/posts/${postId}/escortComplete`);
 }
 
 const PAGE_SIZE = 100;

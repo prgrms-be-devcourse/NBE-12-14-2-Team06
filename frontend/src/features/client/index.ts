@@ -12,5 +12,5 @@ export { default as ApplicantsPage } from './components/ApplicantsPage';
 export { default as ClientTrackingPage } from './components/ClientTrackingPage';
 export { default as ClientReportPage } from './components/ClientReportPage';
 export { default as ClientReviewPage } from './components/ClientReviewPage';
-export { fetchMyPosts } from './api';
+export { completeEscort, fetchMyPosts } from './api';
 export type { ClientPost, ClientPostStatus } from './types';
