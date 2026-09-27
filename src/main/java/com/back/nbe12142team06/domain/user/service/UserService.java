@@ -21,6 +21,7 @@ import com.back.nbe12142team06.domain.user.repository.EscortProfileRepository;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
 import com.back.nbe12142team06.global.exception.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -106,12 +107,19 @@ public class UserService {
                 request.phoneNum(),
                 request.region()
         );
-        User savedUser = this.userRepository.save(user);
-        log.info("[회원가입] userId={}, role={}", savedUser.getId(), savedUser.getRole());
-        return savedUser;
+
+        // 동시성 자체는 유니크로 막혀 있는데 그 때 500번이 나가버리기 때문에 이를 409로 감싸기만 했습니다.
+        try {
+            User savedUser = this.userRepository.saveAndFlush(user);
+            log.info("[회원가입] userId={}, role={}", savedUser.getId(), savedUser.getRole());
+            return savedUser;
+        } catch (DataIntegrityViolationException e) {
+            throw new DuplicatedException(6, "이미 사용 중인 회원 정보입니다.");
+        }
     }
 
     // 로그인
+    @Transactional(readOnly = true)
     public User login(UserLoginRequest request) {
         Optional<User> opUser = this.userRepository.findByUsername(request.username());
 
@@ -134,12 +142,14 @@ public class UserService {
     }
 
     // 상세정보 조회
+    @Transactional(readOnly = true)
     public User myProfile(Long id) {
         return this.userRepository.findById(id)
                 .orElseThrow(() -> new UnauthorizedException("회원 정보를 찾을 수 없습니다. 다시 로그인해주세요."));
     }
 
     // username 중복 검사
+    @Transactional(readOnly = true)
     public boolean isUsernameAvailable(String username) {
         return !this.userRepository.existsByUsername(username);
     }

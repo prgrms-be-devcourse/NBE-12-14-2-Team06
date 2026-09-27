@@ -61,6 +61,9 @@ public class User extends BaseSoftDeleteTimeEntity {
     @Column(nullable = false, length = 50)
     private String region;
 
+    @Version
+    private Long version;
+
     @Builder
     public User(String username, String password, String email, String name, Role role, Gender gender, LocalDate birthDate, String phoneNum, String region) {
         this.username = username;
