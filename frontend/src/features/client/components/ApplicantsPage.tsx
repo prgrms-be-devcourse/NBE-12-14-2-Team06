@@ -178,7 +178,10 @@ export default function ApplicantsPage() {
                   name: applicant.name,
                   rating: applicant.profile?.rating ?? 0,
                   completedCount: applicant.profile?.completedCount ?? 0,
-                  intro: applicant.profile?.intro ? [applicant.profile.intro] : ['자기소개를 아직 작성하지 않았습니다.'],
+                  grade: applicant.profile?.grade,
+                  intro: applicant.profile?.intro
+                      ? [applicant.profile.intro]
+                      : ['자기소개를 아직 작성하지 않았습니다.'],
                 };
                 return (
                   <li

@@ -336,7 +336,8 @@ public class ApplicationService {
                 escortProfile.getCompletedCount(),
                 rating,
                 escortProfile.getRatingCount(),
-                escortProfile.getNoShowCount()
+                escortProfile.getNoShowCount(),
+                escortProfile.getGrade()
         );
     }
 

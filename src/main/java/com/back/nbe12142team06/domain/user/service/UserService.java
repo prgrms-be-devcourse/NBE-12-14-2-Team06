@@ -144,6 +144,11 @@ public class UserService {
         return !this.userRepository.existsByUsername(username);
     }
 
+    // email 중복 검사
+    public boolean isEmailAvailable(String email) {
+        return !this.userRepository.existsByEmail(email);
+    }
+
     // access token 생성
     public String genAccessToken(User user) {
         return this.authTokenService.genAccessToken(user);

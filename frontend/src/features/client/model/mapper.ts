@@ -28,6 +28,7 @@ export function toManager(profile: EscortProfileDto, tags: string[]): Manager {
     name: profile.name,
     rating: profile.rating,
     completedCount: profile.completedCount,
+    grade: profile.grade,
     tags,
     intro: profile.intro ? [profile.intro] : ['자기소개를 아직 작성하지 않았습니다.'],
   };

@@ -15,6 +15,7 @@ export {
 export { PROGRESS_ORDER } from './types';
 export type {
   ApplicationStatus,
+  EscortGrade,
   EscortProgress,
   ApplicantDto,
   Applicant,
