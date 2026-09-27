@@ -17,6 +17,7 @@ import com.back.nbe12142team06.global.exception.ForbiddenException;
 import com.back.nbe12142team06.global.exception.InvalidException;
 import com.back.nbe12142team06.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +25,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true) // 기본은 읽기 전용 트랜잭션으로 설정
@@ -72,6 +74,7 @@ public class ReviewService {
                 .orElseThrow(() -> new NotFoundException(3, "동행 매니저 프로필이 존재하지 않습니다."));
         escortProfile.addRating(request.rating());
 
+        log.info("[리뷰 작성] applicationId={}, clientId={}, rating={}", applicationId, actorId, request.rating());
         return review;
     }
 

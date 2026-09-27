@@ -21,6 +21,7 @@ import com.back.nbe12142team06.domain.user.repository.EscortProfileRepository;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
 import com.back.nbe12142team06.global.exception.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -32,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -104,7 +106,9 @@ public class UserService {
                 request.phoneNum(),
                 request.region()
         );
-        return this.userRepository.save(user);
+        User savedUser = this.userRepository.save(user);
+        log.info("[회원가입] userId={}, role={}", savedUser.getId(), savedUser.getRole());
+        return savedUser;
     }
 
     // 로그인
@@ -112,13 +116,20 @@ public class UserService {
         Optional<User> opUser = this.userRepository.findByUsername(request.username());
 
         if (opUser.isEmpty()) {
+            log.warn("[로그인 실패] 존재하지 않는 아이디 username={}", request.username());
             throw new UnauthorizedException("아이디 또는 비밀번호가 올바르지 않습니다.");
         }
 
         User user = opUser.get();
 
-        checkPassword(request.password(), user.getPassword());
+        try {
+            checkPassword(request.password(), user.getPassword());
+        } catch (UnauthorizedException e) {
+            log.warn("[로그인 실패] 비밀번호 불일치 userId={}", user.getId());
+            throw e;
+        }
 
+        log.info("[로그인 성공] userId={}, role={}", user.getId(), user.getRole());
         return user;
     }
 
@@ -221,6 +232,7 @@ public class UserService {
 
         // 회원 정보, 프로필, 토큰 전부 삭제
         withdraw(user);
+        log.info("[회원 탈퇴] userId={}", id);
     }
 
     // 의뢰인 프로필 생성

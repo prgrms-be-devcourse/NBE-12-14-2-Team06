@@ -21,6 +21,7 @@ import com.back.nbe12142team06.global.exception.ForbiddenException;
 import com.back.nbe12142team06.global.exception.InvalidException;
 import com.back.nbe12142team06.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -29,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ApplicationService {
@@ -79,6 +81,7 @@ public class ApplicationService {
                 .build();
 
         Application savedApplication = applicationRepository.save(application);
+        log.info("[지원] applicationId={}, postId={}, escortId={}", savedApplication.getId(), postId, userId);
         return new ApplicationApplyResponse(savedApplication);
     }
 
@@ -169,6 +172,8 @@ public class ApplicationService {
                         isTimeOverlapping(post, otherApplication.getPost()))
                 .forEach(Application::reject);
 
+        log.info("[지원 수락] applicationId={}, postId={}, escortId={}, clientId={}",
+                applicationId, post.getId(), escort.getId(), userId);
         return new ApplicationAcceptResponse(application);
     }
 
@@ -191,6 +196,7 @@ public class ApplicationService {
         }
 
         application.reject();
+        log.info("[지원 거절] applicationId={}, clientId={}", applicationId, userId);
     }
 
     private boolean isTimeOverlapping(Post firstPost, Post secondPost) {
@@ -212,6 +218,7 @@ public class ApplicationService {
         // 대기 상태에서 지원 취소
         if (application.getStatus() == ApplicationStatus.PENDING) {
             application.cancel();
+            log.info("[지원 취소] applicationId={}, escortId={}", applicationId, userId);
             return;
         }
 
@@ -236,6 +243,8 @@ public class ApplicationService {
                 // 모집 마감 후라면 공고 취소
                 post.matchedCancel();
             }
+            // 매칭 확정 후 동행인이 취소하면 노쇼로 처리되므로 warn
+            log.warn("[노쇼 취소] applicationId={}, postId={}, escortId={}", applicationId, post.getId(), userId);
             return;
         }
 
@@ -293,6 +302,7 @@ public class ApplicationService {
         if (progress == EscortProgress.DEPARTED) {
             application.getPost().startProgress(occurredAt);
         }
+        log.info("[동행 진행상태 변경] applicationId={}, progress={}, escortId={}", applicationId, progress, userId);
     }
 
     @Transactional(readOnly = true)
