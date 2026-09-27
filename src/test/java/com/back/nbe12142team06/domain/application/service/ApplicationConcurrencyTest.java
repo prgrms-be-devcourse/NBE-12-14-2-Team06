@@ -2,7 +2,9 @@ package com.back.nbe12142team06.domain.application.service;
 
 import com.back.nbe12142team06.domain.application.entity.Application;
 import com.back.nbe12142team06.domain.application.enums.ApplicationStatus;
+import com.back.nbe12142team06.domain.application.enums.EscortProgress;
 import com.back.nbe12142team06.domain.application.repository.ApplicationRepository;
+import com.back.nbe12142team06.domain.application.repository.EscortProgressLogRepository;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.entity.PostStatus;
 import com.back.nbe12142team06.domain.post.repository.PostRepository;
@@ -51,6 +53,9 @@ class ApplicationConcurrencyTest {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private EscortProgressLogRepository escortProgressLogRepository;
 
     private Long postId;
     private Long escortId;
@@ -475,6 +480,83 @@ class ApplicationConcurrencyTest {
                 validState,
                 "지원 상태와 공고 상태가 일치하지 않습니다."
         );
+
+        executorService.shutdown();
+    }
+
+    @Test
+    @DisplayName("같은 진행 상태 변경 요청이 동시에 들어오면 중복 로그가 생성되지 않아야 한다")
+    void concurrentProgressUpdate() throws InterruptedException {
+
+        User escort = userRepository.findById(escortId)
+                .orElseThrow();
+
+        Post post = postRepository.findById(postId)
+                .orElseThrow();
+
+        Application application = Application.builder()
+                .post(post)
+                .escort(escort)
+                .build();
+
+        application.accept();
+        application = applicationRepository.save(application);
+
+        Long applicationId = application.getId();
+
+        ExecutorService executorService =
+                Executors.newFixedThreadPool(2);
+
+        CountDownLatch readyLatch =
+                new CountDownLatch(2);
+
+        CountDownLatch startLatch =
+                new CountDownLatch(1);
+
+        CountDownLatch doneLatch =
+                new CountDownLatch(2);
+
+        for (int i = 0; i < 2; i++) {
+
+            executorService.submit(() -> {
+
+                readyLatch.countDown();
+
+                try {
+                    startLatch.await();
+
+                    applicationService.updateProgress(
+                            applicationId,
+                            escortId,
+                            EscortProgress.DEPARTED
+                    );
+
+                } catch (Exception e) {
+                    System.out.println(
+                            Thread.currentThread().getName()
+                                    + " 진행 상태 변경 실패: "
+                                    + e.getClass().getSimpleName()
+                                    + " / "
+                                    + e.getMessage()
+                    );
+                } finally {
+                    doneLatch.countDown();
+                }
+            });
+        }
+
+        readyLatch.await();
+        startLatch.countDown();
+        doneLatch.await();
+
+        long progressLogCount =
+                escortProgressLogRepository.count();
+
+        System.out.println(
+                "저장된 진행 로그 개수 = " + progressLogCount
+        );
+
+        assertEquals(1, progressLogCount);
 
         executorService.shutdown();
     }

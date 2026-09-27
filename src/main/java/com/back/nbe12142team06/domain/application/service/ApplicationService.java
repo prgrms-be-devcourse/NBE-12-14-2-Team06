@@ -249,7 +249,7 @@ public class ApplicationService {
     @Transactional
     public void updateProgress(Long applicationId, Long userId, EscortProgress progress) {
 
-        Application application = applicationRepository.findById(applicationId)
+        Application application = applicationRepository.findByIdWithLock(applicationId)
                 .orElseThrow(() -> new NotFoundException("지원을 찾을 수 없습니다."));
 
         // 본인의 동행 진행 상태만 변경 가능
