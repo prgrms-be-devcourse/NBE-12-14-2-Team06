@@ -107,13 +107,12 @@ public class UserService {
                 request.phoneNum(),
                 request.region()
         );
-        User savedUser = this.userRepository.save(user);
-        log.info("[회원가입] userId={}, role={}", savedUser.getId(), savedUser.getRole());
-        return savedUser;
 
         // 동시성 자체는 유니크로 막혀 있는데 그 때 500번이 나가버리기 때문에 이를 409로 감싸기만 했습니다.
         try {
-            return this.userRepository.saveAndFlush(user);
+            User savedUser = this.userRepository.saveAndFlush(user);
+            log.info("[회원가입] userId={}, role={}", savedUser.getId(), savedUser.getRole());
+            return savedUser;
         } catch (DataIntegrityViolationException e) {
             throw new DuplicatedException(6, "이미 사용 중인 회원 정보입니다.");
         }
