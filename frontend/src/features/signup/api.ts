@@ -1,6 +1,16 @@
-import { apiPost } from '@/lib/api';
+import { api, apiPost } from '@/lib/api';
 import { toClientProfileRequest, toEscortProfileRequest, toSignUpRequest } from './model/mapper';
 import type { SignupFormValues, SignupRole, UserSignUpResponse } from './types';
+
+/** 아이디 중복 검사 — GET /api/v1/users/username (로그인 없이 호출합니다). 쓸 수 있으면 true */
+export function checkUsernameAvailable(username: string): Promise<boolean> {
+  return api<boolean>(`/api/v1/users/username?${new URLSearchParams({ username })}`);
+}
+
+/** 이메일 중복 검사 — GET /api/v1/users/email (로그인 없이 호출합니다). 쓸 수 있으면 true */
+export function checkEmailAvailable(email: string): Promise<boolean> {
+  return api<boolean>(`/api/v1/users/email?${new URLSearchParams({ email })}`);
+}
 
 /**
  * 회원가입 — POST /api/v1/users (로그인 없이 호출합니다)

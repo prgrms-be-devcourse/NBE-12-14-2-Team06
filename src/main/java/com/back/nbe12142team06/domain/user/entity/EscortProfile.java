@@ -1,5 +1,6 @@
 package com.back.nbe12142team06.domain.user.entity;
 
+import com.back.nbe12142team06.domain.user.enums.EscortGrade;
 import com.back.nbe12142team06.global.entity.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -111,4 +112,36 @@ public class EscortProfile extends BaseTimeEntity {
         this.verified = true;
     }
 
+    //등급 배지 기준
+    public EscortGrade getGrade() {
+        EscortGrade grade;
+
+        if (completedCount >= 30) {
+            grade = EscortGrade.EGGPLANT;
+        } else if (completedCount >= 10) {
+            grade = EscortGrade.FLOWER;
+        } else if (completedCount >= 5) {
+            grade = EscortGrade.SPROUT;
+        } else {
+            grade = EscortGrade.SEED;
+        }
+
+        if (noShowCount >= 3) {
+            return lowerGrade(grade, 2);
+        }
+        if (noShowCount >= 2) {
+            return lowerGrade(grade, 1);
+        }
+
+        return grade;
+    }
+
+    // 노쇼에 따른 등급 하락
+    private EscortGrade lowerGrade(EscortGrade grade, int steps) {
+        EscortGrade[] grades = EscortGrade.values();
+        int currentIndex = grade.ordinal();
+        int loweredIndex = Math.max(0, currentIndex - steps);
+
+        return grades[loweredIndex];
+    }
 }
