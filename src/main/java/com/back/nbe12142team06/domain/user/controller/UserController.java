@@ -46,6 +46,20 @@ public class UserController {
     }
 
     @Operation(
+            summary = "이메일 중복 검사",
+            description = "입력한 이메일의 사용 가능 여부를 확인합니다."
+    )
+    @GetMapping("/email")
+    public RsData<Boolean> checkEmail(@RequestParam String email) {
+        Boolean isAvailable = this.userService.isEmailAvailable(email);
+
+        return new RsData<>(
+                "200-2",
+                isAvailable ? "사용 가능한 이메일입니다." : "이미 사용 중인 이메일입니다.",
+                isAvailable
+        );
+    }
+    @Operation(
             summary = "회원가입",
             description = "회원가입 후 Access Token과 Refresh Token을 발급하여 쿠키에 저장합니다."
     )

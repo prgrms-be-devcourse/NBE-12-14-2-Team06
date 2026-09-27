@@ -49,6 +49,12 @@ export type SignupFormValues = {
   intro: string;
 };
 
+/** 2단계 — 중복 확인을 통과한 아이디·이메일 (확인 안 했으면 빈 문자열) */
+export type VerifiedValues = {
+  username: string;
+  email: string;
+};
+
 /** 3단계 — 약관 동의 항목 */
 export type Agreement = {
   id: string;

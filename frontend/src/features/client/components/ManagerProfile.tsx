@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import { EscortGradeBadge } from '@/components/ui';
 import { cn } from '@/lib/cn';
 import type { Manager } from '../types';
 
@@ -70,8 +71,12 @@ export default function ManagerProfile({ manager, size, className }: { manager: 
         </div>
         <div className={cn('flex min-w-0 flex-1 flex-col', s.info)}>
           <div className="flex flex-wrap items-center gap-1.5">
-            <p className={cn('font-semibold text-brand', s.name)}>{manager.name}</p>
-            <span className={cn(CHIP, s.role)}>동행 매니저</span>
+            <p className={cn('font-semibold text-brand', s.name)}>
+              {manager.name}
+            </p>
+            {manager.grade && (
+                <EscortGradeBadge grade={manager.grade} />
+            )}
           </div>
           <p className={cn('flex flex-wrap items-center font-medium text-brand', s.stats)}>
             {manager.rating > 0 ? (

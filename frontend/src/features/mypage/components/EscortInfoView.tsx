@@ -16,6 +16,7 @@ import {
   type EscortProfileWriteRequest,
 } from '../api';
 import type { EscortProfileDto } from '../types';
+import EscortGradeCard from './EscortGradeCard';
 import InfoCard from './InfoCard';
 
 const FIELD = 'h-[47px] w-full rounded-[10px] border border-line-soft bg-white px-4 text-sm text-brand shadow-card placeholder:text-brand-muted';
@@ -305,6 +306,13 @@ export default function EscortInfoView() {
           <p className="text-base leading-6 font-semibold text-brand-muted">{user.region}</p>
         </div>
       </section>
+
+      {profile && (
+          <EscortGradeCard
+              grade={profile.grade}
+              completedCount={profile.completedCount}
+          />
+      )}
 
       <div className="grid grid-cols-[minmax(0,1fr)] gap-[22px] lg:grid-cols-[375px_1fr]">
         <BasicInfoCard user={user} onUpdated={(next) => setState((prev) => prev && { ...prev, user: next })} />

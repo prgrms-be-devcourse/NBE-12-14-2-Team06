@@ -1,5 +1,7 @@
 /** 백엔드 ApplicationStatus (지원 진행 상태) */
 export type ApplicationStatus = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'CANCELED' | 'NO_SHOW';
+/** 백엔드 EscortGrade (동행매니저 등급) */
+export type EscortGrade = 'SEED' | 'SPROUT' | 'FLOWER' | 'EGGPLANT';
 
 /** 백엔드 EscortProgress (동행 진행 단계). 이 순서대로만 진행할 수 있습니다. */
 export type EscortProgress = 'NOT_STARTED' | 'DEPARTED' | 'TO_HOSPITAL' | 'AT_HOSPITAL' | 'TO_HOME' | 'ARRIVED_HOME';
@@ -47,6 +49,7 @@ export type EscortProfileDto = {
   rating: number;
   ratingCount: number;
   noShowCount: number;
+  grade: EscortGrade;
 };
 
 /** 화면에서 쓰기 좋게 다듬은 지원자 한 명 (목록 + 프로필을 합친 모양) */

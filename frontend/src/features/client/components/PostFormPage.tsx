@@ -502,16 +502,16 @@ function PostFormFields({ postId, initial, sample }: FormFieldsProps) {
 
               <FormSection title="요청 조건">
                 <FormRow label="시급(금액)*" htmlFor="post-pay">
-                  <div className="relative min-w-0">
+                  <div className="relative min-w-0 sm:w-[273px]">
                     <input
-                      id="post-pay"
-                      name="hourlyPay"
-                      required
-                      inputMode="numeric"
-                      value={hourlyPay}
-                      onChange={(event) => setHourlyPay(formatPay(event.target.value))}
-                      placeholder="예) 12,000"
-                      className={cn(FIELD, 'pr-12')}
+                        id="post-pay"
+                        name="hourlyPay"
+                        required
+                        inputMode="numeric"
+                        value={hourlyPay}
+                        onChange={(event) => setHourlyPay(formatPay(event.target.value))}
+                        placeholder="예) 12,000"
+                        className={cn(FIELD, 'pr-12')}
                     />
                     <span className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-base text-brand-muted">원</span>
                   </div>
