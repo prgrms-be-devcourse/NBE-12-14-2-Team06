@@ -1,4 +1,4 @@
-import { fetchMyApplications, type MyApplicationDto } from '@/features/application';
+import { fetchMyApplications, fetchProgress, type MyApplicationDto } from '@/features/application';
 import { fetchPostRaw } from '@/features/post';
 import { fetchRidesByPost, formatTransport } from '@/features/ride';
 import { toReportTarget, toTrackingCase } from './model/mapper';
@@ -34,6 +34,10 @@ export async function fetchTrackingCase(applicationId: number): Promise<Tracking
   const application = await findMyApplication(applicationId);
   if (!application) return undefined;
 
-  const [post, rides] = await Promise.all([fetchPostRaw(application.postId), fetchRidesByPost(application.postId)]);
-  return toTrackingCase(application, post, formatTransport(rides));
+  const [post, rides, progress] = await Promise.all([
+    fetchPostRaw(application.postId),
+    fetchRidesByPost(application.postId),
+    fetchProgress(applicationId),
+  ]);
+  return toTrackingCase(application, post, formatTransport(rides), progress.progress);
 }

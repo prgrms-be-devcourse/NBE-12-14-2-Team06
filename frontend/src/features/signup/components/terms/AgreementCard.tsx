@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { cn } from '@/lib/cn';
+import { showUnimplemented } from '@/lib/unimplemented';
 
 type Props = {
   id: string;
@@ -78,8 +79,8 @@ export default function AgreementCard({
         </span>
       </label>
 
-      {badge && (
-        // TODO: 약관 전문을 보여주는 화면/모달이 정해지면 연결하세요.
+      {/* TODO: 약관 전문을 보여주는 화면/모달이 정해지면 연결하세요. */}
+      {badge && showUnimplemented() && (
         <button
           type="button"
           aria-label={`${title} 내용 보기`}
