@@ -231,8 +231,7 @@ public class EducationControllerTest {
         Cookie escortToken = escortReady("escort1");
         Long escortId = findUserId("escort1");
 
-        escortProfileRepository.findById(escortId).orElseThrow()
-                .verify(LocalDateTime.now());
+        this.escortProfileRepository.verify(escortId, LocalDateTime.now());
 
         ResultActions resultActions = watchLog(video.getId(), position("0"), escortToken);
 

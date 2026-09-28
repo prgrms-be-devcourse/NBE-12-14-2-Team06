@@ -117,7 +117,7 @@ public class EscortProfileConcurrencyTest {
                     start.await();
                     transactionTemplate.executeWithoutResult(status -> {
                         EscortProfile profile = this.escortProfileRepository.findById(userId).orElseThrow();
-                        profile.verify(LocalDateTime.now());
+                        this.escortProfileRepository.verify(profile.getUserId(), LocalDateTime.now());
                     }); // 여기서 커밋 → @Version 비교
                     verifySucceeded.set(true);
                 } catch (OptimisticLockingFailureException e) {

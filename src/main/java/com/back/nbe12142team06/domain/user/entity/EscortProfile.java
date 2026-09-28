@@ -6,16 +6,11 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.DynamicUpdate;
-import org.hibernate.annotations.OptimisticLockType;
-import org.hibernate.annotations.OptimisticLocking;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Getter
-@DynamicUpdate
-@OptimisticLocking(type = OptimisticLockType.DIRTY)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "escort_profiles")
 public class EscortProfile extends BaseTimeEntity {
@@ -68,6 +63,8 @@ public class EscortProfile extends BaseTimeEntity {
     @Column(nullable = false, length = 30)
     private String accountNumber;
 
+    @Version
+    private Long version;
 
 
     public EscortProfile(User user, String intro, String bankName, String accountHolder, String accountNumber){
@@ -99,14 +96,6 @@ public class EscortProfile extends BaseTimeEntity {
         this.noShowCount++;
     }
 
-    // 교육 이수 처리
-    public void verify(LocalDateTime now) {
-        if (this.verified) {
-            return;
-        }
-        this.verifiedAt = now;
-        this.verified = true;
-    }
 
     //등급 배지 기준
     public EscortGrade getGrade() {

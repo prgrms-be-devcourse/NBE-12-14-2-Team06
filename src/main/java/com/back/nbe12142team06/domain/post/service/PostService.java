@@ -260,17 +260,16 @@ public class PostService {
         post.startProgress(departedAt);   // escortStartAt 실제값 반영
         post.complete(arrivedAt);       // escortEndAt 실제값 반영 + 상태 COMPLETED
 
-        // 동행인 프로필의 동행 완료 건수 증가.
-        // 엔티티를 읽어 더티체킹으로 갱신하지 않고, DB 에서 원자적으로 증가시키는
-        // 벌크 UPDATE 를 쓴다 (동시 완료 처리 시 lost update 방지).
-        Long escortId = application.getEscort().getId();
-        if (!escortProfileRepository.existsById(escortId)) {
-            throw new NotFoundException(20, "동행 매니저 프로필이 존재하지 않습니다.");
-        }
-        escortProfileRepository.increaseCompletedCount(escortId);
-
         // 재결제 로직
         paymentService.validPayment(userId, post, application, post.getEscortEndAt().plusDays(1).toLocalDate());
-        log.info("[동행 완료] postId={}, escortId={}, userId={}", postId, application.getEscort().getId(), userId);
+
+        // 동행 완료 건수 증가 — clearAutomatically 때문에 반드시 마지막에 호출
+        Long escortId = application.getEscort().getId();
+        int updated = escortProfileRepository.increaseCompletedCount(escortId);
+        if (updated == 0) {
+            throw new NotFoundException(20, "동행 매니저 프로필이 존재하지 않습니다.");
+        }
+
+        log.info("[동행 완료] postId={}, escortId={}, userId={}", postId, escortId, userId);
     }
 }

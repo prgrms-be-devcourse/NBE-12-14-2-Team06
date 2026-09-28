@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -49,6 +50,8 @@ class ApplyCancelReapplyTest {
     private UserRepository userRepository;
     @Autowired
     private EscortProfileRepository escortProfileRepository;
+    @Autowired
+    private TransactionTemplate transactionTemplate;
 
     private Long postId;
     private Long escortId;
@@ -83,8 +86,10 @@ class ApplyCancelReapplyTest {
                 .build());
 
         EscortProfile escortProfile = new EscortProfile(escort, "자기소개", "국민은행", "동행인", "1234567890");
-        escortProfile.verify(LocalDateTime.now());
         escortProfileRepository.save(escortProfile);
+
+        transactionTemplate.executeWithoutResult(status ->
+                escortProfileRepository.verify(escort.getId(), LocalDateTime.now()));
 
         Post post = postRepository.save(Post.builder()
                 .client(client)

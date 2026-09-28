@@ -21,6 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -57,6 +58,9 @@ class ApplicationConcurrencyTest {
 
     @Autowired
     private EscortProgressLogRepository escortProgressLogRepository;
+
+    @Autowired
+    private TransactionTemplate transactionTemplate;
 
     private Long postId;
     private Long escortId;
@@ -101,17 +105,7 @@ class ApplicationConcurrencyTest {
         escort = userRepository.save(escort);
         escortId = escort.getId();
 
-        EscortProfile escortProfile =
-                new EscortProfile(
-                        escort,
-                        "동행인 소개",
-                        "테스트은행",
-                        escort.getName(),
-                        "1234"
-                );
-
-        escortProfile.verify(LocalDateTime.now());
-        escortProfileRepository.save(escortProfile);
+        saveVerifiedProfile(escort, "1234");
 
         Post post = Post.builder()
                 .client(client)
@@ -136,6 +130,15 @@ class ApplicationConcurrencyTest {
 
         postId = postRepository.save(post).getId();
     }
+
+    private void saveVerifiedProfile(User escort, String accountNumber) {
+        escortProfileRepository.save(
+                new EscortProfile(escort, "동행인 소개", "테스트은행", escort.getName(), accountNumber));
+
+        transactionTemplate.executeWithoutResult(status ->
+                escortProfileRepository.verify(escort.getId(), LocalDateTime.now()));
+    }
+
 
     @Test
     @DisplayName("동일한 동행인이 같은 공고에 동시에 지원")
@@ -218,16 +221,7 @@ class ApplicationConcurrencyTest {
 
         escort2 = userRepository.save(escort2);
 
-        EscortProfile escortProfile2 = new EscortProfile(
-                escort2,
-                "동행인2 소개",
-                "테스트은행",
-                escort2.getName(),
-                "5678"
-        );
-
-        escortProfile2.verify(LocalDateTime.now());
-        escortProfileRepository.save(escortProfile2);
+        saveVerifiedProfile(escort2, "5678");
 
         // 기존 동행인 조회
         User escort1 = userRepository.findById(escortId)
