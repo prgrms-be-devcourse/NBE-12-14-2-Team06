@@ -34,6 +34,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -45,7 +46,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * [통합] 가입부터 정산까지 실제 HTTP 요청으로 전 과정을 검증한다.
@@ -82,6 +84,8 @@ class EscortFlowIntegrationTest {
     private PaymentRepository paymentRepository;
     @Autowired
     private SettlementRepository settlementRepository;
+    @Autowired
+    private TransactionTemplate transactionTemplate;
 
     @MockitoBean
     private TossPaymentClient tossPaymentClient;
@@ -184,10 +188,9 @@ class EscortFlowIntegrationTest {
     // 동행인 프로필의 verified 를 리포지토리로 직접 켠다. 승인/자동거절, 권한 경계처럼
     // 교육 이수 자체가 초점이 아닌 시나리오에서, 매번 영상 시청 플로우를 반복하지
     // 않기 위한 지름길이다. 교육 이수 플로우 자체는 시나리오 1에서 실제 API로 검증한다.
-    private void verifyEscortDirectly(Long escortUserId) {
-        EscortProfile profile = escortProfileRepository.findById(escortUserId).orElseThrow();
-        profile.verify(LocalDateTime.now());
-        escortProfileRepository.saveAndFlush(profile);
+    private void verifyEscortDirectly(Long escortId) {
+        transactionTemplate.executeWithoutResult(status ->
+                escortProfileRepository.verify(escortId, LocalDateTime.now()));
     }
 
     private String postJson(LocalDateTime recruitStartAt, LocalDateTime recruitEndAt,

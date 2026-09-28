@@ -1,5 +1,6 @@
 package com.back.nbe12142team06.domain.user.service;
 
+import com.back.nbe12142team06.DatabaseCleaner;
 import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpRequest;
 import com.back.nbe12142team06.domain.user.dto.user.UserProfileUpdateRequest;
 import com.back.nbe12142team06.domain.user.entity.User;
@@ -9,6 +10,7 @@ import com.back.nbe12142team06.domain.user.repository.UserRepository;
 import com.back.nbe12142team06.global.exception.DuplicatedException;
 import com.back.nbe12142team06.global.exception.UnauthorizedException;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,9 +42,18 @@ class UserConcurrencyTest {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private DatabaseCleaner databaseCleaner;
+
+    @BeforeEach
+    void setUp() {
+        databaseCleaner.clean();
+    }
+
+
     @AfterEach
     void tearDown() {
-        this.userRepository.deleteAllInBatch();
+        databaseCleaner.clean();
     }
 
     // username만 같고 email, phoneNum은 스레드마다 다르게

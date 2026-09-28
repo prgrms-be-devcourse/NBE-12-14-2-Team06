@@ -18,7 +18,6 @@ import com.back.nbe12142team06.domain.post.service.PostService;
 import com.back.nbe12142team06.domain.ride.entity.RideSelect;
 import com.back.nbe12142team06.domain.settlement.entity.Settlement;
 import com.back.nbe12142team06.domain.settlement.repository.SettlementRepository;
-import com.back.nbe12142team06.domain.settlement.service.SettlementService;
 import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpRequest;
 import com.back.nbe12142team06.domain.user.entity.EscortProfile;
 import com.back.nbe12142team06.domain.user.entity.User;
@@ -26,9 +25,7 @@ import com.back.nbe12142team06.domain.user.enums.Gender;
 import com.back.nbe12142team06.domain.user.enums.Role;
 import com.back.nbe12142team06.domain.user.repository.EscortProfileRepository;
 import com.back.nbe12142team06.domain.user.service.UserService;
-import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.Cookie;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -45,9 +42,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 @SpringBootTest
@@ -126,7 +122,7 @@ class NoShowPenaltySettlementTest {
 
         EscortProfile escortProfile1 = new EscortProfile(escort, "하이", "오픈은행", escort.getName(), "000-1234567-000");
         escortProfileRepository.save(escortProfile1);
-        escortProfile1.verify(LocalDateTime.now()); // 교육 이수 처리 (지원 가능 상태)
+        this.escortProfileRepository.verify(escortProfile1.getUserId(), LocalDateTime.now()); // 교육 이수 처리 (지원 가능 상태)
 
         String title = "정형외과 동행 구합니다";
         String content = "무릎 수술 후 검진 예약이 있어 동행인이 필요합니다.";
@@ -211,7 +207,7 @@ class NoShowPenaltySettlementTest {
     @DisplayName("[NoShowPenaltyService] 지원 승인 후 취소 패널티")
     void noShow() {
         // 패널티 적용 되었는지 검증
-        EscortProfile escortProfile = escortProfileRepository.findByIdWithUser(escort.getId()).get();
+        EscortProfile escortProfile = escortProfileRepository.findById(escort.getId()).get();
         assertEquals(1, escortProfile.getNoShowCount());
 
         // 공고 결제 완료 처리
