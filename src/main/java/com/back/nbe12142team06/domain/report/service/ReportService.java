@@ -2,6 +2,7 @@ package com.back.nbe12142team06.domain.report.service;
 
 import com.back.nbe12142team06.domain.application.entity.Application;
 import com.back.nbe12142team06.domain.application.repository.ApplicationRepository;
+import com.back.nbe12142team06.domain.report.dto.ReportDto;
 import com.back.nbe12142team06.domain.report.dto.ReportWriteRequest;
 import com.back.nbe12142team06.domain.report.entity.Report;
 import com.back.nbe12142team06.domain.report.repository.ReportRepository;
@@ -69,7 +70,7 @@ public class ReportService {
     }
 
     // 진료 보고서 조회 (클래스의 readOnly 적용)
-    public Report findByApplicationId(Long applicationId, Long actorId) {
+    public ReportDto findByApplicationId(Long applicationId, Long actorId) {
 
         Application application = applicationRepository.findById(applicationId)
                 .orElseThrow(() -> new NotFoundException(1, "존재하지 않는 동행 건입니다."));
@@ -82,7 +83,9 @@ public class ReportService {
             throw new ForbiddenException(2, "본인의 동행 건만 조회할 수 있습니다.");
         }
 
-        return reportRepository.findByApplicationId(applicationId)
+        Report report = reportRepository.findByApplicationId(applicationId)
                 .orElseThrow(() -> new NotFoundException(2, "작성된 보고서가 없습니다."));
+
+        return new ReportDto(report);
     }
 }

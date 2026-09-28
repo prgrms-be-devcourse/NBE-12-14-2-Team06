@@ -9,12 +9,9 @@ export type WriteReportPayload = {
   notes: string;
 };
 
-/** POST 응답(ReportWriteResponse)은 updatedAt 이 없습니다. */
-type ReportWriteResponse = Omit<ReportDto, 'updatedAt'>;
-
-/** 진료 보고서 작성(동행인 전용) — POST /api/v1/applications/{applicationId}/report */
-export async function writeReport(applicationId: number, payload: WriteReportPayload): Promise<ReportWriteResponse> {
-  return api<ReportWriteResponse>(`/api/v1/applications/${applicationId}/report`, {
+/** 진료 보고서 작성(동행인 전용) — POST /api/v1/applications/{applicationId}/report. 작성 응답도 조회와 같은 ReportDto 입니다. */
+export async function writeReport(applicationId: number, payload: WriteReportPayload): Promise<ReportDto> {
+  return api<ReportDto>(`/api/v1/applications/${applicationId}/report`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
