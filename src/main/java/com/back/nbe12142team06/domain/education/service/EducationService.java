@@ -8,6 +8,7 @@ import com.back.nbe12142team06.domain.education.repository.EducationVideoReposit
 import com.back.nbe12142team06.domain.education.repository.WatchProgressLogRepository;
 import com.back.nbe12142team06.domain.user.entity.EscortProfile;
 import com.back.nbe12142team06.domain.user.repository.EscortProfileRepository;
+import com.back.nbe12142team06.domain.user.repository.UserRepository;
 import com.back.nbe12142team06.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,7 @@ public class EducationService {
     private final EducationVideoRepository educationVideoRepository;
     private final EducationProgressRepository educationProgressRepository;
     private final WatchProgressLogRepository watchProgressLogRepository;
+    private final UserRepository userRepository;
     private final Clock clock;
 
     // 시청 기록
@@ -51,7 +53,13 @@ public class EducationService {
 
         // 필수 영상 전부 시청 시 동행인 프로필 신원인증 처리
         if (progress.isCompleted() && isAllRequiredCompleted(escortProfile)) {
-            escortProfile.verify(now);
+            this.escortProfileRepository.verify(userId, now);
+
+            // 벌크 UPDATE는 메모리 객체를 갱신하지 않으므로, 응답용으로 최신 상태를 다시 조회
+            EscortProfile refreshed = this.escortProfileRepository.findById(userId).orElseThrow();
+            return this.educationProgressRepository
+                    .findByEscortProfileAndEducationVideo(refreshed, educationVideo)
+                    .orElseThrow();
         }
 
         return progress;

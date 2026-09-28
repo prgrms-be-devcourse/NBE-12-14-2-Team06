@@ -8,6 +8,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.SQLRestriction;
 
 import java.time.LocalDate;
@@ -62,6 +63,8 @@ public class User extends BaseSoftDeleteTimeEntity {
     private String region;
 
     @Version
+    @ColumnDefault("0")
+    @Column(nullable = false)
     private Long version;
 
     @Builder
