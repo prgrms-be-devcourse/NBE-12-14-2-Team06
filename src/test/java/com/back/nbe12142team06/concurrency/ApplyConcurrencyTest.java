@@ -37,6 +37,13 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 각 스레드가 실제로 자기 트랜잭션을 커밋해야 경쟁 상태가 재현된다.
  * (테스트에 @Transactional 을 붙이면 모든 스레드가 같은 트랜잭션/커넥션을 공유하게 되어
  * 경쟁 자체가 발생하지 않는다.)
+ *
+ * dev 의 ApplicationConcurrencyTest#concurrentApply 와 시나리오(같은 동행인의 동시 지원)는
+ * 동일하지만 검증 대상이 다르다. dev 쪽은 apply() 안에서 Post 를 비관적 쓰기 락
+ * (findByIdWithLock) 으로 조회해 지원 요청 자체를 직렬화하는 것을 검증하는 반면,
+ * 이 테스트는 Application 의 (active_post_id, escort_id) unique 제약이 최종 방어선으로
+ * 동작해 중복 저장을 막는다는 것을 검증한다. 두 테스트는 서로 다른 안전장치를 검증하므로
+ * 둘 다 유지한다.
  */
 @SpringBootTest
 @ActiveProfiles("test")

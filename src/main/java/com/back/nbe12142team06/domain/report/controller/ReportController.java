@@ -29,7 +29,7 @@ public class ReportController {
             description = "특정 동행 건의 진료 보고서를 작성하고 저장된 내용을 기반으로 AI 요약을 생성합니다."
     )
     @PostMapping("/{applicationId}/report")
-    public RsData<ReportWriteResponse> write(
+    public RsData<ReportDto> write(
             @PathVariable Long applicationId,
             @AuthenticationPrincipal SecurityUser actor,
             @RequestBody @Valid ReportWriteRequest request) {
@@ -44,7 +44,7 @@ public class ReportController {
         return new RsData<>(
                 "201-1",
                 "%d번 동행 건의 보고서가 등록되었습니다.".formatted(applicationId),
-                new ReportWriteResponse(reportService.findByApplicationId(applicationId, actor.getId()))
+                reportService.findByApplicationId(applicationId, actor.getId())
         );
     }
 
@@ -57,9 +57,8 @@ public class ReportController {
             @PathVariable Long applicationId,
             @AuthenticationPrincipal SecurityUser actor) {
 
-        ReportDto reportDto = new ReportDto(
-                reportService.findByApplicationId(applicationId, actor.getId())
-        );
+        ReportDto reportDto =
+                reportService.findByApplicationId(applicationId, actor.getId());
 
         return new RsData<>("200-1", "보고서 조회 성공", reportDto);
     }

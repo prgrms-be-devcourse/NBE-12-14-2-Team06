@@ -45,7 +45,7 @@ public class ApplicationService {
     public ApplicationApplyResponse apply(Long postId, Long userId) {
 
 
-        Post post = postRepository.findById(postId).orElseThrow(
+        Post post = postRepository.findByIdWithLock(postId).orElseThrow(
                 () -> new NotFoundException("공고를 찾을 수 없습니다."));
 
         // 모집 중인 공고만 지원 가능
@@ -106,14 +106,11 @@ public class ApplicationService {
         Application application = applicationRepository.findById(applicationId).orElseThrow(
                 () -> new NotFoundException("지원을 찾을 수 없습니다."));
 
-        // application.getPost() 로 얻은 프록시를 그대로 쓰면, 같은 공고에 대한 두 승인
-        // 요청이 서로 다른 스냅샷(둘 다 OPEN)을 보고 동시에 통과해버린다.
-        // 비관적 쓰기 락으로 다시 조회해 두 번째 요청을 첫 번째 트랜잭션이 커밋할 때까지
-        // 대기시키면, 커밋 후에는 갱신된 상태(MATCHED)를 보고 아래의 기존 InvalidException 을
-        // 정상적으로 던지게 된다. 그러지 않으면 (post_id, escort_id) 유니크 제약 위반이나
-        // 락 대기 시간 초과 같은 저수준 예외가 그대로 새어나간다.
-        Post post = postRepository.findByIdForUpdate(application.getPost().getId())
-                .orElseThrow(() -> new NotFoundException("공고를 찾을 수 없습니다."));
+        Long postId = application.getPost().getId();
+
+        Post post = postRepository.findByIdWithLock(postId).orElseThrow(
+                () -> new NotFoundException("공고를 찾을 수 없습니다."));
+
         User escort = application.getEscort();
 
         // 본인 공고에 들어온 지원만 승인 가능
@@ -261,7 +258,7 @@ public class ApplicationService {
     @Transactional
     public void updateProgress(Long applicationId, Long userId, EscortProgress progress) {
 
-        Application application = applicationRepository.findById(applicationId)
+        Application application = applicationRepository.findByIdWithLock(applicationId)
                 .orElseThrow(() -> new NotFoundException("지원을 찾을 수 없습니다."));
 
         // 본인의 동행 진행 상태만 변경 가능

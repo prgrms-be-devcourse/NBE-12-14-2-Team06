@@ -21,6 +21,25 @@ export type EscortReport = {
   submittedAt: string;
 };
 
+/**
+ * 보고서 작성·조회 화면 "기본 정보" 카드에 들어가는 값 (실제 API 로 채웁니다 — model/mapper.ts).
+ * 의뢰인명은 여기 없습니다. 내 지원 목록(MyApplicationDto)·공고(PostDto) 어느 쪽도 의뢰인 이름을
+ * 내려주지 않아서, 조회 화면에서만 보고서 응답의 ReportDto.clientName 을 씁니다.
+ */
+export type ReportTarget = {
+  applicationId: number;
+  postId: number;
+  title: string;
+  hospitalName: string;
+  /** "2026.09.22(화)" */
+  dateLabel: string;
+  /** 동행 시간 "9:00 ~ 12:10" */
+  workTime: string;
+  hospitalAddress: string;
+  /** 환자 특이사항. 의뢰인이 안 썼으면 "없음" */
+  note: string;
+};
+
 /** 동행 현황 화면 하나 (신청 한 건에 대응). 모의 데이터용 모양 */
 export type EscortCase = {
   /** 내가 신청한 공고(신청 번호) */

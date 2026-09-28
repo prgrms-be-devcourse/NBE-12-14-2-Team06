@@ -32,11 +32,11 @@ function toApplicationStatus(application: MyApplicationDto): ApplicationStatus {
   }
 
   switch (application.postStatus) {
-    case '동행 진행 중':
+    case 'IN_PROGRESS':
       return 'inProgress';
-    case '동행 완료':
+    case 'COMPLETED':
       return 'completed';
-    case '매칭 완료':
+    case 'MATCHED':
     default:
       return 'matched';
   }

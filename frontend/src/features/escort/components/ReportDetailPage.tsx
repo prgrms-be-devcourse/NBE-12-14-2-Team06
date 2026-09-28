@@ -10,8 +10,9 @@ import { useRequireAuth } from '@/features/auth';
 import { StatusLabel } from '@/features/post';
 import { aiSummaryItems, fetchReport, isReportNotFoundError, parseAiSummary, type ReportDto } from '@/features/report';
 import { cn } from '@/lib/cn';
+import { fetchReportTarget } from '../api';
 import { formatDateTime } from '../lib/date';
-import { getEscortCase } from '../model/cases';
+import type { ReportTarget } from '../types';
 
 const CARD = 'rounded-[30px] border border-line bg-white px-6 py-8 shadow-card lg:px-[35px]';
 const TITLE = 'text-2xl leading-6 font-semibold text-brand';
@@ -19,9 +20,12 @@ const MENU_BUTTON = 'flex h-[45px] w-full items-center justify-center gap-2.5 ro
 const MUTED_NOTICE = 'text-sm leading-6 font-medium text-brand-muted';
 
 type ReportResult =
+  /** 내 동행 건이 아니거나 없는 번호 */
+  | { status: 'noEscort' }
+  /** 동행 건은 있는데 보고서를 아직 안 썼을 때 */
   | { status: 'notFound' }
   | { status: 'error'; message: string }
-  | { status: 'ready'; report: ReportDto };
+  | { status: 'ready'; target: ReportTarget; report: ReportDto };
 
 /** 여러 줄 텍스트를 InfoRow 안에서 줄 단위로 보여줍니다. */
 function MultilineText({ text }: { text: string }) {
@@ -37,41 +41,56 @@ function MultilineText({ text }: { text: string }) {
 /**
  * 동행 보고서 상세 — Figma 동행 매니저_보고서 조회 276:845
  *
- * 진료 내용은 GET /api/v1/applications/{applicationId}/report 로 가져옵니다.
- * 공고 정보·동행인 정보는 아직 연결 전이라 모의 데이터(model/cases.ts)를 그대로 씁니다.
+ * 진료 내용은 GET /api/v1/applications/{applicationId}/report,
+ * 기본 정보(공고·동행 일시)는 api.ts 의 fetchReportTarget 으로 가져옵니다.
  */
 export default function ReportDetailPage() {
   const { loading: authLoading, user } = useRequireAuth('ESCORT');
-  const { applicationId } = useParams<{ applicationId: string }>();
-  const escort = getEscortCase(Number(applicationId));
-  const targetApplicationId = escort?.applicationId;
+  const params = useParams<{ applicationId: string }>();
+  const applicationId = Number(params.applicationId);
 
   const [result, setResult] = useState<{ key?: number; data?: ReportResult }>({});
 
   useEffect(() => {
-    if (targetApplicationId === undefined) return;
+    if (!Number.isFinite(applicationId)) return;
     let ignore = false;
 
-    fetchReport(targetApplicationId)
-      .then((report) => {
-        if (!ignore) setResult({ key: targetApplicationId, data: { status: 'ready', report } });
+    // 보고서 조회 실패는 값으로 받아 둡니다. "내 동행 건인지"를 먼저 판정해야
+    // 없는 번호·남의 건에서 보고서 쪽 오류 문구가 대신 뜨지 않습니다.
+    const reportOutcome = fetchReport(applicationId).then(
+      (report) => ({ report }),
+      (error: unknown) => ({ error }),
+    );
+
+    Promise.all([fetchReportTarget(applicationId), reportOutcome])
+      .then(([target, outcome]) => {
+        if (ignore) return;
+        let data: ReportResult;
+        if (!target) {
+          data = { status: 'noEscort' };
+        } else if ('error' in outcome) {
+          data = isReportNotFoundError(outcome.error)
+            ? { status: 'notFound' }
+            : { status: 'error', message: outcome.error instanceof Error ? outcome.error.message : '보고서를 불러오지 못했습니다.' };
+        } else {
+          data = { status: 'ready', target, report: outcome.report };
+        }
+        setResult({ key: applicationId, data });
       })
       .catch((error: unknown) => {
         if (ignore) return;
         setResult({
-          key: targetApplicationId,
-          data: isReportNotFoundError(error)
-            ? { status: 'notFound' }
-            : { status: 'error', message: error instanceof Error ? error.message : '보고서를 불러오지 못했습니다.' },
+          key: applicationId,
+          data: { status: 'error', message: error instanceof Error ? error.message : '보고서를 불러오지 못했습니다.' },
         });
       });
 
     return () => {
       ignore = true;
     };
-  }, [targetApplicationId]);
+  }, [applicationId]);
 
-  const state = result.key === targetApplicationId ? result.data : undefined;
+  const state = result.key === applicationId ? result.data : undefined;
 
   if (authLoading) {
     return (
@@ -84,17 +103,6 @@ export default function ReportDetailPage() {
   }
   if (!user) return null;
 
-  if (!escort) {
-    return (
-      <AppShell>
-        <section className="bg-white py-[100px] text-center">
-          <p className="text-xl font-semibold text-brand">동행 정보를 찾을 수 없습니다.</p>
-          <Link href="/mypage/applications" className={cn(MENU_BUTTON, 'mx-auto mt-8 h-14 max-w-60')}>신청 목록으로</Link>
-        </section>
-      </AppShell>
-    );
-  }
-
   if (!state) {
     return (
       <AppShell>
@@ -105,12 +113,23 @@ export default function ReportDetailPage() {
     );
   }
 
+  if (state.status === 'noEscort') {
+    return (
+      <AppShell>
+        <section className="bg-white py-[100px] text-center">
+          <p className="text-xl font-semibold text-brand">동행 정보를 찾을 수 없습니다.</p>
+          <Link href="/mypage/applications" className={cn(MENU_BUTTON, 'mx-auto mt-8 h-14 w-60')}>신청 목록으로</Link>
+        </section>
+      </AppShell>
+    );
+  }
+
   if (state.status === 'notFound') {
     return (
       <AppShell>
         <section className="bg-white py-[100px] text-center">
           <p className="text-xl font-semibold text-brand">아직 보고서가 작성되지 않았습니다.</p>
-          <Link href={`/escort/${escort.applicationId}`} className={cn(MENU_BUTTON, 'mx-auto mt-8 h-14 max-w-60')}>동행 내역으로 돌아가기</Link>
+          <Link href={`/escort/${applicationId}`} className={cn(MENU_BUTTON, 'mx-auto mt-8 h-14 max-w-60')}>동행 내역으로 돌아가기</Link>
         </section>
       </AppShell>
     );
@@ -121,12 +140,13 @@ export default function ReportDetailPage() {
       <AppShell>
         <section className="bg-white py-[100px] text-center">
           <p role="alert" className="text-xl font-semibold text-brand">{state.message}</p>
-          <Link href={`/escort/${escort.applicationId}`} className={cn(MENU_BUTTON, 'mx-auto mt-8 h-14 w-60')}>동행 내역으로 돌아가기</Link>
+          <Link href={`/escort/${applicationId}`} className={cn(MENU_BUTTON, 'mx-auto mt-8 h-14 w-60')}>동행 내역으로 돌아가기</Link>
         </section>
       </AppShell>
     );
   }
 
+  const escort = state.target;
   const report = state.report;
   const aiSummary = parseAiSummary(report.aiSummary);
   const summaryItems = aiSummary ? aiSummaryItems(aiSummary) : [];
@@ -149,8 +169,9 @@ export default function ReportDetailPage() {
                     <InfoRow label="동행시간" labelWidth={92}>{escort.workTime}</InfoRow>
                   </div>
                   <div aria-hidden="true" className="hidden self-center bg-[#e6e8ec] opacity-50 lg:block lg:h-40" />
+                  {/* 의뢰인명만 보고서 응답에서 옵니다 — 다른 줄과 출처가 다릅니다 (types.ts 의 ReportTarget 주석 참고). */}
                   <div className="flex flex-col gap-[3px]">
-                    <InfoRow label="의뢰인명" labelWidth={92}>{escort.clientName}</InfoRow>
+                    <InfoRow label="의뢰인명" labelWidth={92}>{report.clientName}</InfoRow>
                     <InfoRow label="병원 주소" labelWidth={92}>{escort.hospitalAddress}</InfoRow>
                     <InfoRow label="특이사항" labelWidth={92}>{escort.note}</InfoRow>
                   </div>
