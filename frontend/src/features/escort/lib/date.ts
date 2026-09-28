@@ -8,12 +8,29 @@ function parseDateTime(value: string): Date {
   return new Date(value.replace(/(\.\d{3})\d+/, '$1'));
 }
 
-/** "2026.09.22(화) 오후 12:30" */
-export function formatDateTime(value: string): string {
+/** "2026.09.22(화)" */
+export function formatDotDate(value: string): string {
   const date = parseDateTime(value);
   const mm = String(date.getMonth() + 1).padStart(2, '0');
   const dd = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}.${mm}.${dd}(${WEEKDAYS[date.getDay()]})`;
+}
+
+/** "2026.09.22(화) 오후 12:30" */
+export function formatDateTime(value: string): string {
+  const date = parseDateTime(value);
   const hour = date.getHours();
   const minute = String(date.getMinutes()).padStart(2, '0');
-  return `${date.getFullYear()}.${mm}.${dd}(${WEEKDAYS[date.getDay()]}) ${hour < 12 ? '오전' : '오후'} ${hour % 12 || 12}:${minute}`;
+  return `${formatDotDate(value)} ${hour < 12 ? '오전' : '오후'} ${hour % 12 || 12}:${minute}`;
+}
+
+/** "9:00 ~ 12:10" (동행 시간대) */
+export function formatTimeRange(start: string, end: string): string {
+  return `${formatClock(start)} ~ ${formatClock(end)}`;
+}
+
+/** "9:00" */
+function formatClock(value: string): string {
+  const date = parseDateTime(value);
+  return `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
 }

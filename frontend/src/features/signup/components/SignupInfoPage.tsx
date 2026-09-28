@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useRef, type ChangeEvent, type FormEvent } from 'react';
+import { useEffect, useRef, type ChangeEvent, type FormEvent, type MouseEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/layout';
 import { Container, SectionHeading } from '@/components/ui';
+import { checkEmailAvailable, checkUsernameAvailable } from '../api';
+import { useDuplicateCheck, type DuplicateCheckMessage } from '../hooks/useDuplicateCheck';
 import { useSignupRole } from '../hooks/useSignupRole';
 import { BANKS, REGIONS } from '../model';
 import { useSignup } from '../state/SignupContext';
@@ -29,6 +31,19 @@ const ACCOUNT_FIELD = 'h-[47px]!';
 const TODAY = new Date().toLocaleDateString('sv-SE');
 const GRID = 'mx-auto grid w-full max-w-[998px] gap-x-8 gap-y-[21px] lg:grid-cols-2';
 
+/** 중복 확인 결과 한 줄 (통과는 차분한 색, 실패는 빨간색) */
+function CheckMessage({ message }: { message: DuplicateCheckMessage | null }) {
+  if (!message) return null;
+  return (
+    <p
+      role={message.ok ? 'status' : 'alert'}
+      className={`px-4 text-sm leading-5 font-medium ${message.ok ? 'text-brand' : 'text-[#b91d1d]'}`}
+    >
+      {message.text}
+    </p>
+  );
+}
+
 /**
  * 회원가입 2단계(정보 입력) — Figma 공통_회원가입_의뢰인(정보 입력) 564:17746
  *                              · 공통_회원가입_동행 매니저(정보 입력) 564:17621
@@ -39,8 +54,28 @@ export default function SignupInfoPage() {
   const router = useRouter();
   const role = useSignupRole();
   // 입력값은 3·4단계와 공유하고, 이전 단계로 돌아와도 유지됩니다.
-  const { values, setValues } = useSignup();
+  const { values, setValues, verified, setVerified } = useSignup();
   const confirmRef = useRef<HTMLInputElement>(null);
+  const usernameRef = useRef<HTMLInputElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+
+  // 아이디·이메일은 중복 확인을 통과해야 다음 단계로 넘어갑니다.
+  const usernameCheck = useDuplicateCheck({
+    inputRef: usernameRef,
+    value: values.username,
+    verifiedValue: verified.username,
+    onVerified: (username) => setVerified((prev) => ({ ...prev, username })),
+    check: checkUsernameAvailable,
+    label: '아이디',
+  });
+  const emailCheck = useDuplicateCheck({
+    inputRef: emailRef,
+    value: values.email,
+    verifiedValue: verified.email,
+    onVerified: (email) => setVerified((prev) => ({ ...prev, email })),
+    check: checkEmailAvailable,
+    label: '이메일',
+  });
 
   const handleChange =
     (key: keyof SignupFormValues) =>
@@ -53,6 +88,19 @@ export default function SignupInfoPage() {
     const mismatch = values.passwordConfirm !== '' && values.password !== values.passwordConfirm;
     confirmRef.current?.setCustomValidity(mismatch ? '비밀번호가 일치하지 않습니다.' : '');
   }, [values.password, values.passwordConfirm]);
+
+  const unverified = [!usernameCheck.verified && '아이디', !emailCheck.verified && '이메일'].filter(
+    (label) => label !== false,
+  );
+
+  // 중복 확인이 남아 있으면 "다음"은 흐리게 보이고, 누르면 팝업으로 알려 줍니다.
+  // 브라우저 기본 검사보다 먼저 돌아야 해서 제출(onSubmit)이 아니라 클릭에서 막습니다.
+  const handleNextClick = (event: MouseEvent<HTMLButtonElement>) => {
+    if (unverified.length === 0) return;
+    event.preventDefault();
+    window.alert(`${unverified.join(', ')} 중복 확인을 해주세요.`);
+    (usernameCheck.verified ? emailRef : usernameRef).current?.focus();
+  };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -113,6 +161,7 @@ export default function SignupInfoPage() {
                   <FormField label="아이디*" htmlFor="signup-username" className="lg:col-span-2">
                     <div className="flex gap-2.5 lg:max-w-[485px]">
                       <TextInput
+                        ref={usernameRef}
                         id="signup-username"
                         name="username"
                         autoComplete="username"
@@ -123,8 +172,9 @@ export default function SignupInfoPage() {
                         value={values.username}
                         onChange={handleChange('username')}
                       />
-                      <CheckButton />
+                      <CheckButton onClick={usernameCheck.handleCheck} disabled={usernameCheck.checking} />
                     </div>
+                    <CheckMessage message={usernameCheck.message} />
                   </FormField>
 
                   <FormField label="비밀번호*" htmlFor="signup-password">
@@ -157,6 +207,7 @@ export default function SignupInfoPage() {
                     {/* 디자인상 이 줄은 485px 로 열(483px)보다 살짝 넓습니다 */}
                     <div className="flex gap-2.5 lg:w-[485px]">
                       <TextInput
+                        ref={emailRef}
                         id="signup-email"
                         name="email"
                         type="email"
@@ -166,8 +217,9 @@ export default function SignupInfoPage() {
                         value={values.email}
                         onChange={handleChange('email')}
                       />
-                      <CheckButton />
+                      <CheckButton onClick={emailCheck.handleCheck} disabled={emailCheck.checking} />
                     </div>
+                    <CheckMessage message={emailCheck.message} />
                   </FormField>
                   <FormField label="성별*" labelId="signup-gender-label" className="lg:self-center">
                     <GenderRadioGroup
@@ -334,7 +386,9 @@ export default function SignupInfoPage() {
 
             <div className="flex w-full gap-2.5">
               <StepNavButton href="/signup">이전</StepNavButton>
-              <StepNavButton variant="solid">다음</StepNavButton>
+              <StepNavButton variant="solid" inactive={unverified.length > 0} onClick={handleNextClick}>
+                다음
+              </StepNavButton>
             </div>
           </form>
         </Container>

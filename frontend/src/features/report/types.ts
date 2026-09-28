@@ -6,6 +6,7 @@
 export type ReportDto = {
   id: number;
   applicationId: number;
+  clientName: string;
   title: string;
   department: string;
   purpose: string;

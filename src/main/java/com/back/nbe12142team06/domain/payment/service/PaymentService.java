@@ -68,7 +68,9 @@ public class PaymentService {
             throw new InternalServerErrorException(10, "결제 승인 도중 서버 에러가 발생했습니다.");
         }
 
-        log.info("결제 승인 성공, %s".formatted(response));
+        // [로그 정리] 토스 응답 객체 전체(결제·카드 정보 포함 가능)가 로그에 남아서 주석 처리하고, 아래에 ID 만 남기도록 대체
+        // log.info("결제 승인 성공, %s".formatted(response));
+        log.info("결제 승인 성공 - paymentId: {}, userId: {}", paymentId, userId);
 
         return payment;
     }
@@ -112,7 +114,9 @@ public class PaymentService {
             throw new InternalServerErrorException(11, "결제 취소 도중 서버 에러가 발생했습니다.");
         }
 
-        log.info("결제 취소 성공, %s".formatted(response));
+        // [로그 정리] 토스 응답 객체 전체(결제·카드 정보 포함 가능)가 로그에 남아서 주석 처리하고, 아래에 ID 만 남기도록 대체
+        // log.info("결제 취소 성공, %s".formatted(response));
+        log.info("결제 취소 성공 - paymentId: {}, cancelAmount: {}", payment.getId(), cancelAmount);
 
         return payment;
     }

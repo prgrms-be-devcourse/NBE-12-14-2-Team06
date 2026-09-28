@@ -237,7 +237,7 @@ public class UserServiceTest {
                         "1234",
                         "user@test.test",
                         "유저1",
-                        Role.CLIENT,
+                        Role.ESCORT,
                         Gender.MALE,
                         LocalDate.of(1990, 5, 6),
                         "010-1234-5678",

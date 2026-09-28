@@ -9,11 +9,14 @@ import {
   type SetStateAction,
 } from 'react';
 import { INITIAL_FORM_VALUES } from '../model';
-import type { SignupFormValues } from '../types';
+import type { SignupFormValues, VerifiedValues } from '../types';
 
 type SignupContextValue = {
   values: SignupFormValues;
   setValues: Dispatch<SetStateAction<SignupFormValues>>;
+  /** 중복 확인을 통과한 값. 약관 단계에서 돌아와도 다시 확인하지 않도록 여기에 둡니다. */
+  verified: VerifiedValues;
+  setVerified: Dispatch<SetStateAction<VerifiedValues>>;
 };
 
 const SignupContext = createContext<SignupContextValue | null>(null);
@@ -24,7 +27,8 @@ const SignupContext = createContext<SignupContextValue | null>(null);
  */
 export function SignupProvider({ children }: { children: ReactNode }) {
   const [values, setValues] = useState<SignupFormValues>(INITIAL_FORM_VALUES);
-  return <SignupContext value={{ values, setValues }}>{children}</SignupContext>;
+  const [verified, setVerified] = useState<VerifiedValues>({ username: '', email: '' });
+  return <SignupContext value={{ values, setValues, verified, setVerified }}>{children}</SignupContext>;
 }
 
 export function useSignup() {

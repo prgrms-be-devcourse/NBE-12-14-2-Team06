@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 public record ReportDto(
         Long id,
         Long applicationId,
+        String clientName,
         String title,
         String department,      // 화면에 그대로 쓸 수 있도록 한글 과목명으로 내려준다
         String purpose,
@@ -22,6 +23,7 @@ public record ReportDto(
         this(
                 report.getId(),
                 report.getApplication().getId(),
+                report.getApplication().getPost().getClient().getName(),
                 report.getTitle(),
                 report.getDepartment().getDescription(),
                 report.getPurpose(),
