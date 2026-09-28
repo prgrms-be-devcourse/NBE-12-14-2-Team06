@@ -5,16 +5,17 @@ import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { AppShell } from '@/components/layout';
 import { cn } from '@/lib/cn';
+import { showUnimplemented } from '@/lib/unimplemented';
 
-const MENU = [
-  { label: '회원 관리', href: '/admin/members' },
-  // TODO: 설정 화면은 아직 디자인/구현이 없습니다.
-  { label: '설정', href: '#' },
-];
+const BASE_MENU = [{ label: '회원 관리', href: '/admin/members' }];
+
+// TODO: 설정 화면은 아직 디자인/구현이 없습니다.
+const UNIMPLEMENTED_MENU = [{ label: '설정', href: '#' }];
 
 /** 관리자 페이지 공통 틀 — 왼쪽 메뉴(256px) + 구분선 + 오른쪽 내용 (Figma 571:19169 Main_MyPage) */
 export default function AdminShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const MENU = showUnimplemented() ? [...BASE_MENU, ...UNIMPLEMENTED_MENU] : BASE_MENU;
 
   return (
     <AppShell>

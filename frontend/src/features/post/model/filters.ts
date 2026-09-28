@@ -6,7 +6,7 @@ export const DEFAULT_FILTERS: PostFilters = {
   region: 'all',
   period: 'all',
   pay: 'all',
-  sort: 'latest',
+  sort: 'deadline',
   openOnly: true,
 };
 
@@ -32,6 +32,7 @@ export const PAY_OPTIONS: Option[] = [
 ];
 
 export const SORT_OPTIONS: Option[] = [
+  { value: 'deadline', label: '마감임박 순' },
   { value: 'latest', label: '최신 순' },
   { value: 'payHigh', label: '시급 높은 순' },
   { value: 'payLow', label: '시급 낮은 순' },
@@ -55,7 +56,7 @@ export function filterPosts(posts: PostSummary[], filters: PostFilters): PostSum
 
   if (filters.sort === 'payHigh') return [...filtered].sort((a, b) => b.hourlyPay - a.hourlyPay);
   if (filters.sort === 'payLow') return [...filtered].sort((a, b) => a.hourlyPay - b.hourlyPay);
-  return filtered; // 최신 순 = 목록 순서 그대로
+  return filtered; // deadline · latest = 목록 순서 그대로 (서버가 이미 정렬해서 줌)
 }
 
 export function optionLabel(options: Option[], value: string): string {

@@ -12,6 +12,7 @@ import { fetchPendingPayment, type PaymentDto } from '@/features/payment';
 import { StatusLabel } from '@/features/post';
 import { cn } from '@/lib/cn';
 import { buildKakaoTCallUrl } from '@/lib/kakaoT';
+import { showUnimplemented } from '@/lib/unimplemented';
 import { completeEscort, fetchClientEscortCase } from '../api';
 import { STAGE_VIEW } from '../model/escort';
 import type { ClientEscortCase, ClientEscortStage } from '../types';
@@ -286,7 +287,7 @@ export default function ClientTrackingPage() {
                         {completing ? '처리 중...' : '동행 완료 처리'}
                       </button>
                     )}
-                    {escort.stage === 'arrived' && (
+                    {escort.stage === 'arrived' && showUnimplemented() && (
                       <button type="button" className={cn(BUTTON, SOLID)}>
                         동행 종료
                       </button>
@@ -299,7 +300,7 @@ export default function ClientTrackingPage() {
                     {escort.stage === 'done' && (
                       <>
                         {/* 추가 결제가 남아 있으면 정산부터 할 수 없어서 그때는 숨깁니다. */}
-                        {!pendingPayment && (
+                        {!pendingPayment && showUnimplemented() && (
                           <button type="button" className={cn(BUTTON, SOLID)}>
                             정산하기
                           </button>

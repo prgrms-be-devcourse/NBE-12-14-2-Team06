@@ -1,4 +1,5 @@
 import { cn } from '@/lib/cn';
+import { showUnimplemented } from '@/lib/unimplemented';
 import type { Manager } from '../types';
 import ManagerProfile from './ManagerProfile';
 
@@ -30,9 +31,11 @@ export default function ManagerInfoCard({ manager, size, title }: Props) {
         <ManagerProfile manager={manager} size={size} />
         <div className={cn('flex gap-[4.25px]', large ? 'flex-col gap-2.5 sm:flex-row' : 'flex-col')}>
           {/* TODO: 연락하기(메시지) 기능 연결 */}
-          <button type="button" className={button}>
-            연락하기
-          </button>
+          {showUnimplemented() && (
+            <button type="button" className={button}>
+              연락하기
+            </button>
+          )}
         </div>
       </div>
     </section>

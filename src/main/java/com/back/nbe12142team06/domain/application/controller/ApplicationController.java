@@ -118,6 +118,21 @@ public class ApplicationController {
 
     }
 
+    @Operation(summary = "동행 진행 상태 조회", description = "승인된 동행의 현재 진행 단계를 조회합니다. 동행 매니저 본인 또는 그 공고를 작성한 의뢰인만 볼 수 있습니다.")
+    @GetMapping("/{applicationId}/progress")
+    public RsData<ApplicationProgressResponse> getProgress(
+            @PathVariable Long applicationId,
+            @AuthenticationPrincipal SecurityUser actor) {
+
+        ApplicationProgressResponse response = applicationService.getProgress(applicationId, actor.getId());
+
+        return new RsData<>(
+                "200-1",
+                "동행 진행 상태 조회가 완료되었습니다.",
+                response
+        );
+    }
+
     @Operation(summary = "동행자 프로필 조회", description = "특정 지원의 동행자 프로필 정보를 조회합니다.")
     @GetMapping("/{applicationId}/escort-profile")
     public RsData<ApplicationEscortProfileResponse> profile(

@@ -4,6 +4,7 @@ import type {
   ApplicantDto,
   ApplicationAcceptDto,
   ApplicationApplyDto,
+  ApplicationProgressDto,
   EscortProfileDto,
   EscortProgress,
   MyApplicationDto,
@@ -51,6 +52,14 @@ export function rejectApplication(applicationId: number): Promise<void> {
 /** 지원 취소(동행 매니저 본인) — PATCH /api/v1/applications/{applicationId}/cancel */
 export function cancelApplication(applicationId: number): Promise<void> {
   return apiPatch<void>(`/api/v1/applications/${applicationId}/cancel`);
+}
+
+/**
+ * 동행 진행 상태 조회 — GET /api/v1/applications/{applicationId}/progress
+ * 이 지원의 동행 매니저 본인 또는 그 공고를 작성한 의뢰인만 볼 수 있습니다.
+ */
+export function fetchProgress(applicationId: number): Promise<ApplicationProgressDto> {
+  return api<ApplicationProgressDto>(`/api/v1/applications/${applicationId}/progress`);
 }
 
 /**
