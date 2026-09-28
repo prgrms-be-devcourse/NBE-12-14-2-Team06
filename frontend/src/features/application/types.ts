@@ -38,6 +38,12 @@ export type ApplicationAcceptDto = {
   status: ApplicationStatus;
 };
 
+/** GET /api/v1/applications/{applicationId}/progress 응답 — 이 지원의 현재 동행 진행 단계 */
+export type ApplicationProgressDto = {
+  applicationId: number;
+  progress: EscortProgress;
+};
+
 /** GET /api/v1/applications/{applicationId}/escort-profile 응답 */
 export type EscortProfileDto = {
   escortId: number;

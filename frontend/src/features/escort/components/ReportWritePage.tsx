@@ -8,6 +8,7 @@ import { AppShell } from '@/components/layout';
 import { Container, InfoRow, SectionHeading } from '@/components/ui';
 import { useRequireAuth } from '@/features/auth';
 import { cn } from '@/lib/cn';
+import { showUnimplemented } from '@/lib/unimplemented';
 import { writeReport } from '@/features/report';
 import { fetchReportTarget } from '../api';
 import { DEPARTMENTS } from '../model/departments';
@@ -229,37 +230,40 @@ export default function ReportWritePage() {
                 />
               </div>
 
-              <div>
-                <SectionTitle>첨부 사진</SectionTitle>
-                <p className="mb-2 px-2 text-sm leading-5 font-medium text-brand-muted">사진 첨부는 추후 지원 예정입니다. 지금 선택한 사진은 서버로 전송되지 않습니다.</p>
-                <div className="flex flex-wrap items-center gap-2">
-                  <label className="flex h-[120px] w-full cursor-pointer flex-col items-center justify-center gap-2.5 rounded-[20px] border border-line-soft bg-line-soft px-4 text-center text-base leading-5 text-brand-muted shadow-card sm:w-[calc(100%-320px)] sm:min-w-[220px] lg:w-[378px]">
-                    <Image src="/icons/escort/camera.svg" alt="" width={31.65} height={27.65} />
-                    <span>
-                      사진을 업로드해주세요.
-                      <br />
-                      (선택, 최대 {MAX_PHOTOS}장)
-                    </span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      disabled={photos.length >= MAX_PHOTOS}
-                      onChange={handlePhotos}
-                      className="sr-only"
-                    />
-                  </label>
-                  {Array.from({ length: MAX_PHOTOS }, (_, index) => {
-                    const photo = photos[index];
-                    return photo ? (
-                      // eslint-disable-next-line @next/next/no-img-element -- 업로드 미리보기(blob 주소)
-                      <img key={photo.url} src={photo.url} alt={photo.name} className="size-[72px] rounded-[20px] object-cover shadow-card" />
-                    ) : (
-                      <Image key={index} src="/icons/escort/photo-slot.svg" alt="" width={80} height={80} className="size-[72px]" />
-                    );
-                  })}
+              {/* 서버 업로드 API가 없어서 미리보기만 되고 실제로 전송되지 않는 기능이라, 발표 전까지는 숨깁니다. */}
+              {showUnimplemented() && (
+                <div>
+                  <SectionTitle>첨부 사진</SectionTitle>
+                  <p className="mb-2 px-2 text-sm leading-5 font-medium text-brand-muted">사진 첨부는 추후 지원 예정입니다. 지금 선택한 사진은 서버로 전송되지 않습니다.</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <label className="flex h-[120px] w-full cursor-pointer flex-col items-center justify-center gap-2.5 rounded-[20px] border border-line-soft bg-line-soft px-4 text-center text-base leading-5 text-brand-muted shadow-card sm:w-[calc(100%-320px)] sm:min-w-[220px] lg:w-[378px]">
+                      <Image src="/icons/escort/camera.svg" alt="" width={31.65} height={27.65} />
+                      <span>
+                        사진을 업로드해주세요.
+                        <br />
+                        (선택, 최대 {MAX_PHOTOS}장)
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        disabled={photos.length >= MAX_PHOTOS}
+                        onChange={handlePhotos}
+                        className="sr-only"
+                      />
+                    </label>
+                    {Array.from({ length: MAX_PHOTOS }, (_, index) => {
+                      const photo = photos[index];
+                      return photo ? (
+                        // eslint-disable-next-line @next/next/no-img-element -- 업로드 미리보기(blob 주소)
+                        <img key={photo.url} src={photo.url} alt={photo.name} className="size-[72px] rounded-[20px] object-cover shadow-card" />
+                      ) : (
+                        <Image key={index} src="/icons/escort/photo-slot.svg" alt="" width={80} height={80} className="size-[72px]" />
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {submitError && (
                 <p role="alert" className={ERROR_TEXT}>

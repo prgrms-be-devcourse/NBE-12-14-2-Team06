@@ -10,6 +10,7 @@ import { useRequireAuth } from '@/features/auth';
 import { StatusLabel } from '@/features/post';
 import { aiSummaryItems, fetchReport, isReportNotFoundError, parseAiSummary, type ReportDto } from '@/features/report';
 import { cn } from '@/lib/cn';
+import { showUnimplemented } from '@/lib/unimplemented';
 import { fetchReportTarget } from '../api';
 import { formatDateTime } from '../lib/date';
 import type { ReportTarget } from '../types';
@@ -246,10 +247,12 @@ export default function ReportDetailPage() {
                     동행 내역으로 돌아가기
                   </Link>
                   {/* TODO: 메시지 기능 연결 */}
-                  <button type="button" className={MENU_BUTTON}>
-                    <Image src="/icons/escort/chat.svg" alt="" width={14.3} height={12.3} />
-                    의뢰인에게 메시지 보내기
-                  </button>
+                  {showUnimplemented() && (
+                    <button type="button" className={MENU_BUTTON}>
+                      <Image src="/icons/escort/chat.svg" alt="" width={14.3} height={12.3} />
+                      의뢰인에게 메시지 보내기
+                    </button>
+                  )}
                 </div>
               </section>
             </div>
