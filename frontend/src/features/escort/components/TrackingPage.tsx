@@ -9,6 +9,7 @@ import { Container, InfoRow, SectionHeading } from '@/components/ui';
 import { PROGRESS_ORDER, advanceProgress } from '@/features/application';
 import { useRequireAuth } from '@/features/auth';
 import { StatusLabel } from '@/features/post';
+import { fetchReport } from '@/features/report';
 import { cn } from '@/lib/cn';
 import { showUnimplemented } from '@/lib/unimplemented';
 import { fetchTrackingCase } from '../api';
@@ -43,6 +44,23 @@ export default function TrackingPage() {
   const [doneCount, setDoneCount] = useState<number>();
   const [advancing, setAdvancing] = useState(false);
   const [progressError, setProgressError] = useState<string>();
+  // 보고서를 이미 썼는지. true 면 "보고서 작성" 버튼을 "보고서 조회"로 바꿔서
+  // 이미 작성된 보고서를 또 쓰는 화면으로 들어가지 않게 합니다.
+  const [hasReport, setHasReport] = useState(false);
+
+  useEffect(() => {
+    if (!Number.isFinite(applicationId)) return;
+    let ignore = false;
+
+    // 실패(보고서 미작성 포함)하면 hasReport 는 기본값 false 그대로 둡니다.
+    fetchReport(applicationId)
+      .then(() => !ignore && setHasReport(true))
+      .catch(() => {});
+
+    return () => {
+      ignore = true;
+    };
+  }, [applicationId]);
 
   useEffect(() => {
     if (!Number.isFinite(applicationId)) return;
@@ -206,9 +224,15 @@ export default function TrackingPage() {
                 )}
                 <div className="mt-5 flex flex-col gap-1.5">
                   {finished ? (
-                    <Link href={`/escort/${escort.applicationId}/report/new`} className={cn(BUTTON, 'bg-brand text-white hover:bg-brand-hover')}>
-                      {info.primary}
-                    </Link>
+                    hasReport ? (
+                      <Link href={`/escort/${escort.applicationId}/report`} className={cn(BUTTON, 'bg-brand text-white hover:bg-brand-hover')}>
+                        보고서 조회
+                      </Link>
+                    ) : (
+                      <Link href={`/escort/${escort.applicationId}/report/new`} className={cn(BUTTON, 'bg-brand text-white hover:bg-brand-hover')}>
+                        {info.primary}
+                      </Link>
+                    )
                   ) : (
                     <button type="button" onClick={handleAdvance} disabled={advancing} className={cn(BUTTON, 'bg-brand text-white hover:bg-brand-hover')}>
                       {advancing ? '처리 중…' : nextLabel}

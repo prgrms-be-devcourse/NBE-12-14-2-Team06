@@ -71,6 +71,13 @@ export type ClientEscortCase = {
   applicationId: number;
   postId: number;
   stage: ClientEscortStage;
+  /**
+   * 공고 자체가 "동행 완료" 상태인지 (PostService.escortComplete 가 호출돼야 true 가 됩니다).
+   * stage 는 동행 매니저의 실제 진행 단계(EscortProgress)를 보여주는 값이라 ARRIVED_HOME 에
+   * 도달하면 'done' 이 되지만, Post 는 의뢰인이 "동행 완료 처리"를 눌러야 별도로 완료됩니다.
+   * 리뷰 작성·정산 같은 "Post 완료"가 필요한 기능은 stage 대신 이 값을 봐야 합니다.
+   */
+  postCompleted: boolean;
   title: string;
   hospitalName: string;
   region: string;

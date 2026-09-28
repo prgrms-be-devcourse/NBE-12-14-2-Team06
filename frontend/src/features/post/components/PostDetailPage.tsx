@@ -400,22 +400,8 @@ function PostDetailPageBody({ viewer }: Props) {
               </dl>
             </Section>
 
-            {/* 지원 전 안내 — 지원은 동행 매니저(ESCORT)만 하므로, CLIENT로 로그인했으면(경로와 무관하게) 안 보여줍니다. */}
-            {!applyBlockedByRole && (
-              <section className={cn(CARD, 'flex flex-col gap-[30px] px-6 pt-8 pb-5 lg:min-h-[194px] lg:flex-row lg:px-10')}>
-                <h2 className={cn(CARD_TITLE, 'shrink-0 lg:w-[116px]')}>지원 전 안내</h2>
-                <div className="flex min-h-[134px] flex-1 items-center gap-4 rounded-[30px] border border-line bg-line-soft px-6 lg:px-[17px]">
-                  <Image src="/icons/notice.svg" alt="" width={48} height={101} className="shrink-0" />
-                  <div className="flex flex-col gap-[30px] py-4 pl-2.5 font-semibold text-brand">
-                    <p className="text-lg leading-6 lg:text-2xl">지원 시 개인정보 제공 동의가 필요합니다.</p>
-                    <p className="text-sm leading-6">
-                      지원하시면 의뢰인에게 회원님의 연락처가 제공되며, 매칭을 위한 최소한의 정보만 전달됩니다.
-                      개인정보는 매칭 목적 외에 사용되지 않습니다.
-                    </p>
-                  </div>
-                </div>
-              </section>
-            )}
+            {/* "지원 전 안내"(지원 시 개인정보 제공 동의) 섹션은 보는 사람(비로그인/의뢰인/동행인)에
+                따라 조건을 맞추기가 계속 어긋나서, 요청에 따라 전체 삭제했습니다. */}
 
             {/* 추가 결제 안내 — 실제 동행 시간이 예상보다 길어져 차액이 남았을 때만 */}
             {pendingPayment && (
