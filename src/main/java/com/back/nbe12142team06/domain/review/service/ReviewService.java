@@ -9,7 +9,6 @@ import com.back.nbe12142team06.domain.review.dto.ReviewWriteRequest;
 import com.back.nbe12142team06.domain.review.entity.Review;
 import com.back.nbe12142team06.domain.review.entity.ReviewTag;
 import com.back.nbe12142team06.domain.review.repository.ReviewRepository;
-import com.back.nbe12142team06.domain.user.entity.EscortProfile;
 import com.back.nbe12142team06.domain.user.repository.EscortProfileRepository;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
 import com.back.nbe12142team06.global.exception.DuplicatedException;
@@ -69,10 +68,14 @@ public class ReviewService {
                         .build()
         );
 
-        // 동행 매니저 프로필 평점 반영
-        EscortProfile escortProfile = this.escortProfileRepository.findById(application.getEscort().getId())
-                .orElseThrow(() -> new NotFoundException(3, "동행 매니저 프로필이 존재하지 않습니다."));
-        escortProfile.addRating(request.rating());
+        // 동행 매니저 프로필 평점 반영.
+        // 엔티티를 읽어 더티체킹으로 갱신하면 같은 동행인에게 리뷰가 동시에 여러 건
+        // 작성될 때 lost update 가 발생하므로, DB 에서 원자적으로 증가시키는 벌크 UPDATE 를 쓴다.
+        Long escortId = application.getEscort().getId();
+        if (!escortProfileRepository.existsById(escortId)) {
+            throw new NotFoundException(3, "동행 매니저 프로필이 존재하지 않습니다.");
+        }
+        escortProfileRepository.addRating(escortId, request.rating());
 
         log.info("[리뷰 작성] applicationId={}, clientId={}, rating={}", applicationId, actorId, request.rating());
         return review;

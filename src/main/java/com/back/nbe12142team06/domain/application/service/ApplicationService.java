@@ -45,7 +45,7 @@ public class ApplicationService {
     public ApplicationApplyResponse apply(Long postId, Long userId) {
 
 
-        Post post = postRepository.findById(postId).orElseThrow(
+        Post post = postRepository.findByIdWithLock(postId).orElseThrow(
                 () -> new NotFoundException("공고를 찾을 수 없습니다."));
 
         // 모집 중인 공고만 지원 가능
@@ -106,7 +106,11 @@ public class ApplicationService {
         Application application = applicationRepository.findById(applicationId).orElseThrow(
                 () -> new NotFoundException("지원을 찾을 수 없습니다."));
 
-        Post post = application.getPost();
+        Long postId = application.getPost().getId();
+
+        Post post = postRepository.findByIdWithLock(postId).orElseThrow(
+                () -> new NotFoundException("공고를 찾을 수 없습니다."));
+
         User escort = application.getEscort();
 
         // 본인 공고에 들어온 지원만 승인 가능
@@ -254,7 +258,7 @@ public class ApplicationService {
     @Transactional
     public void updateProgress(Long applicationId, Long userId, EscortProgress progress) {
 
-        Application application = applicationRepository.findById(applicationId)
+        Application application = applicationRepository.findByIdWithLock(applicationId)
                 .orElseThrow(() -> new NotFoundException("지원을 찾을 수 없습니다."));
 
         // 본인의 동행 진행 상태만 변경 가능
