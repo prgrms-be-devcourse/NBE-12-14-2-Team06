@@ -110,7 +110,7 @@ public class ApplicationControllerTest {
         // 테스트용 동행인 프로필 생성 (교육 이수 완료 상태)
         EscortProfile escortProfile = new EscortProfile(escort, "ㅎㅎ", "은행은행", escort.getName(), "1234");
         escortProfileRepository.save(escortProfile);
-        escortProfile.verify(LocalDateTime.now());
+        this.escortProfileRepository.verify(escortProfile.getUserId(), LocalDateTime.now());
 
         // 테스트용 공고
         Post post = Post.builder()
@@ -671,7 +671,7 @@ public class ApplicationControllerTest {
                 "동행인2",
                 "123-0000000-222"
         ));
-        escort2Profile.verify(LocalDateTime.now());
+        this.escortProfileRepository.verify(escort2Profile.getUserId(), LocalDateTime.now());
 
         Cookie escort2AccessTokenCookie = mvc.perform(
                         post("/api/v1/auth/login")

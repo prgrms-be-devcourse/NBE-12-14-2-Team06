@@ -47,7 +47,6 @@ public class ReviewService {
         }
 
         // 매칭이 확정된 동행 건에만 리뷰 작성 가능
-        // || application.getPost().getPostStatus() != PostStatus.COMPLETED 의뢰인이 노쇼 후 리뷰 작성 방지용으로 제안드립니다.
         if (application.getStatus() != ApplicationStatus.ACCEPTED || application.getPost().getPostStatus() != PostStatus.COMPLETED) {
             throw new InvalidException(1, "매칭이 확정된 동행 건에만 리뷰를 작성할 수 있습니다.");
         }
@@ -72,10 +71,10 @@ public class ReviewService {
         // 엔티티를 읽어 더티체킹으로 갱신하면 같은 동행인에게 리뷰가 동시에 여러 건
         // 작성될 때 lost update 가 발생하므로, DB 에서 원자적으로 증가시키는 벌크 UPDATE 를 쓴다.
         Long escortId = application.getEscort().getId();
-        if (!escortProfileRepository.existsById(escortId)) {
+        int updated = escortProfileRepository.addRating(escortId, request.rating());
+        if (updated == 0) {
             throw new NotFoundException(3, "동행 매니저 프로필이 존재하지 않습니다.");
         }
-        escortProfileRepository.addRating(escortId, request.rating());
 
         log.info("[리뷰 작성] applicationId={}, clientId={}, rating={}", applicationId, actorId, request.rating());
         return review;

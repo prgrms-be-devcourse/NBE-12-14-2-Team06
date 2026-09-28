@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.time.LocalDateTime;
 
@@ -63,6 +64,12 @@ public class EscortProfile extends BaseTimeEntity {
     @Column(nullable = false, length = 30)
     private String accountNumber;
 
+    @Version
+    @ColumnDefault("0")
+    @Column(nullable = false)
+    private Long version;
+
+
     public EscortProfile(User user, String intro, String bankName, String accountHolder, String accountNumber){
         this.user = user;
         this.intro = intro;
@@ -92,14 +99,6 @@ public class EscortProfile extends BaseTimeEntity {
         this.noShowCount++;
     }
 
-    // 교육 이수 처리
-    public void verify(LocalDateTime now) {
-        if (this.verified) {
-            return;
-        }
-        this.verifiedAt = now;
-        this.verified = true;
-    }
 
     //등급 배지 기준
     public EscortGrade getGrade() {

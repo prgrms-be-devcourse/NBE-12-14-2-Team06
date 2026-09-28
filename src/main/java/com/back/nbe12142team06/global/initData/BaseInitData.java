@@ -92,7 +92,7 @@ public class BaseInitData {
         createEscortWithProfile("escort02", "정동행", "010-2000-0002", "부산");
         createEscortWithProfile("escort03", "한동행", "010-2000-0003", "경기");
 
-        escort01.verify(LocalDateTime.now());
+        this.escortProfileRepository.verify(escort01.getUserId(), LocalDateTime.now());
 
         createAdmin("admin01", "관리자", "010-3000-0001", "서울");
 
