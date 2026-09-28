@@ -11,6 +11,7 @@ import com.back.nbe12142team06.global.exception.ForbiddenException;
 import com.back.nbe12142team06.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,18 +45,27 @@ public class ReportService {
             throw new DuplicatedException(1, "이미 보고서가 작성된 동행 건입니다.");
         }
 
-        Report savedReport = reportRepository.save(
-                Report.builder()
-                        .application(application)
-                        .title(generateTitle(request))
-                        .department(request.department())
-                        .purpose(request.purpose())
-                        .originContent(request.originContent())
-                        .notes(request.notes())
-                        .build()
-        );
-        log.info("[보고서 작성] reportId={}, applicationId={}, escortId={}", savedReport.getId(), applicationId, actorId);
-        return savedReport;
+        // existsByApplicationId() 체크와 save() 사이는 여전히 check-then-act 라
+        // 동시에 두 요청이 검사를 통과할 수 있다. Report.application_id 의 unique 제약이
+        // 마지막 방어선인데, 여기서 던져지는 DataIntegrityViolationException 은 DB 제약
+        // 이름 등 내부 구조를 그대로 드러내는 저수준 예외라 서비스 계층에서 잡아
+        // 위 체크와 동일한 의미의 DuplicatedException 으로 바꿔 던진다.
+        try {
+            Report savedReport = reportRepository.save(
+                    Report.builder()
+                            .application(application)
+                            .title(generateTitle(request))
+                            .department(request.department())
+                            .purpose(request.purpose())
+                            .originContent(request.originContent())
+                            .notes(request.notes())
+                            .build()
+            );
+            log.info("[보고서 작성] reportId={}, applicationId={}, escortId={}", savedReport.getId(), applicationId, actorId);
+            return savedReport;
+        } catch (DataIntegrityViolationException e) {
+            throw new DuplicatedException(1, "이미 보고서가 작성된 동행 건입니다.", e);
+        }
     }
 
     /**
