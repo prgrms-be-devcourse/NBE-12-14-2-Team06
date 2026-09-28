@@ -1,5 +1,6 @@
 package com.back.nbe12142team06.concurrency;
 
+import com.back.nbe12142team06.DatabaseCleaner;
 import com.back.nbe12142team06.domain.application.entity.Application;
 import com.back.nbe12142team06.domain.application.repository.ApplicationRepository;
 import com.back.nbe12142team06.domain.application.service.ApplicationService;
@@ -11,6 +12,7 @@ import com.back.nbe12142team06.domain.user.enums.Gender;
 import com.back.nbe12142team06.domain.user.enums.Role;
 import com.back.nbe12142team06.domain.user.repository.EscortProfileRepository;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -62,12 +64,15 @@ class ApplyConcurrencyTest {
     private EscortProfileRepository escortProfileRepository;
     @Autowired
     private TransactionTemplate transactionTemplate;
+    @Autowired
+    private DatabaseCleaner databaseCleaner;
 
     private Long postId;
     private Long escortId;
 
     @BeforeEach
     void setUp() {
+        databaseCleaner.clean();
         String tag = String.valueOf(System.nanoTime());
         String phoneTag = tag.substring(tag.length() - 7);
 
@@ -122,6 +127,11 @@ class ApplyConcurrencyTest {
 
         postId = post.getId();
         escortId = escort.getId();
+    }
+
+    @AfterEach
+    void tearDown() {
+        databaseCleaner.clean();
     }
 
     @Test

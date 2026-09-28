@@ -1,14 +1,15 @@
 package com.back.nbe12142team06.concurrency;
 
+import com.back.nbe12142team06.DatabaseCleaner;
 import com.back.nbe12142team06.domain.application.entity.Application;
 import com.back.nbe12142team06.domain.application.enums.ApplicationStatus;
 import com.back.nbe12142team06.domain.application.repository.ApplicationRepository;
 import com.back.nbe12142team06.domain.application.service.ApplicationService;
+import com.back.nbe12142team06.domain.penalty.repository.NoShowPenaltyRepository;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.entity.PostStatus;
 import com.back.nbe12142team06.domain.post.repository.PostRepository;
 import com.back.nbe12142team06.domain.post.service.PostService;
-import com.back.nbe12142team06.domain.penalty.repository.NoShowPenaltyRepository;
 import com.back.nbe12142team06.domain.user.entity.EscortProfile;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Gender;
@@ -22,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -51,6 +53,10 @@ class PostmatchedCancelTest {
     private EscortProfileRepository escortProfileRepository;
     @Autowired
     private NoShowPenaltyRepository noShowPenaltyRepository;
+    @Autowired
+    private TransactionTemplate transactionTemplate;
+    @Autowired
+    private DatabaseCleaner databaseCleaner;
 
     private Long postId;
     private Long escortId;
@@ -59,6 +65,7 @@ class PostmatchedCancelTest {
 
     @BeforeEach
     void setUp() {
+        databaseCleaner.clean();
         String tag = String.valueOf(System.nanoTime());
         String phoneTag = tag.substring(tag.length() - 7);
 
@@ -87,9 +94,10 @@ class PostmatchedCancelTest {
                 .build());
 
         EscortProfile escortProfile = new EscortProfile(escort, "자기소개", "국민은행", "동행인", "1234567890");
-        escortProfile.verify(LocalDateTime.now());
         escortProfileRepository.save(escortProfile);
 
+        transactionTemplate.executeWithoutResult(status ->
+                escortProfileRepository.verify(escort.getId(), LocalDateTime.now()));
         //@BeforeEach에서 Post:MATCHED 상태 + Application:ACCEPTED 상태 하나 미리 세팅
         Post post = postRepository.save(Post.builder()
                 .client(client)
@@ -142,6 +150,7 @@ class PostmatchedCancelTest {
         noShowPenaltyRepository.deleteAll(noShowPenaltyRepository.findByEscortIdAndStatus(escortId));
         applicationRepository.deleteById(applicationId);
         postRepository.deleteById(postId);
+        databaseCleaner.clean();
     }
 
     /**

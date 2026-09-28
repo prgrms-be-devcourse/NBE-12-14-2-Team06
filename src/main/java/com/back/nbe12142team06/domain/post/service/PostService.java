@@ -259,6 +259,13 @@ public class PostService {
                 .map(EscortProgressLog::getOccurredAt)
                 .orElseThrow(() -> new NotFoundException(19, "귀가완료 기록이 없습니다."));
 
+        // 동행 매니저 프로필 존재 확인 — 외부 결제 API(validPayment)보다 먼저 검증한다.
+        // validPayment 는 Toss 부분 취소를 호출하므로, 그 뒤에 실패하면 환불은 되돌릴 수 없다.
+        Long escortId = application.getEscort().getId();
+        if (!escortProfileRepository.existsById(escortId)) {
+            throw new NotFoundException(20, "동행 매니저 프로필이 존재하지 않습니다.");
+        }
+
         post.startProgress(departedAt);   // escortStartAt 실제값 반영
         post.complete(arrivedAt);       // escortEndAt 실제값 반영 + 상태 COMPLETED
 
@@ -266,7 +273,6 @@ public class PostService {
         paymentService.validPayment(userId, post, application, post.getEscortEndAt().plusDays(1).toLocalDate());
 
         // 동행 완료 건수 증가 — clearAutomatically 때문에 반드시 마지막에 호출
-        Long escortId = application.getEscort().getId();
         int updated = escortProfileRepository.increaseCompletedCount(escortId);
         if (updated == 0) {
             throw new NotFoundException(20, "동행 매니저 프로필이 존재하지 않습니다.");

@@ -333,14 +333,14 @@ public class UserService {
     // 접근하면 LazyInitializationException 이 나기 때문입니다.
     @Transactional(readOnly = true)
     public EscortProfile getEscortProfile(Long escortId) {
-        return this.escortProfileRepository.findById(escortId)
+        return this.escortProfileRepository.findByIdWithUser(escortId)
                 .orElseThrow(() -> new NotFoundException("동행 매니저 프로필이 존재하지 않습니다."));
     }
 
     // 동행인 프로필 수정
     @Transactional
     public EscortProfile updateEscortProfile(Long escortId, EscortProfileModifyRequest request) {
-        EscortProfile escortProfile = this.escortProfileRepository.findById(escortId)
+        EscortProfile escortProfile = this.escortProfileRepository.findByIdWithUser(escortId)
                 .orElseThrow(() -> new NotFoundException("동행 매니저 프로필이 존재하지 않습니다."));
 
         escortProfile.updateProfile(request.intro(),  request.bankName(), request.accountHolder(), request.accountNumber());

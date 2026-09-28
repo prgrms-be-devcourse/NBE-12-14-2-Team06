@@ -7,8 +7,13 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 public interface EscortProfileRepository extends JpaRepository<EscortProfile, Long> {
+
+    @Query("select p from EscortProfile p join fetch p.user where p.userId = :userId")
+    Optional<EscortProfile> findByIdWithUser(@Param("userId") Long userId);
+
 
     @Modifying
     @Query("delete from EscortProfile p where p.user.id = :userId")
