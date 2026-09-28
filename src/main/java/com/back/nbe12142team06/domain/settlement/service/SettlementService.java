@@ -58,9 +58,6 @@ public class SettlementService {
         } catch (RuntimeException e) {
             // 금융 결제원 API 요청 에러
             settlementPersistenceService.updateSettlement(settlementId, SettlementStatus.FAILED);
-            // [로그 정리] 개인정보(실명·계좌번호)가 로그에 남아서 주석 처리하고, 아래에 ID 만 남기도록 대체
-            // log.error("정산 실패 - 금융 결제원 API 요청 실패, settlementId: %s, name: %s, account: %s"
-            //         .formatted(settlementId, name, account), e);
             log.error("정산 실패 - 금융 결제원 API 요청 실패, settlementId: {}", settlementId, e);
             throw new InternalServerErrorException(30, "정산에 실패했습니다.");
         }
@@ -98,25 +95,16 @@ public class SettlementService {
                 if (response.res_cnt() >= 1) {
                     settlementPersistenceService.updateSettlement(accountDto.id(), SettlementStatus.COMPLETED);
                     successCount++;
-                    // [로그 정리] 개인정보(실명·계좌번호)가 로그에 남아서 주석 처리하고, 아래에 ID 만 남기도록 대체
-                    // log.info("정산 성공 - settlementId: %s, name: %s, account: %s"
-                    //         .formatted(accountDto.id(), accountDto.name(), accountDto.accountNumber()));
                     log.info("정산 성공 - settlementId: {}", accountDto.id());
                 } else {
                     // 정산 성공 0건
                     settlementPersistenceService.updateSettlement(accountDto.id(), SettlementStatus.FAILED);
                     failedCount++;
-                    // [로그 정리] 개인정보(실명·계좌번호)가 로그에 남아서 주석 처리하고, 아래에 ID 만 남기도록 대체
-                    // log.error("정산 실패 - 금융 결제원 API 요청 성공 0건, settlementId: %s, name: %s, account: %s"
-                    //         .formatted(accountDto.id(), accountDto.name(), accountDto.accountNumber()));
                     log.error("정산 실패 - 금융 결제원 API 요청 성공 0건, settlementId: {}", accountDto.id());
                 }
             } catch (RuntimeException e) {
                 // 금융 결제원 API 요청 에러
                 settlementPersistenceService.updateSettlement(accountDto.id(), SettlementStatus.FAILED);
-                // [로그 정리] 개인정보(실명·계좌번호)가 로그에 남아서 주석 처리하고, 아래에 ID 만 남기도록 대체
-                // log.error("정산 실패 - 금융 결제원 API 요청 실패, settlementId: %s, name: %s, account: %s"
-                //         .formatted(accountDto.id(), accountDto.name(), accountDto.accountNumber()), e);
                 log.error("정산 실패 - 금융 결제원 API 요청 실패, settlementId: {}", accountDto.id(), e);
             }
         }
