@@ -63,6 +63,10 @@ public class EscortProfile extends BaseTimeEntity {
     @Column(nullable = false, length = 30)
     private String accountNumber;
 
+    // 낙관적 락
+    @Version
+    private Long version;
+
     public EscortProfile(User user, String intro, String bankName, String accountHolder, String accountNumber){
         this.user = user;
         this.intro = intro;

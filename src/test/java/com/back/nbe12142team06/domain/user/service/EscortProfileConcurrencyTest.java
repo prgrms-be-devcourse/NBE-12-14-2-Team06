@@ -49,6 +49,7 @@ public class EscortProfileConcurrencyTest {
 
     @AfterEach
     void tearDown() {
+        this.escortProfileRepository.deleteAllInBatch(); // 자식(FK 가진 쪽) 먼저
         this.userRepository.deleteAllInBatch();
     }
 
