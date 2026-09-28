@@ -42,13 +42,13 @@ public class SettlementService {
     // 단일 정산 요청
     public void request(Long userId, Long settlementId) {
 
-        Settlement settlement = settlementPersistenceService.findSettlement(userId, settlementId);
+        AccountDto accountDto = settlementPersistenceService.findAccountDto(userId, settlementId);
 
-        String name = settlement.getEscort().getName();
-        String account = settlementRepository.findAccountByUserId(settlement.getEscort().getId());
+        String name = accountDto.name();
+        String account = accountDto.accountNumber();
 
         try {
-            SettlementClientResponse response = settlementApi(settlement.getPayoutAmount(), name, account);
+            SettlementClientResponse response = settlementApi(accountDto.payoutAmount(), name, account);
             // 정산 완료 상태 변경
             if (response.res_cnt() >= 1) {
                 settlementPersistenceService.updateSettlement(settlementId, SettlementStatus.COMPLETED);

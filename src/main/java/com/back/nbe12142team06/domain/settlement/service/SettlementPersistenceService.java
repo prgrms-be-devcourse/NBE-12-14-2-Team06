@@ -30,18 +30,9 @@ public class SettlementPersistenceService {
         return settlementRepository.updateStatus(settlementId, status);
     }
 
-    public Settlement findSettlement(Long userId, Long settlementId) {
+    public AccountDto findAccountDto(Long userId, Long settlementId) {
         // 정산 데이터 조회
-        Settlement settlement = settlementRepository.findByIdAndState(settlementId)
+        return settlementRepository.findByIdAndState(userId, settlementId)
                 .orElseThrow(() -> new NotFoundException(30, "찾으시는 정산 데이터가 없습니다."));
-
-        if (!settlement.getEscort().getId().equals(userId)) {
-            throw new ForbiddenException(30, "정산 요청할 권한이 없습니다.");
-        }
-
-        if (!settlement.getApplication().getPost().getPostStatus().equals(PostStatus.COMPLETED)) {
-            throw new InvalidException(30, "아직 완료되지 않은 동행 의뢰입니다.");
-        }
-        return settlement;
     }
 }

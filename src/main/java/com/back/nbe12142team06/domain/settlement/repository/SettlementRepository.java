@@ -17,11 +17,14 @@ import java.util.Optional;
 
 public interface SettlementRepository extends JpaRepository<Settlement, Long> {
 
-    @Query("select s " +
+    @Query("select s.id, ep.accountNumber, e.name, s.payoutAmount " +
             "from Settlement s " +
-            "join fetch User u on s.escort=u " +
-            "where s.id=:settlementId and (s.settlementStatus='PENDING' or s.settlementStatus='FAILED')")
-    Optional<Settlement> findByIdAndState(@Param("settlementId") Long settlementId);
+            "join s.escort e " +
+            "join EscortProfile ep on ep.userId=e.id " +
+            "where s.id=:settlementId and e.id=:userId " +
+            "and (s.settlementStatus='PENDING' or s.settlementStatus='FAILED')")
+    Optional<AccountDto> findByIdAndState(@Param("userId") Long userId,
+                                          @Param("settlementId") Long settlementId);
 
     @Query("select s " +
             "from Settlement s " +

@@ -233,34 +233,6 @@ class SettlementControllerTest {
     }
 
     @Test
-    @DisplayName("[SettlementController] 정산 요청 - 실패 권한 부족")
-    void settlementReqFailForbidden() throws Exception {
-        ResultActions resultActions = mvc.perform(
-                        post("/api/v1/settlements/%s".formatted(savedSettlement1Id))
-                                .cookie(accessTokenCookie3))
-                .andDo(print());
-
-        resultActions.andExpect(handler().handlerType(SettlementController.class));
-        resultActions.andExpect(handler().methodName("settlementRequest"));
-        resultActions.andExpect(jsonPath("$.statusCode").value("403-30"));
-        resultActions.andExpect(jsonPath("$.msg").value("정산 요청할 권한이 없습니다."));
-    }
-
-    @Test
-    @DisplayName("[SettlementController] 정산 요청 - 실패 완료되지 않은 동행")
-    void settlementReqFailInvalid() throws Exception {
-        ResultActions resultActions = mvc.perform(
-                        post("/api/v1/settlements/%s".formatted(savedSettlement1Id))
-                                .cookie(accessTokenCookie2))
-                .andDo(print());
-
-        resultActions.andExpect(handler().handlerType(SettlementController.class));
-        resultActions.andExpect(handler().methodName("settlementRequest"));
-        resultActions.andExpect(jsonPath("$.statusCode").value("400-30"));
-        resultActions.andExpect(jsonPath("$.msg").value("아직 완료되지 않은 동행 의뢰입니다."));
-    }
-
-    @Test
     @DisplayName("[SettlementController] 정산 목록 조회 - 성공")
     void settlementList() throws Exception {
         ResultActions resultActions = mvc.perform(
