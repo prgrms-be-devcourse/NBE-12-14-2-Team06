@@ -87,8 +87,8 @@ export type ClientEscortCase = {
   /** 카카오 T 호출 링크에 쓰는 집(픽업)·병원 좌표. 둘 다 있어야 버튼을 보여줍니다. */
   pickupPoint?: RoutePoint;
   hospitalPoint?: RoutePoint;
-  /** 지도 "최근 업데이트" 시각 */
-  updatedAt: string;
+  /** 지도 "최근 업데이트" 시각. 실시간 위치 API 가 없어 실제 데이터에서는 비어 있습니다 */
+  updatedAt?: string;
   manager: Manager;
   timeline: TimelineStep[];
   report?: ClientReport;

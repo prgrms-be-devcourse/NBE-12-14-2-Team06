@@ -1,9 +1,34 @@
-import { fetchApplicants } from '@/features/application';
+import { fetchApplicants, fetchEscortProfile } from '@/features/application';
 import { fetchMyProfile } from '@/features/auth';
-import { fetchPosts, type PostFilters } from '@/features/post';
-import { api } from '@/lib/api';
+import { fetchPostRaw, fetchPosts, type PostFilters } from '@/features/post';
+import { fetchUserReviews } from '@/features/review';
+import { fetchRidesByPost, formatTransport } from '@/features/ride';
+import { api, apiPatch } from '@/lib/api';
+import { toClientEscortCase } from './model/escort';
+import { toManager, topReviewTagLabels } from './model/mapper';
 import { toClientPost } from './model/posts';
-import type { ClientPost } from './types';
+import type { ClientEscortCase, ClientPost } from './types';
+
+/**
+ * 의뢰인 화면(동행 현황·보고서·리뷰)이 함께 쓰는 동행 한 건.
+ * 공고·매니저·이동수단을 한 번에 모읍니다.
+ *
+ * ⚠️ postId 는 화면이 쿼리(?postId=)로 받아 넘깁니다. 백엔드에 "신청 상세 조회"(GET /applications/{id})가
+ *    없어서 applicationId 만으로는 공고를 찾을 수 없기 때문입니다. 그 API 가 생기면 쿼리 의존을 걷어내세요.
+ */
+export async function fetchClientEscortCase(postId: number, applicationId: number): Promise<ClientEscortCase> {
+  const [post, profile, rides] = await Promise.all([
+    fetchPostRaw(postId),
+    fetchEscortProfile(applicationId),
+    fetchRidesByPost(postId),
+  ]);
+
+  // 리뷰는 매니저 카드의 태그 계산용이라, 실패해도 나머지 화면은 그대로 보여줍니다.
+  const reviews = await fetchUserReviews(profile.escortId).catch(() => []);
+  const manager = toManager(profile, topReviewTagLabels(reviews));
+
+  return toClientEscortCase(post, applicationId, manager, formatTransport(rides));
+}
 
 /**
  * 결제를 요청하기 전에 orderId·금액을 서버 세션에 저장합니다.
@@ -37,6 +62,17 @@ export async function fetchConfirmPayment(paymentId: number, request: PaymentCon
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(request),
     });
+}
+
+/**
+ * 동행 완료 처리 — PATCH /api/v1/posts/{postId}/escortComplete (공고를 쓴 의뢰인 본인만)
+ *
+ * 서버가 진행 로그의 출발·귀가 완료 시각으로 공고의 실제 동행 시간을 채우고 상태를 "동행 완료"로 바꾼 뒤,
+ * 동행 매니저의 완료 건수 증가와 정산·재결제까지 이어서 처리합니다.
+ * 동행인이 아직 "귀가 완료"를 찍지 않았으면 404 "귀가완료 기록이 없습니다" 로 거절합니다.
+ */
+export function completeEscort(postId: number): Promise<void> {
+  return apiPatch<void>(`/api/v1/posts/${postId}/escortComplete`);
 }
 
 const PAGE_SIZE = 100;

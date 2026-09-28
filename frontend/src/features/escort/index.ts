@@ -9,4 +9,4 @@ export { default as ReportDetailPage } from './components/ReportDetailPage';
 export { default as StageBar } from './components/tracking/StageBar';
 export { default as MapCard } from './components/tracking/MapCard';
 export { default as Timeline } from './components/tracking/Timeline';
-export type { EscortCase, EscortStage, TimelineStep } from './types';
+export type { EscortStage, TimelineStep, TrackingCase } from './types';

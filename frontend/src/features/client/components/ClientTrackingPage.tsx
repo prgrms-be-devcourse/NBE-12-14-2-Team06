@@ -6,16 +6,14 @@ import { useParams, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { AppShell } from '@/components/layout';
 import { Container, InfoRow, SectionHeading } from '@/components/ui';
-import { fetchEscortProfile } from '@/features/application';
 import { useRequireAuth } from '@/features/auth';
 import { MapCard, StageBar, Timeline, type EscortStage } from '@/features/escort';
-import { fetchPostRaw, StatusLabel } from '@/features/post';
-import { fetchRidesByPost } from '@/features/ride';
-import { fetchUserReviews } from '@/features/review';
+import { fetchPendingPayment, type PaymentDto } from '@/features/payment';
+import { StatusLabel } from '@/features/post';
 import { cn } from '@/lib/cn';
 import { buildKakaoTCallUrl } from '@/lib/kakaoT';
-import { formatTransport, toManager, topReviewTagLabels } from '../model/mapper';
-import { STAGE_VIEW, getClientEscortCase, toClientEscortCase } from '../model/escort';
+import { completeEscort, fetchClientEscortCase } from '../api';
+import { STAGE_VIEW } from '../model/escort';
 import type { ClientEscortCase, ClientEscortStage } from '../types';
 import ManagerInfoCard from './ManagerInfoCard';
 import TripSummary from './TripSummary';
@@ -54,7 +52,7 @@ function summaryRows(escort: ClientEscortCase): { label: string; value: string[]
   }
   rows.push({ label: '이동수단', value: [escort.transport] });
   if (escort.stage === 'ready') {
-    rows.push({ label: '만남 장소', value: [escort.meetingPlace] });
+    rows.push({ label: '만날 장소', value: [escort.meetingPlace] });
   }
   if (escort.stage === 'done') {
     rows.push({ label: '안내 사항', value: ['동행이 정상적으로 완료되었습니다.', '동행인 리뷰를 해주세요.'] });
@@ -80,18 +78,19 @@ export default function ClientTrackingPage() {
   const postId = postIdParam ? Number(postIdParam) : undefined;
 
   const [live, setLive] = useState<{ key?: number; escort?: ClientEscortCase; error?: string }>({});
+  // 동행 완료 처리 뒤 공고 상태·미결제 건을 다시 받아오려고 올립니다.
+  const [reloadKey, setReloadKey] = useState(0);
+  const [completing, setCompleting] = useState(false);
+  const [completeError, setCompleteError] = useState<string>();
+  const [paymentResult, setPaymentResult] = useState<{ key?: number; data: PaymentDto | null }>({ data: null });
 
   useEffect(() => {
     if (postId === undefined) return;
     let ignore = false;
 
-    Promise.all([fetchPostRaw(postId), fetchEscortProfile(applicationId), fetchRidesByPost(postId)])
-      .then(async ([post, profile, rides]) => {
-        // 리뷰는 매니저 카드의 태그 계산용이라, 실패해도 나머지 화면은 그대로 보여줍니다.
-        const reviews = await fetchUserReviews(profile.escortId).catch(() => []);
-        if (ignore) return;
-        const manager = toManager(profile, topReviewTagLabels(reviews));
-        setLive({ key: postId, escort: toClientEscortCase(post, applicationId, manager, formatTransport(rides)) });
+    fetchClientEscortCase(postId, applicationId)
+      .then((escort) => {
+        if (!ignore) setLive({ key: postId, escort });
       })
       .catch((error: unknown) => {
         if (!ignore) setLive({ key: postId, error: error instanceof Error ? error.message : '동행 현황을 불러오지 못했습니다.' });
@@ -100,11 +99,32 @@ export default function ClientTrackingPage() {
     return () => {
       ignore = true;
     };
-  }, [postId, applicationId]);
+  }, [postId, applicationId, reloadKey]);
+
+  // 동행이 끝나야 "추가 결제"가 생깁니다. 완료 전의 READY 결제는 아직 안 낸 최초 결제라 물어보면 안 됩니다.
+  const completed = live.key === postId && live.escort?.stage === 'done';
+
+  useEffect(() => {
+    if (postId === undefined || !completed) return;
+    let ignore = false;
+
+    fetchPendingPayment(postId)
+      .then((payment) => !ignore && setPaymentResult({ key: postId, data: payment }))
+      // 조회에 실패해도 동행 현황 자체는 보여 줍니다. (추가 결제 버튼만 안 뜹니다)
+      .catch(() => !ignore && setPaymentResult({ key: postId, data: null }));
+
+    return () => {
+      ignore = true;
+    };
+  }, [postId, completed, reloadKey]);
+
+  // 다른 공고로 이동한 직후에는 이전 공고의 결제 정보를 쓰지 않습니다.
+  const pendingPayment = completed && paymentResult.key === postId ? paymentResult.data : null;
 
   const liveLoading = postId !== undefined && live.key !== postId;
-  const liveError = postId !== undefined && live.key === postId ? live.error : undefined;
-  const escort = postId !== undefined ? (live.key === postId ? live.escort : undefined) : getClientEscortCase(applicationId);
+  // postId 가 없으면 불러올 방법이 없어 아래 "동행 정보를 찾을 수 없습니다" 로 떨어집니다.
+  const liveError = live.key === postId ? live.error : undefined;
+  const escort = live.key === postId ? live.escort : undefined;
 
   if (authLoading) {
     return (
@@ -161,8 +181,44 @@ export default function ClientTrackingPage() {
   const [from, to] = GOING_HOME[escort.stage]
     ? [escort.hospitalPoint, escort.pickupPoint]
     : [escort.pickupPoint, escort.hospitalPoint];
-  const kakaoT = from && to ? { href: buildKakaoTCallUrl(from, to), label: `${from.name} → ${to.name}` } : undefined;
-  const hasStageButtons = escort.stage !== 'ready' && escort.stage !== 'ongoing';
+  // 동행이 끝나면 부를 택시가 없으므로 호출 버튼도 숨깁니다.
+  const kakaoT =
+    escort.stage !== 'done' && from && to
+      ? { href: buildKakaoTCallUrl(from, to), label: `${from.name} → ${to.name}` }
+      : undefined;
+  const hasStageButtons = escort.stage !== 'ready';
+
+  /**
+   * 추가 결제도 공고 등록 때와 같은 결제 화면(토스 위젯)을 씁니다.
+   * flow=extra 는 결제 후 공고 등록 완료 화면으로 가지 않기 위한 표시입니다. 본보기: post/components/PostDetailPage.tsx
+   */
+  const extraPaymentHref = pendingPayment
+    ? `/client/posts/new/payment?${new URLSearchParams({
+        postId: String(escort.postId),
+        paymentId: String(pendingPayment.id),
+        amount: String(pendingPayment.amount),
+        pay: String(pendingPayment.hourlyPaySnapshot),
+        flow: 'extra',
+      })}`
+    : '';
+
+  /**
+   * 동행 완료 처리. 동행인이 "귀가 완료"를 찍어야 서버가 받아주므로,
+   * 아직이면 서버 메시지("귀가완료 기록이 없습니다")를 그대로 보여줍니다.
+   */
+  const handleComplete = async () => {
+    if (postId === undefined) return;
+    setCompleting(true);
+    setCompleteError(undefined);
+    try {
+      await completeEscort(postId);
+      setReloadKey((key) => key + 1);
+    } catch (error) {
+      setCompleteError(error instanceof Error ? error.message : '동행 완료 처리에 실패했습니다.');
+    } finally {
+      setCompleting(false);
+    }
+  };
 
   return (
     <AppShell>
@@ -216,28 +272,43 @@ export default function ClientTrackingPage() {
                   ))}
                 </dl>
 
+                {completeError && (
+                  <p role="alert" className="mt-3 text-sm leading-5 font-medium text-[#b91d1d]">
+                    {completeError}
+                  </p>
+                )}
+
                 {(hasStageButtons || kakaoT) && (
                   <div className="mt-5 flex flex-col gap-[5px]">
-                    {/* TODO: 동행 종료 · 추가 결제 · 정산 API 연결 */}
+                    {/* TODO: 추가 결제 · 정산 API 연결 */}
+                    {escort.stage === 'ongoing' && (
+                      <button type="button" onClick={handleComplete} disabled={completing} className={cn(BUTTON, SOLID, 'disabled:cursor-not-allowed disabled:opacity-60')}>
+                        {completing ? '처리 중...' : '동행 완료 처리'}
+                      </button>
+                    )}
                     {escort.stage === 'arrived' && (
                       <button type="button" className={cn(BUTTON, SOLID)}>
                         동행 종료
                       </button>
                     )}
-                    {escort.stage === 'finishing' && (
-                      <button type="button" className={cn(BUTTON, SOLID)}>
-                        추가 결제
-                      </button>
+                    {pendingPayment && (
+                      <Link href={extraPaymentHref} className={cn(BUTTON, SOLID)}>
+                        {`${pendingPayment.amount.toLocaleString()}원 추가 결제`}
+                      </Link>
                     )}
                     {escort.stage === 'done' && (
                       <>
-                        <button type="button" className={cn(BUTTON, SOLID)}>
-                          정산하기
-                        </button>
-                        <Link href={`${base}/review`} className={cn(BUTTON, GHOST)}>
+                        {/* 추가 결제가 남아 있으면 정산부터 할 수 없어서 그때는 숨깁니다. */}
+                        {!pendingPayment && (
+                          <button type="button" className={cn(BUTTON, SOLID)}>
+                            정산하기
+                          </button>
+                        )}
+                        {/* 두 화면도 공고 정보가 필요한데 applicationId 만으로는 찾을 수 없어 postId 를 함께 넘깁니다. */}
+                        <Link href={`${base}/review?postId=${escort.postId}`} className={cn(BUTTON, GHOST)}>
                           리뷰 작성
                         </Link>
-                        <Link href={`${base}/report`} className={cn(BUTTON, GHOST)}>
+                        <Link href={`${base}/report?postId=${escort.postId}`} className={cn(BUTTON, GHOST)}>
                           보고서 조회
                         </Link>
                       </>
