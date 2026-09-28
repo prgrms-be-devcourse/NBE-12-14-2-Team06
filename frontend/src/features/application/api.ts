@@ -5,6 +5,7 @@ import type {
   ApplicationAcceptDto,
   ApplicationApplyDto,
   ApplicationProgressDto,
+  ClientProfileDto,
   EscortProfileDto,
   EscortProgress,
   MyApplicationDto,
@@ -37,6 +38,11 @@ export async function fetchApplicants(postId: number, page = 0, size = 20): Prom
 /** 지원자 프로필 조회 — GET /api/v1/applications/{applicationId}/escort-profile (그 공고의 작성자만) */
 export function fetchEscortProfile(applicationId: number): Promise<EscortProfileDto> {
   return api<EscortProfileDto>(`/api/v1/applications/${applicationId}/escort-profile`);
+}
+
+/** 의뢰인·보호자 정보 조회 — GET /api/v1/applications/{applicationId}/client-profile (매칭된 동행 매니저 본인만) */
+export function fetchClientProfile(applicationId: number): Promise<ClientProfileDto> {
+  return api<ClientProfileDto>(`/api/v1/applications/${applicationId}/client-profile`);
 }
 
 /** 지원 승인 — PATCH /api/v1/applications/{applicationId}/accept (같은 공고의 나머지 대기 지원은 서버가 자동으로 거절 처리합니다) */

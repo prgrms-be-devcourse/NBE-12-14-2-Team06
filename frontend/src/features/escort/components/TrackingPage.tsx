@@ -9,6 +9,7 @@ import { Container, InfoRow, SectionHeading } from '@/components/ui';
 import { PROGRESS_ORDER, advanceProgress } from '@/features/application';
 import { useRequireAuth } from '@/features/auth';
 import { StatusLabel } from '@/features/post';
+import { fetchReport } from '@/features/report';
 import { cn } from '@/lib/cn';
 import { showUnimplemented } from '@/lib/unimplemented';
 import { fetchTrackingCase } from '../api';
@@ -43,6 +44,23 @@ export default function TrackingPage() {
   const [doneCount, setDoneCount] = useState<number>();
   const [advancing, setAdvancing] = useState(false);
   const [progressError, setProgressError] = useState<string>();
+  // 보고서를 이미 썼는지. true 면 "보고서 작성" 버튼을 "보고서 조회"로 바꿔서
+  // 이미 작성된 보고서를 또 쓰는 화면으로 들어가지 않게 합니다.
+  const [hasReport, setHasReport] = useState(false);
+
+  useEffect(() => {
+    if (!Number.isFinite(applicationId)) return;
+    let ignore = false;
+
+    // 실패(보고서 미작성 포함)하면 hasReport 는 기본값 false 그대로 둡니다.
+    fetchReport(applicationId)
+      .then(() => !ignore && setHasReport(true))
+      .catch(() => {});
+
+    return () => {
+      ignore = true;
+    };
+  }, [applicationId]);
 
   useEffect(() => {
     if (!Number.isFinite(applicationId)) return;
@@ -146,16 +164,22 @@ export default function TrackingPage() {
                 <h2 className={cn(CARD_TITLE, 'mb-[21px]')}>동행 정보</h2>
                 <dl className="grid gap-x-[22px] lg:grid-cols-[1fr_1px_1fr]">
                   <div className="flex flex-col gap-[3px]">
-                    <InfoRow label="공고 제목" labelWidth={92}>{escort.title}</InfoRow>
-                    <InfoRow label="병원명" labelWidth={92}>{escort.hospitalName}</InfoRow>
-                    <InfoRow label="병원 주소" labelWidth={92}>{escort.hospitalAddress}</InfoRow>
-                    <InfoRow label="날짜" labelWidth={92}>{escort.dateLabel}</InfoRow>
-                    <InfoRow label="시간" labelWidth={92}>{escort.timeLabel}</InfoRow>
+                    <InfoRow label="공고 제목" labelWidth={110}>{escort.title}</InfoRow>
+                    <InfoRow label="병원명" labelWidth={110}>{escort.hospitalName}</InfoRow>
+                    <InfoRow label="병원 주소" labelWidth={110}>{escort.hospitalAddress}</InfoRow>
+                    <InfoRow label="날짜" labelWidth={110}>{escort.dateLabel}</InfoRow>
+                    <InfoRow label="시간" labelWidth={110}>{escort.timeLabel}</InfoRow>
+                    {/* 이 공고 한 건에만 해당하는 메모 (의뢰인이 공고 등록할 때 씀) */}
+                    <InfoRow label="특이사항" labelWidth={110}>{escort.note}</InfoRow>
                   </div>
                   <div aria-hidden="true" className="hidden self-center bg-[#e6e8ec] opacity-50 lg:block lg:h-[221px]" />
-                  {/* ⚠️ 의뢰인명·연락처·보호자 정보는 백엔드 응답에 없어서 뺐습니다 (model/mapper.ts 주석 참고). */}
                   <div className="flex flex-col gap-[3px]">
-                    <InfoRow label="특이사항" labelWidth={120}>{escort.note}</InfoRow>
+                    <InfoRow label="의뢰인" labelWidth={110}>{escort.clientName}</InfoRow>
+                    <InfoRow label="연락처" labelWidth={110}>{escort.clientPhone}</InfoRow>
+                    <InfoRow label="보호자" labelWidth={110}>{escort.emergencyContactName}</InfoRow>
+                    <InfoRow label="보호자 연락처" labelWidth={110}>{escort.emergencyContactPhone}</InfoRow>
+                    {/* 의뢰인 개인한테 항상 붙어있는 메모 (마이페이지에 등록해둔 것) */}
+                    <InfoRow label="의뢰인 메모" labelWidth={110}>{escort.careNote}</InfoRow>
                   </div>
                 </dl>
               </section>
@@ -206,9 +230,15 @@ export default function TrackingPage() {
                 )}
                 <div className="mt-5 flex flex-col gap-1.5">
                   {finished ? (
-                    <Link href={`/escort/${escort.applicationId}/report/new`} className={cn(BUTTON, 'bg-brand text-white hover:bg-brand-hover')}>
-                      {info.primary}
-                    </Link>
+                    hasReport ? (
+                      <Link href={`/escort/${escort.applicationId}/report`} className={cn(BUTTON, 'bg-brand text-white hover:bg-brand-hover')}>
+                        보고서 조회
+                      </Link>
+                    ) : (
+                      <Link href={`/escort/${escort.applicationId}/report/new`} className={cn(BUTTON, 'bg-brand text-white hover:bg-brand-hover')}>
+                        {info.primary}
+                      </Link>
+                    )
                   ) : (
                     <button type="button" onClick={handleAdvance} disabled={advancing} className={cn(BUTTON, 'bg-brand text-white hover:bg-brand-hover')}>
                       {advancing ? '처리 중…' : nextLabel}

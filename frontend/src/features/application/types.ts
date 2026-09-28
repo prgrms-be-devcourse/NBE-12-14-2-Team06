@@ -44,6 +44,17 @@ export type ApplicationProgressDto = {
   progress: EscortProgress;
 };
 
+/** GET /api/v1/applications/{applicationId}/client-profile 응답 — 매칭된 의뢰인·보호자 정보 */
+export type ClientProfileDto = {
+  clientId: number;
+  clientName: string;
+  clientPhone: string;
+  emergencyContactName: string;
+  emergencyContactPhone: string;
+  /** 특이사항을 안 썼으면 null */
+  careNote: string | null;
+};
+
 /** GET /api/v1/applications/{applicationId}/escort-profile 응답 */
 export type EscortProfileDto = {
   escortId: number;
