@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/cn';
+import { showUnimplemented } from '@/lib/unimplemented';
 import { login } from '../api';
 import { useAuth } from '../lib/AuthProvider';
 import { LOGIN_HOME_BY_ROLE } from '../model';
@@ -123,6 +124,7 @@ export default function LoginForm() {
         </label>
 
         {/* TODO: 아이디/비밀번호 찾기 화면이 생기면 주소를 연결하세요. */}
+        {showUnimplemented() && (
         <span className="ml-auto flex items-center gap-1.5 text-sm leading-[22px] font-medium whitespace-nowrap text-brand">
           <a href="#" className="transition-colors hover:text-brand-hover">
             아이디 찾기
@@ -132,6 +134,7 @@ export default function LoginForm() {
             비밀번호 찾기
           </a>
         </span>
+        )}
       </div>
 
       <div className="flex flex-col gap-2.5">

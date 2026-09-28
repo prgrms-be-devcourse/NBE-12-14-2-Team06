@@ -10,6 +10,7 @@ import { PROGRESS_ORDER, advanceProgress } from '@/features/application';
 import { useRequireAuth } from '@/features/auth';
 import { StatusLabel } from '@/features/post';
 import { cn } from '@/lib/cn';
+import { showUnimplemented } from '@/lib/unimplemented';
 import { fetchTrackingCase } from '../api';
 import { STAGE_INFO, TIMELINE_BASE } from '../model/stage';
 import type { EscortStage, TrackingCase } from '../types';
@@ -216,11 +217,16 @@ export default function TrackingPage() {
                   {finished ? (
                     <>
                       <Link href={detailHref} className={cn(BUTTON, 'border border-line bg-white text-brand hover:bg-line-soft')}>공고 상세보기</Link>
-                      <button type="button" className={cn(BUTTON, 'border border-line bg-white text-brand hover:bg-line-soft')}>{info.third}</button>
+                      {/* TODO: 정산 요청 API 가 생기면 연결하세요. */}
+                      {showUnimplemented() && (
+                        <button type="button" className={cn(BUTTON, 'border border-line bg-white text-brand hover:bg-line-soft')}>{info.third}</button>
+                      )}
                     </>
                   ) : (
                     <>
-                      <button type="button" className={cn(BUTTON, 'border border-line bg-white text-brand hover:bg-line-soft')}>의뢰인 연락하기</button>
+                      {showUnimplemented() && (
+                        <button type="button" className={cn(BUTTON, 'border border-line bg-white text-brand hover:bg-line-soft')}>의뢰인 연락하기</button>
+                      )}
                       <Link href={detailHref} className={cn(BUTTON, 'border border-line bg-white text-brand hover:bg-line-soft')}>{info.third}</Link>
                     </>
                   )}

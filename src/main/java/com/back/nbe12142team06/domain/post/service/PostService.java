@@ -178,7 +178,9 @@ public class PostService {
     @Transactional
     public void matchedCancel(Long postId, Long userId) {
         User user = getUser(userId);
-        Post post = findById(postId);
+        //Post post = findById(postId);
+        Post post = postRepository.findByIdWithLock(postId)
+                .orElseThrow(() -> new NotFoundException(1, postId + "번 공고가 없습니다."));
 
         if (user.getRole() != Role.CLIENT && user.getRole() != Role.ADMIN) {
             throw new UnauthorizedException(15, "공고 취소 권한이 없습니다.");

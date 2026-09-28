@@ -11,6 +11,7 @@ export {
   rejectApplication,
   cancelApplication,
   advanceProgress,
+  fetchProgress,
 } from './api';
 export { PROGRESS_ORDER } from './types';
 export type {
@@ -22,5 +23,6 @@ export type {
   EscortProfileDto,
   ApplicationApplyDto,
   ApplicationAcceptDto,
+  ApplicationProgressDto,
   MyApplicationDto,
 } from './types';

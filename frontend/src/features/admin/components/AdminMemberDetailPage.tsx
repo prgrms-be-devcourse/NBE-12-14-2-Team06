@@ -7,6 +7,7 @@ import { AppShell } from '@/components/layout';
 import { InfoRow } from '@/components/ui';
 import { useRequireAuth } from '@/features/auth';
 import { cn } from '@/lib/cn';
+import { showUnimplemented } from '@/lib/unimplemented';
 import { formatDotDate } from '../lib/date';
 import { ROLE_LABEL, getMemberDetail } from '../model';
 
@@ -68,12 +69,14 @@ export default function AdminMemberDetailPage() {
               목록으로
             </Link>
             {/* TODO: 회원 정보 수정 화면/API 가 생기면 연결하세요. */}
-            <button
-              type="button"
-              className="h-[45px] w-[155px] rounded-[24.3px] bg-brand text-base font-semibold text-white transition-colors hover:bg-brand-hover"
-            >
-              회원 정보 수정
-            </button>
+            {showUnimplemented() && (
+              <button
+                type="button"
+                className="h-[45px] w-[155px] rounded-[24.3px] bg-brand text-base font-semibold text-white transition-colors hover:bg-brand-hover"
+              >
+                회원 정보 수정
+              </button>
+            )}
           </div>
 
           {/* 프로필 요약 (Figma 571:21101) */}
@@ -169,13 +172,15 @@ export default function AdminMemberDetailPage() {
             <div className="flex min-h-[47px] flex-wrap items-center justify-between gap-2">
               <h2 className={CARD_TITLE}>최근 활동 요약</h2>
               {/* TODO: 회원별 활동 목록 화면이 생기면 Link 로 바꾸세요. */}
-              <button
-                type="button"
-                className="flex items-center gap-4 px-4 text-base leading-5 font-semibold text-brand transition-colors hover:text-brand-hover"
-              >
-                전체 보기
-                <Image src="/icons/arrow-right.svg" alt="" width={24} height={24} />
-              </button>
+              {showUnimplemented() && (
+                <button
+                  type="button"
+                  className="flex items-center gap-4 px-4 text-base leading-5 font-semibold text-brand transition-colors hover:text-brand-hover"
+                >
+                  전체 보기
+                  <Image src="/icons/arrow-right.svg" alt="" width={24} height={24} />
+                </button>
+              )}
             </div>
             <ul className="mt-[3px] grid grid-cols-2 gap-[22px] lg:grid-cols-4">
               {member.activity.map((stat) => (

@@ -45,14 +45,15 @@ public class PostController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dateTo,
             @RequestParam(required = false) Integer minPay,
             @RequestParam(required = false) Integer maxPay,
-            @RequestParam(defaultValue = "latest") String sort,
+            @RequestParam(defaultValue = "deadline") String sort,
             // 모집중 탭(기본값) / 마감 탭 — 신규·모집중 공고가 마감 공고에 밀리지 않도록 목록 자체를 분리
             @RequestParam(defaultValue = "true") boolean openOnly) {
 
         Sort sortOption = switch (sort) {
             case "payHigh" -> Sort.by(Sort.Direction.DESC, "hourlyPay");
             case "payLow" -> Sort.by(Sort.Direction.ASC, "hourlyPay");
-            default -> Sort.by(Sort.Direction.DESC, "id"); // 최신순 (기본값)
+            case "latest" -> Sort.by(Sort.Direction.DESC, "id");
+            default -> Sort.by(Sort.Direction.ASC, "recruitEndAt"); // 마감임박순 (기본값)
         };
 
         PostSearchConditionDto condition = new PostSearchConditionDto(

@@ -229,7 +229,9 @@ public class ApplicationService {
         // 승인 후 동행인 취소
         if (application.getStatus() == ApplicationStatus.ACCEPTED) {
 
-            Post post = application.getPost();
+           // Post post = application.getPost();
+            Post post = postRepository.findByIdWithLock(application.getPost().getId())
+                    .orElseThrow(() -> new NotFoundException("공고를 찾을 수 없습니다."));
 
             EscortProfile escortProfile = escortProfileRepository.findById(userId)
                     .orElseThrow(() -> new NotFoundException("동행인 프로필을 찾을 수 없습니다."));
@@ -307,6 +309,27 @@ public class ApplicationService {
             application.getPost().startProgress(occurredAt);
         }
         log.info("[동행 진행상태 변경] applicationId={}, progress={}, escortId={}", applicationId, progress, userId);
+    }
+
+    // 이 지원의 현재 동행 진행 단계 조회. 본인(동행인) 또는 이 공고를 작성한 의뢰인만 볼 수 있다.
+    @Transactional(readOnly = true)
+    public ApplicationProgressResponse getProgress(Long applicationId, Long userId) {
+
+        Application application = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new NotFoundException("지원을 찾을 수 없습니다."));
+
+        boolean isEscort = application.getEscort().getId().equals(userId);
+        boolean isClient = application.getPost().getClient().getId().equals(userId);
+        if (!isEscort && !isClient) {
+            throw new ForbiddenException("본인의 동행 건만 진행 상태를 조회할 수 있습니다.");
+        }
+
+        EscortProgress current = escortProgressLogRepository
+                .findTopByApplicationOrderByOccurredAtDescIdDesc(application)
+                .map(EscortProgressLog::getProgress)
+                .orElse(EscortProgress.NOT_STARTED);
+
+        return new ApplicationProgressResponse(applicationId, current);
     }
 
     @Transactional(readOnly = true)

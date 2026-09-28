@@ -10,6 +10,7 @@ import { fetchMyPosts, type ClientPost } from '@/features/client';
 import { ApiError } from '@/lib/api';
 import { cn } from '@/lib/cn';
 import { REGIONS } from '@/lib/regions';
+import { showUnimplemented } from '@/lib/unimplemented';
 import {
   createMyClientProfile,
   fetchMyClientProfile,
@@ -291,22 +292,24 @@ export default function ClientInfoView() {
         <BasicInfoCard user={user} onUpdated={(next) => setState((prev) => ({ ...prev, user: next }))} />
         <div className="flex flex-col gap-[22px]">
           <GuardianInfoCard profile={clientProfile} onSaved={(next) => setState((prev) => ({ ...prev, clientProfile: next }))} />
-          <InfoCard title="계정 관리" paddingBottom="pb-6" className="lg:min-h-[250px]">
-            <ul className="mt-[9px] flex flex-col gap-[3px]">
-              {ACCOUNT_ACTIONS.map((label) => (
-                // TODO: 각 기능이 정해지면 연결하세요.
-                <li key={label}>
-                  <button
-                    type="button"
-                    className="flex h-[47px] w-full items-center justify-between px-4 text-left text-base leading-5 font-semibold text-brand transition-colors hover:text-brand-hover"
-                  >
-                    {label}
-                    <Image src="/icons/chevron-right.svg" alt="" width={24} height={24} />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </InfoCard>
+          {/* TODO: 각 기능이 정해지면 연결하세요. 그때까지는 버튼을 눌러도 반응이 없어서 카드 자체를 숨깁니다. */}
+          {showUnimplemented() && (
+            <InfoCard title="계정 관리" paddingBottom="pb-6" className="lg:min-h-[250px]">
+              <ul className="mt-[9px] flex flex-col gap-[3px]">
+                {ACCOUNT_ACTIONS.map((label) => (
+                  <li key={label}>
+                    <button
+                      type="button"
+                      className="flex h-[47px] w-full items-center justify-between px-4 text-left text-base leading-5 font-semibold text-brand transition-colors hover:text-brand-hover"
+                    >
+                      {label}
+                      <Image src="/icons/chevron-right.svg" alt="" width={24} height={24} />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </InfoCard>
+          )}
         </div>
       </div>
 

@@ -65,7 +65,7 @@ export type PostDetail = PostSummary & {
   recruitStarted: boolean;
 };
 
-export type PostSort = 'latest' | 'payHigh' | 'payLow';
+export type PostSort = 'deadline' | 'latest' | 'payHigh' | 'payLow';
 
 /** 목록 화면 검색·필터 상태 ('all' = 조건 없음) */
 export type PostFilters = {
