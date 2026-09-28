@@ -1,6 +1,7 @@
 package com.back.nbe12142team06.domain.user.service;
 
 
+import com.back.nbe12142team06.DatabaseCleaner;
 import com.back.nbe12142team06.domain.user.dto.profile.EscortProfileModifyRequest;
 import com.back.nbe12142team06.domain.user.dto.profile.EscortProfileRequest;
 import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpRequest;
@@ -10,6 +11,7 @@ import com.back.nbe12142team06.domain.user.enums.Role;
 import com.back.nbe12142team06.domain.user.repository.EscortProfileRepository;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,10 +49,17 @@ public class EscortProfileConcurrencyTest {
     @Autowired
     private TransactionTemplate transactionTemplate;
 
+    @Autowired
+    private DatabaseCleaner databaseCleaner;
+
+    @BeforeEach
+    void setUp() {
+        databaseCleaner.clean();
+    }
+
     @AfterEach
     void tearDown() {
-        this.escortProfileRepository.deleteAllInBatch(); // 자식(FK 가진 쪽) 먼저
-        this.userRepository.deleteAllInBatch();
+        databaseCleaner.clean();
     }
 
     // username만 같고 email, phoneNum은 스레드마다 다르게

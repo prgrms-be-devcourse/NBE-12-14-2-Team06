@@ -6,11 +6,16 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.DynamicUpdate;
+import org.hibernate.annotations.OptimisticLockType;
+import org.hibernate.annotations.OptimisticLocking;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Getter
+@DynamicUpdate
+@OptimisticLocking(type = OptimisticLockType.DIRTY)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "escort_profiles")
 public class EscortProfile extends BaseTimeEntity {
@@ -63,9 +68,7 @@ public class EscortProfile extends BaseTimeEntity {
     @Column(nullable = false, length = 30)
     private String accountNumber;
 
-    // 낙관적 락
-    @Version
-    private Long version;
+
 
     public EscortProfile(User user, String intro, String bankName, String accountHolder, String accountNumber){
         this.user = user;
