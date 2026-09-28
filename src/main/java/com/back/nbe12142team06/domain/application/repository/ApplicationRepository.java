@@ -4,13 +4,16 @@ import com.back.nbe12142team06.domain.application.entity.Application;
 import com.back.nbe12142team06.domain.application.enums.ApplicationStatus;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.user.entity.User;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ApplicationRepository extends JpaRepository<Application, Long> {
     // 취소되지 않은 동일 공고 중복 지원 방지
@@ -70,4 +73,8 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
     List<Application> findAllByEscortIdWithPost(
             @Param("escortId") Long escortId
     );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT a FROM Application a WHERE a.id = :id")
+    Optional<Application> findByIdWithLock(@Param("id") Long id);
 }
