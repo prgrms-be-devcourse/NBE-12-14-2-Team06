@@ -255,6 +255,17 @@ public class BaseInitData {
                         12500,
                         minusDays(5, 9, 0), minusDays(3, 18, 0), plusDays(1, 9, 0), plusDays(1, 12, 0),
                         PostStatus.CANCELED, 17280
+                ),
+                // ── 15: 모집중(OPEN) — 결제까지 완료된 반복 테스트용 공고. 모집마감을 30일 뒤로
+                //         멀찍이 잡아서, 재시작 시점이 언제든 만료(EXPIRED) 배치에 안 걸리게 합니다. ──
+                new PostSeed(
+                        "테스트병원 결제 완료 테스트 공고", "테스트용 공고입니다. 결제까지 완료된 상태로 고정해 두었습니다.", null,
+                        "서울", "테스트병원", "서울 테스트구 테스트로 1",
+                        bd("37.5665"), bd("126.9780"),
+                        "서울 테스트구 테스트로 1 (자택)", bd("37.5665"), bd("126.9780"),
+                        10000,
+                        now(), plusDays(30, 18, 0), plusDays(31, 9, 0), plusDays(31, 12, 0),
+                        PostStatus.OPEN, 0
                 )
         );
 
