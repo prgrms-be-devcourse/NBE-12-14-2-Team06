@@ -229,7 +229,9 @@ public class ApplicationService {
         // 승인 후 동행인 취소
         if (application.getStatus() == ApplicationStatus.ACCEPTED) {
 
-            Post post = application.getPost();
+           // Post post = application.getPost();
+            Post post = postRepository.findByIdWithLock(application.getPost().getId())
+                    .orElseThrow(() -> new NotFoundException("공고를 찾을 수 없습니다."));
 
             EscortProfile escortProfile = escortProfileRepository.findById(userId)
                     .orElseThrow(() -> new NotFoundException("동행인 프로필을 찾을 수 없습니다."));
