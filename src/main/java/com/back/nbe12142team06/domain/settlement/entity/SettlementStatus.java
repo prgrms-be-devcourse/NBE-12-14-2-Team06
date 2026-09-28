@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum SettlementStatus {
     PENDING("정산 전"),
+    PROCESSING("정산 중"),
     COMPLETED("정산 완료"),
     FAILED("정산 실패");
 

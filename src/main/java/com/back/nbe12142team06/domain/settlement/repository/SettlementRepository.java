@@ -17,11 +17,14 @@ import java.util.Optional;
 
 public interface SettlementRepository extends JpaRepository<Settlement, Long> {
 
-    @Query("select s " +
+    @Query("select s.id, ep.accountNumber, e.name, s.payoutAmount " +
             "from Settlement s " +
-            "join fetch User u on s.escort=u " +
-            "where s.id=:settlementId and (s.settlementStatus='PENDING' or s.settlementStatus='FAILED')")
-    Optional<Settlement> findByIdAndState(@Param("settlementId") Long settlementId);
+            "join s.escort e " +
+            "join EscortProfile ep on ep.userId=e.id " +
+            "where s.id=:settlementId and e.id=:userId " +
+            "and (s.settlementStatus='PENDING' or s.settlementStatus='FAILED' or s.settlementStatus='PROCESSING')")
+    Optional<AccountDto> findByIdAndState(@Param("userId") Long userId,
+                                          @Param("settlementId") Long settlementId);
 
     @Query("select s " +
             "from Settlement s " +
@@ -47,6 +50,10 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long> {
     @Query("update Settlement s set s.settlementStatus=:status where s.id=:id")
     int updateStatus(@Param("id") Long id, @Param("status") SettlementStatus status);
 
-    @Query("select ep.accountNumber from Settlement s join s.escort e join EscortProfile ep on ep.userId=e.id where e.id=:userId")
-    String findAccountByUserId(@Param("userId") Long userId);
+    @Modifying
+    @Query("update Settlement s " +
+            "set s.settlementStatus=SettlementStatus.PROCESSING " +
+            "where s.id=:settlementId " +
+            "and (s.settlementStatus=SettlementStatus.PENDING or s.settlementStatus=SettlementStatus.FAILED)")
+    int updateProcessing(@Param("settlementId") Long settlementId);
 }

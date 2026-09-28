@@ -14,6 +14,7 @@ import com.back.nbe12142team06.domain.settlement.repository.SettlementRepository
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.global.exception.ForbiddenException;
 import com.back.nbe12142team06.global.exception.InternalServerErrorException;
+import com.back.nbe12142team06.global.exception.InvalidException;
 import com.back.nbe12142team06.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,25 +43,31 @@ public class SettlementService {
     // 단일 정산 요청
     public void request(Long userId, Long settlementId) {
 
-        Settlement settlement = settlementPersistenceService.findSettlement(userId, settlementId);
+        AccountDto accountDto = settlementPersistenceService.findAccountDto(userId, settlementId);
 
-        String name = settlement.getEscort().getName();
-        String account = settlementRepository.findAccountByUserId(settlement.getEscort().getId());
+        String name = accountDto.name();
+        String account = accountDto.accountNumber();
+
+        // 정산 중 상태 변경
+        int row = settlementPersistenceService.processingSettlement(settlementId);
+
+        // 변경 된 행이 0개라면 정산 중이거나 정산이 완료 된 경우
+        if (row == 0) {
+            throw new InvalidException(30, "이미 정산 중이거나 정산이 완료되었습니다.");
+        }
 
         try {
-            SettlementClientResponse response = settlementApi(settlement.getPayoutAmount(), name, account);
+            SettlementClientResponse response = settlementApi(accountDto.payoutAmount(), name, account);
             // 정산 완료 상태 변경
             if (response.res_cnt() >= 1) {
                 settlementPersistenceService.updateSettlement(settlementId, SettlementStatus.COMPLETED);
+                log.info("정산 성공 - settlementId: {}", accountDto.id());
             } else {
                 throw new RuntimeException();
             }
         } catch (RuntimeException e) {
             // 금융 결제원 API 요청 에러
             settlementPersistenceService.updateSettlement(settlementId, SettlementStatus.FAILED);
-            // [로그 정리] 개인정보(실명·계좌번호)가 로그에 남아서 주석 처리하고, 아래에 ID 만 남기도록 대체
-            // log.error("정산 실패 - 금융 결제원 API 요청 실패, settlementId: %s, name: %s, account: %s"
-            //         .formatted(settlementId, name, account), e);
             log.error("정산 실패 - 금융 결제원 API 요청 실패, settlementId: {}", settlementId, e);
             throw new InternalServerErrorException(30, "정산에 실패했습니다.");
         }
@@ -84,13 +91,21 @@ public class SettlementService {
         return new SettlementResponse(settlement);
     }
 
-    // 정산 스캐줄링
+    // 정산 스케줄링
     public int[] settlementProcess() {
         List<AccountDto> accountDtoList = settlementPersistenceService.findAllByStatusAndDate();
         int successCount = 0;
         int failedCount = 0;
 
         for (AccountDto accountDto : accountDtoList) {
+            // 정산 중 상태 변경
+            int row = settlementPersistenceService.processingSettlement(accountDto.id());
+
+            // 변경 된 행이 0개라면 정산 중이거나 정산이 완료 된 경우
+            if (row == 0) {
+                continue;
+            }
+
             try {
                 SettlementClientResponse response =
                         settlementApi(accountDto.payoutAmount(), accountDto.name(), accountDto.accountNumber());
@@ -98,25 +113,16 @@ public class SettlementService {
                 if (response.res_cnt() >= 1) {
                     settlementPersistenceService.updateSettlement(accountDto.id(), SettlementStatus.COMPLETED);
                     successCount++;
-                    // [로그 정리] 개인정보(실명·계좌번호)가 로그에 남아서 주석 처리하고, 아래에 ID 만 남기도록 대체
-                    // log.info("정산 성공 - settlementId: %s, name: %s, account: %s"
-                    //         .formatted(accountDto.id(), accountDto.name(), accountDto.accountNumber()));
                     log.info("정산 성공 - settlementId: {}", accountDto.id());
                 } else {
                     // 정산 성공 0건
                     settlementPersistenceService.updateSettlement(accountDto.id(), SettlementStatus.FAILED);
                     failedCount++;
-                    // [로그 정리] 개인정보(실명·계좌번호)가 로그에 남아서 주석 처리하고, 아래에 ID 만 남기도록 대체
-                    // log.error("정산 실패 - 금융 결제원 API 요청 성공 0건, settlementId: %s, name: %s, account: %s"
-                    //         .formatted(accountDto.id(), accountDto.name(), accountDto.accountNumber()));
                     log.error("정산 실패 - 금융 결제원 API 요청 성공 0건, settlementId: {}", accountDto.id());
                 }
             } catch (RuntimeException e) {
                 // 금융 결제원 API 요청 에러
                 settlementPersistenceService.updateSettlement(accountDto.id(), SettlementStatus.FAILED);
-                // [로그 정리] 개인정보(실명·계좌번호)가 로그에 남아서 주석 처리하고, 아래에 ID 만 남기도록 대체
-                // log.error("정산 실패 - 금융 결제원 API 요청 실패, settlementId: %s, name: %s, account: %s"
-                //         .formatted(accountDto.id(), accountDto.name(), accountDto.accountNumber()), e);
                 log.error("정산 실패 - 금융 결제원 API 요청 실패, settlementId: {}", accountDto.id(), e);
             }
         }
