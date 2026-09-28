@@ -1,20 +1,16 @@
 package com.back.nbe12142team06.domain.settlement.service;
 
+import com.back.nbe12142team06.DatabaseCleaner;
 import com.back.nbe12142team06.domain.application.entity.Application;
 import com.back.nbe12142team06.domain.application.enums.ApplicationStatus;
 import com.back.nbe12142team06.domain.application.repository.ApplicationRepository;
-import com.back.nbe12142team06.domain.penalty.entity.NoShowPenalty;
-import com.back.nbe12142team06.domain.penalty.entity.NoShowPenaltyStatus;
 import com.back.nbe12142team06.domain.penalty.repository.NoShowPenaltyRepository;
-import com.back.nbe12142team06.domain.penalty.service.NoShowPenaltyService;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.entity.PostStatus;
 import com.back.nbe12142team06.domain.post.repository.PostRepository;
 import com.back.nbe12142team06.domain.settlement.client.SettlementClient;
-import com.back.nbe12142team06.domain.settlement.client.SettlementClientRequest;
 import com.back.nbe12142team06.domain.settlement.client.SettlementClientResponse;
 import com.back.nbe12142team06.domain.settlement.entity.Settlement;
-import com.back.nbe12142team06.domain.settlement.entity.SettlementStatus;
 import com.back.nbe12142team06.domain.settlement.repository.SettlementRepository;
 import com.back.nbe12142team06.domain.user.entity.EscortProfile;
 import com.back.nbe12142team06.domain.user.entity.User;
@@ -22,6 +18,7 @@ import com.back.nbe12142team06.domain.user.enums.Gender;
 import com.back.nbe12142team06.domain.user.enums.Role;
 import com.back.nbe12142team06.domain.user.repository.EscortProfileRepository;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -30,19 +27,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest
@@ -66,16 +61,19 @@ class SettlementConcurrencyTest {
     private UserRepository userRepository;
     @Autowired
     private EscortProfileRepository escortProfileRepository;
+    @Autowired
+    private DatabaseCleaner databaseCleaner;
 
     @MockitoBean
     private SettlementClient settlementClient;
 
-    /** 패널티 조회 직후에 지연을 끼워 넣기 위한 스파이 */
-    @MockitoSpyBean
-    private NoShowPenaltyService noShowPenaltyService;
-
     private User client;
     private User escort;
+
+    @AfterEach
+    void tearDown() {
+        databaseCleaner.clean();
+    }
 
     @BeforeEach
     void setUp() {
@@ -110,8 +108,8 @@ class SettlementConcurrencyTest {
                 .build());
 
         EscortProfile profile = new EscortProfile(escort, "자기소개", "오픈은행", "동행매니저이름", "000-1234567-000");
-        profile.verify(LocalDateTime.now());
-        escortProfileRepository.save(profile);
+        EscortProfile savedProfile = escortProfileRepository.save(profile);
+        escortProfileRepository.verify(savedProfile.getUserId(), LocalDateTime.now());
     }
 
     @Test
