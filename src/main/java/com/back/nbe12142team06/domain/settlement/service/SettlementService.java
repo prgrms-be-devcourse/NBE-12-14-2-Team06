@@ -14,6 +14,7 @@ import com.back.nbe12142team06.domain.settlement.repository.SettlementRepository
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.global.exception.ForbiddenException;
 import com.back.nbe12142team06.global.exception.InternalServerErrorException;
+import com.back.nbe12142team06.global.exception.InvalidException;
 import com.back.nbe12142team06.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,11 +48,20 @@ public class SettlementService {
         String name = accountDto.name();
         String account = accountDto.accountNumber();
 
+        // 정산 중 상태 변경
+        int row = settlementPersistenceService.processingSettlement(settlementId);
+
+        // 변경 된 행이 0개라면 정산 중이거나 정산이 완료 된 경우
+        if (row == 0) {
+            throw new InvalidException(30, "이미 정산 중이거나 정산이 완료되었습니다.");
+        }
+
         try {
             SettlementClientResponse response = settlementApi(accountDto.payoutAmount(), name, account);
             // 정산 완료 상태 변경
             if (response.res_cnt() >= 1) {
                 settlementPersistenceService.updateSettlement(settlementId, SettlementStatus.COMPLETED);
+                log.info("정산 성공 - settlementId: {}", accountDto.id());
             } else {
                 throw new RuntimeException();
             }
@@ -81,13 +91,21 @@ public class SettlementService {
         return new SettlementResponse(settlement);
     }
 
-    // 정산 스캐줄링
+    // 정산 스케줄링
     public int[] settlementProcess() {
         List<AccountDto> accountDtoList = settlementPersistenceService.findAllByStatusAndDate();
         int successCount = 0;
         int failedCount = 0;
 
         for (AccountDto accountDto : accountDtoList) {
+            // 정산 중 상태 변경
+            int row = settlementPersistenceService.processingSettlement(accountDto.id());
+
+            // 변경 된 행이 0개라면 정산 중이거나 정산이 완료 된 경우
+            if (row == 0) {
+                continue;
+            }
+
             try {
                 SettlementClientResponse response =
                         settlementApi(accountDto.payoutAmount(), accountDto.name(), accountDto.accountNumber());

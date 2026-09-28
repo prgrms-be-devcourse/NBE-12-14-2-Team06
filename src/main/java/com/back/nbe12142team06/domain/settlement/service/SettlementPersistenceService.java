@@ -35,4 +35,9 @@ public class SettlementPersistenceService {
         return settlementRepository.findByIdAndState(userId, settlementId)
                 .orElseThrow(() -> new NotFoundException(30, "찾으시는 정산 데이터가 없습니다."));
     }
+
+    @Transactional
+    public int processingSettlement(Long settlementId) {
+        return settlementRepository.updateProcessing(settlementId);
+    }
 }

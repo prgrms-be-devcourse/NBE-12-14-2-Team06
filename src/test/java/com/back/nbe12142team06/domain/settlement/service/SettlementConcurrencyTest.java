@@ -27,6 +27,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -63,6 +64,8 @@ class SettlementConcurrencyTest {
     private EscortProfileRepository escortProfileRepository;
     @Autowired
     private DatabaseCleaner databaseCleaner;
+    @Autowired
+    private TransactionTemplate transactionTemplate;
 
     @MockitoBean
     private SettlementClient settlementClient;
@@ -109,7 +112,8 @@ class SettlementConcurrencyTest {
 
         EscortProfile profile = new EscortProfile(escort, "자기소개", "오픈은행", "동행매니저이름", "000-1234567-000");
         EscortProfile savedProfile = escortProfileRepository.save(profile);
-        escortProfileRepository.verify(savedProfile.getUserId(), LocalDateTime.now());
+        transactionTemplate.executeWithoutResult(transactionStatus ->
+                escortProfileRepository.verify(savedProfile.getUserId(), LocalDateTime.now()));
     }
 
     @Test
