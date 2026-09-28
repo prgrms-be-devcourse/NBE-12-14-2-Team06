@@ -31,9 +31,8 @@ export type ReportTarget = {
 
 /**
  * 동행 현황 화면 하나 (신청 한 건에 대응). 실제 API 로 채웁니다 — model/mapper.ts.
- *
- * ⚠️ 의뢰인명·연락처·보호자 정보는 백엔드 응답에 없어서 빠져 있습니다.
- *    진행 단계도 "읽는" API 가 없어, 공고 상태에서 추정한 doneCount 만 들고 있습니다.
+ * 의뢰인명·연락처·보호자 정보는 GET .../client-profile 로, 진행 단계(doneCount)는
+ * GET .../progress 로 채웁니다(둘 다 application/api.ts).
  */
 export type TrackingCase = {
   /** 내가 신청한 공고(신청 번호) */
@@ -53,6 +52,12 @@ export type TrackingCase = {
   transport: string;
   /** 환자 특이사항. 의뢰인이 안 썼으면 "없음" */
   note: string;
-  /** 완료한 진행 단계 수 (0~6). 공고 상태로 추정한 값입니다 — model/mapper.ts 주석 참고 */
+  clientName: string;
+  clientPhone: string;
+  emergencyContactName: string;
+  emergencyContactPhone: string;
+  /** 의뢰인 특이사항. 안 썼으면 "없음" */
+  careNote: string;
+  /** 완료한 진행 단계 수 (0~6) — GET .../progress 로 조회한 실제 값입니다. */
   doneCount: number;
 };

@@ -135,7 +135,7 @@ public class ApplicationController {
 
     @Operation(summary = "동행자 프로필 조회", description = "특정 지원의 동행자 프로필 정보를 조회합니다.")
     @GetMapping("/{applicationId}/escort-profile")
-    public RsData<ApplicationEscortProfileResponse> profile(
+    public RsData<ApplicationEscortProfileResponse> escortProfile(
             @PathVariable Long applicationId,
             @AuthenticationPrincipal SecurityUser actor
     ) {
@@ -145,6 +145,22 @@ public class ApplicationController {
         return new RsData<>(
                 "200-2",
                 "지원자 프로필 조회가 완료되었습니다.",
+                response
+        );
+    }
+
+    @Operation(summary = "의뢰인 프로필 조회", description = "매칭된 의뢰인 프로필 정보를 조회합니다.")
+    @GetMapping("/{applicationId}/client-profile")
+    public RsData<ApplicationClientProfileResponse> clientProfile(
+            @PathVariable Long applicationId,
+            @AuthenticationPrincipal SecurityUser actor
+    ) {
+        ApplicationClientProfileResponse response =
+                applicationService.getClientProfile(applicationId, actor.getId());
+
+        return new RsData<>(
+                "200-2",
+                "매칭된 의뢰인 프로필 조회가 완료되었습니다.",
                 response
         );
     }

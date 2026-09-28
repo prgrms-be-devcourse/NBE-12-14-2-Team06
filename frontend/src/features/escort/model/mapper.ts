@@ -1,4 +1,4 @@
-import { PROGRESS_ORDER, type EscortProgress, type MyApplicationDto } from '@/features/application';
+import { PROGRESS_ORDER, type ClientProfileDto, type EscortProgress, type MyApplicationDto } from '@/features/application';
 import type { PostDto } from '@/features/post';
 import { formatDateTime, formatDotDate, formatTime, formatTimeRange } from '../lib/date';
 import type { ReportTarget, TrackingCase } from '../types';
@@ -25,11 +25,10 @@ export function toReportTarget(application: MyApplicationDto, post: PostDto): Re
 }
 
 /**
- * 내 지원 한 건(MyApplicationDto) + 그 공고(PostDto) + 이동 정보 + 실제 진행 단계(GET .../progress)
- * → 동행 현황 화면.
+ * 내 지원 한 건(MyApplicationDto) + 그 공고(PostDto) + 이동 정보 + 의뢰인·보호자 정보
+ * (GET .../client-profile) + 실제 진행 단계(GET .../progress) → 동행 현황 화면.
  *
- * ⚠️ 의뢰인명·연락처·보호자 정보는 어느 응답에도 없어서 화면에서 뺐습니다.
- *    postStatus 는 ENUM 이름("IN_PROGRESS")입니다 — 한글을 내려주는 PostDto.postStatus 와 다릅니다.
+ * postStatus 는 ENUM 이름("IN_PROGRESS")입니다 — 한글을 내려주는 PostDto.postStatus 와 다릅니다.
  * doneCount 는 PROGRESS_ORDER 안에서 progress 의 위치 + 1 입니다. NOT_STARTED(index 0) 도 "동행
  * 시작 전까지는 완료"로 쳐서 1 이고, ARRIVED_HOME(index 5) 이면 6 = PROGRESS_ORDER.length 로 전부
  * 완료됩니다 — 예전처럼 postStatus 로 추측하지 않고, 백엔드가 실제로 기록한 단계를 그대로 씁니다.
@@ -39,6 +38,7 @@ export function toTrackingCase(
   post: PostDto,
   transport: string,
   progress: EscortProgress,
+  clientProfile: ClientProfileDto,
 ): TrackingCase {
   return {
     applicationId: application.applicationId,
@@ -52,6 +52,11 @@ export function toTrackingCase(
     endAt: formatDateTime(application.escortEndAt),
     transport,
     note: post.patientNote?.trim() || '없음',
+    clientName: clientProfile.clientName,
+    clientPhone: clientProfile.clientPhone,
+    emergencyContactName: clientProfile.emergencyContactName,
+    emergencyContactPhone: clientProfile.emergencyContactPhone,
+    careNote: clientProfile.careNote?.trim() || '없음',
     doneCount: PROGRESS_ORDER.indexOf(progress) + 1,
   };
 }

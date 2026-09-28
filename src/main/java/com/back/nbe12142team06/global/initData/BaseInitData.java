@@ -9,10 +9,12 @@ import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.entity.PostStatus;
 import com.back.nbe12142team06.domain.post.repository.PostRepository;
+import com.back.nbe12142team06.domain.user.entity.ClientProfile;
 import com.back.nbe12142team06.domain.user.entity.EscortProfile;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Gender;
 import com.back.nbe12142team06.domain.user.enums.Role;
+import com.back.nbe12142team06.domain.user.repository.ClientProfileRepository;
 import com.back.nbe12142team06.domain.user.repository.EscortProfileRepository;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
 import jakarta.persistence.EntityManager;
@@ -47,6 +49,13 @@ import java.util.Set;
  * - 시급은 10,000 ~ 14,000원 사이로 다양하게 분포시킵니다.
  * - 전부 "방금 전"으로만 보이지 않도록, 등록일(createdAt)을 분/시간/일 단위로 다르게 backdate 합니다.
  *   createdAt 은 @CreatedDate(updatable = false) 라 엔티티 빌더로는 못 바꾸므로, 저장 후 네이티브 UPDATE 로 직접 보정합니다.
+ *
+ * 테스트 계정 (전부 비밀번호 "password1!"):
+ * - client01 김의뢰 · client02 이의뢰 · client03 박의뢰
+ * - escort01 최동행(교육 이수 완료 · 인증 완료) · escort02 정동행 · escort03 한동행
+ * - admin01 관리자
+ * - post id=16 "테스트병원 결제 완료 테스트 공고" — client01 소유, 결제(DONE)까지 시드로 채워져 있어
+ *   반복 테스트용으로 쓰기 좋습니다 (실제 토스 API 우회는 TossPaymentClient 참고).
  */
 @Configuration
 @Profile("dev")
@@ -61,6 +70,7 @@ public class BaseInitData {
     private final EducationVideoRepository educationVideoRepository;
     private final EscortProfileRepository escortProfileRepository;
     private final EducationService educationService;
+    private final ClientProfileRepository clientProfileRepository;
 
     @PersistenceContext
     private EntityManager em;
@@ -81,10 +91,13 @@ public class BaseInitData {
     void initPosts() {
         if (userRepository.count() > 0 || this.escortProfileRepository.count() > 0) return; // 이미 데이터가 있으면 다시 만들지 않음 (안전장치)
 
+        // 의뢰인 3명: User + ClientProfile(보호자 정보)까지 생성.
+        // ClientProfile 이 없으면 동행인 쪽 "의뢰인/보호자 정보 조회"(GET .../client-profile)가
+        // 404(의뢰인 프로필을 찾을 수 없습니다)를 던진다.
         List<User> clients = List.of(
-                createClient("client01", "김의뢰", "010-1000-0001", "서울"),
-                createClient("client02", "이의뢰", "010-1000-0002", "부산"),
-                createClient("client03", "박의뢰", "010-1000-0003", "경기")
+                createClientWithProfile("client01", "김의뢰", "010-1000-0001", "서울", "김보호", "010-9000-0001", "고령이라 이동 시 부축이 필요합니다."),
+                createClientWithProfile("client02", "이의뢰", "010-1000-0002", "부산", "이보호", "010-9000-0002", null),
+                createClientWithProfile("client03", "박의뢰", "010-1000-0003", "경기", "박보호", "010-9000-0003", "휠체어를 사용합니다.")
         );
 
         // 동행 매니저 3명: 프로필 + 교육 진행 상황까지 생성. escort01만 교육 이수 완료 상태
@@ -356,6 +369,16 @@ public class BaseInitData {
                 .region(region)
                 .build();
         return userRepository.save(client);
+    }
+
+    // 의뢰인 회원 + 프로필(보호자 정보) 생성
+    private User createClientWithProfile(String username, String name, String phoneNum, String region,
+                                          String emergencyContactName, String emergencyContactPhone, String careNote) {
+        User client = createClient(username, name, phoneNum, region);
+        clientProfileRepository.save(
+                new ClientProfile(client, emergencyContactName, emergencyContactPhone, careNote)
+        );
+        return client;
     }
 
     private User createEscort(String username, String name, String phoneNum, String region) {
