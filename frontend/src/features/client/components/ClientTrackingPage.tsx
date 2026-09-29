@@ -167,7 +167,7 @@ export default function ClientTrackingPage() {
       <AppShell>
         <section className="bg-white py-[100px] text-center">
           <p className="text-xl font-semibold text-brand">동행 정보를 찾을 수 없습니다.</p>
-          <Link href="/client/posts" className={cn(BUTTON, 'mx-auto mt-8 h-14 w-60 border border-line text-brand')}>
+          <Link href="/client/posts" className={cn(BUTTON, 'mx-auto mt-8 h-14 max-w-60 border border-line text-brand')}>
             작성한 공고로
           </Link>
         </section>

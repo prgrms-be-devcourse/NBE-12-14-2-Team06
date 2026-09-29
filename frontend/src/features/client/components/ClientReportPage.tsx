@@ -137,7 +137,7 @@ export default function ClientReportPage() {
       <AppShell>
         <section className="bg-white py-[100px] text-center">
           <p className="text-xl font-semibold text-brand">아직 보고서가 작성되지 않았습니다.</p>
-          <Link href={`/client/escort/${escort.applicationId}`} className={cn(MENU_BUTTON, 'mx-auto mt-8 h-14 w-60')}>
+          <Link href={`/client/escort/${escort.applicationId}`} className={cn(MENU_BUTTON, 'mx-auto mt-8 h-14 max-w-60')}>
             동행 현황으로 돌아가기
           </Link>
         </section>
@@ -150,7 +150,7 @@ export default function ClientReportPage() {
       <AppShell>
         <section className="bg-white py-[100px] text-center">
           <p role="alert" className="text-xl font-semibold text-brand">{state.message}</p>
-          <Link href={`/client/escort/${escort.applicationId}`} className={cn(MENU_BUTTON, 'mx-auto mt-8 h-14 w-60')}>
+          <Link href={`/client/escort/${escort.applicationId}`} className={cn(MENU_BUTTON, 'mx-auto mt-8 h-14 max-w-60')}>
             동행 현황으로 돌아가기
           </Link>
         </section>
