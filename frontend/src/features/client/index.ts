@@ -9,6 +9,7 @@ export { default as PaymentSuccessPage } from './components/SuccessPage';
 export { default as PaymentFailPage } from './components/FailPage';
 export { default as PostCompletePage } from './components/PostCompletePage';
 export { default as ApplicantsPage } from './components/ApplicantsPage';
+export { default as ApplicantProfilePage } from './components/ApplicantProfilePage';
 export { default as ClientTrackingPage } from './components/ClientTrackingPage';
 export { default as ClientReportPage } from './components/ClientReportPage';
 export { default as ClientReviewPage } from './components/ClientReviewPage';

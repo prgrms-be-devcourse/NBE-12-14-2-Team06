@@ -188,6 +188,9 @@ export default function ApplicantsPage() {
                   intro: applicant.profile?.intro
                       ? [applicant.profile.intro]
                       : ['자기소개를 아직 작성하지 않았습니다.'],
+                  ratingCount: applicant.profile?.ratingCount,
+                  noShowCount: applicant.profile?.noShowCount,
+                  verified: applicant.profile?.verified,
                 };
                 return (
                   <li
@@ -198,6 +201,12 @@ export default function ApplicantsPage() {
                     )}
                   >
                     <ManagerProfile manager={manager} size="md" className="px-2 lg:px-[42px]" />
+                    <Link
+                        href={`/client/posts/${postId}/applicants/${applicant.applicationId}/profile`}
+                        className="px-2 text-xs font-semibold text-brand-muted underline underline-offset-2 lg:px-[42px]"
+                    >
+                      프로필 더보기
+                    </Link>
                     <div className="flex gap-[5px] px-2 lg:px-[42px]">
                       {applicant.status === 'ACCEPTED' ? (
                         <span className={cn(BUTTON, 'cursor-default bg-brand text-white')}>승인 완료</span>
