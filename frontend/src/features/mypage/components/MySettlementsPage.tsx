@@ -84,7 +84,7 @@ function SettlementCard({ settlement, onRequested }: { settlement: SettlementDto
         {badge.label}
       </span>
       <div className="flex items-center gap-5">
-        <Image src="/icons/image-placeholder.svg" alt="" width={60} height={60} className="size-[60px] shrink-0" />
+        <Image src="/images/post/eggplant.png" alt="" width={60} height={60} className="size-[60px] shrink-0 object-contain" />
         <div className="min-w-0">
           <p className="truncate text-base leading-4 font-semibold text-brand">{settlement.post.title}</p>
           <p className="mt-2.5 flex items-center gap-2 text-xs leading-4 font-medium text-brand">
