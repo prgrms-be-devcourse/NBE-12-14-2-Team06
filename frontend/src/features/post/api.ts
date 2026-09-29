@@ -43,6 +43,19 @@ export async function fetchPosts(filters: PostFilters, page: number, size: numbe
   };
 }
 
+/**
+ * 내가 작성한 공고 목록 — GET /api/v1/posts/me (의뢰인 로그인 쿠키 필요)
+ * GET /api/v1/posts 와 달리 결제 상태와 무관하게 본인 공고를 전부 돌려줍니다.
+ */
+export async function fetchMyPostsRaw(page = 0, size = 100): Promise<PostPage> {
+  const data = await api<SpringPage<PostDto>>(`/api/v1/posts/me?page=${page}&size=${size}`);
+  return {
+    posts: data.content.map(toPostSummary),
+    totalPages: data.totalPages,
+    totalElements: data.totalElements,
+  };
+}
+
 /** 공고 상세 조회 — GET /api/v1/posts/{postId} (로그인 없이도 됩니다) */
 export async function fetchPost(postId: number): Promise<PostDetail> {
   const dto = await api<PostDto>(`/api/v1/posts/${postId}`);
