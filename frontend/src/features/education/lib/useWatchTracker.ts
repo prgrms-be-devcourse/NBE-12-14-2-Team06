@@ -130,6 +130,8 @@ export function useWatchTracker(videoRef: RefObject<HTMLVideoElement | null>, { 
 
     const handlePlay = () => {
       played = true;
+      // 다시 재생하면 이전 안내(탭 이동으로 일시정지 등)는 지난 일이라 지웁니다.
+      setState((prev) => (prev.notice ? { ...prev, notice: undefined } : prev));
       send(video.currentTime);
       stopTimer();
       timer = window.setInterval(() => send(video.currentTime), HEARTBEAT_MS);
