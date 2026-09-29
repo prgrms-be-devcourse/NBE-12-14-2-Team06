@@ -14,7 +14,7 @@ export default function ClientPostCard({ post }: { post: ClientPost }) {
   return (
     <article className="flex min-h-[315px] w-full min-w-0 flex-col justify-center gap-[5.5px] rounded-[30px] border-[0.68px] border-line bg-white p-5 shadow-[0_0.68px_2.7px_rgba(25,33,61,0.08)] lg:h-[315px] lg:w-[447px]">
       <div className="flex w-full max-w-[377px] items-center gap-5 self-center">
-        <Image src="/icons/image-placeholder.svg" alt="" width={73} height={73} className="size-[72.5px] shrink-0" />
+        <Image src="/images/post/eggplant.png" alt="" width={73} height={73} className="size-[72.5px] shrink-0 object-contain" />
         <div className="flex min-w-0 flex-1 flex-col gap-[13.7px]">
           <div className="flex">
             <StatusLabel tone={label.tone}>{label.text}</StatusLabel>

@@ -44,6 +44,12 @@ export type Manager = {
   region?: string;
   tags?: string[];
   intro: string[];
+  /** 평점을 매긴 사람 수. 값이 없으면 화면에서 별점 옆에 괄호를 생략합니다. */
+  ratingCount?: number;
+  /** 노쇼 횟수. 값이 없으면 화면에서 이 항목을 생략합니다. */
+  noShowCount?: number;
+  /** 신원 인증 여부. true 일 때만 인증 배지를 보여줍니다. */
+  verified?: boolean;
 };
 
 /** 공고에 지원한 동행 매니저 */

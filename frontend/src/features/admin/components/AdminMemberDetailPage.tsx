@@ -82,7 +82,7 @@ export default function AdminMemberDetailPage() {
           {/* 프로필 요약 (Figma 571:21101) */}
           <section className="flex flex-col items-center gap-8 rounded-[30px] border border-line-soft bg-white p-8 shadow-card lg:min-h-[210px] lg:flex-row lg:gap-0">
             <div className="grid size-[101px] shrink-0 place-items-center rounded-[30px] bg-line-soft">
-              <Image src="/icons/avatar.svg" alt="" width={36} height={38} />
+              <Image src="/images/post/eggplant.png" alt="" width={36} height={38} className="object-contain" />
             </div>
 
             <div className="flex min-w-0 flex-1 flex-col lg:ml-8 lg:max-w-[538px]">

@@ -294,7 +294,7 @@ export default function EscortInfoView() {
     <div className="flex max-w-[858px] flex-col gap-[22px] pt-8 lg:pt-[41px]">
       <section className="flex flex-col gap-8 rounded-[30px] border border-line-soft bg-white p-8 shadow-card sm:flex-row lg:min-h-[210px]">
         <div className="grid size-[101px] shrink-0 place-items-center self-center rounded-[30px] bg-line-soft sm:self-start lg:self-center">
-          <Image src="/icons/avatar.svg" alt="" width={36} height={38} />
+          <Image src="/images/post/eggplant.png" alt="" width={36} height={38} className="object-contain" />
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-3 lg:gap-[9px]">
           <div className="flex items-center gap-2.5">

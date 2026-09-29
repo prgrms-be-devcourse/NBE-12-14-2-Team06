@@ -67,7 +67,7 @@ export default function ManagerProfile({ manager, size, className }: { manager: 
     <div className={cn('flex min-w-0 flex-col gap-3', className)}>
       <div className={cn('flex min-w-0 items-center', s.gap)}>
         <div className={cn('grid shrink-0 place-items-center bg-line-soft', s.avatar)}>
-          <Image src="/icons/avatar.svg" alt="" width={36} height={38} style={{ width: s.avatarIcon, height: 'auto' }} />
+          <Image src="/images/post/eggplant.png" alt="" width={36} height={38} className="object-contain" style={{ width: s.avatarIcon, height: 'auto' }} />
         </div>
         <div className={cn('flex min-w-0 flex-1 flex-col', s.info)}>
           <div className="flex flex-wrap items-center gap-1.5">
@@ -77,12 +77,16 @@ export default function ManagerProfile({ manager, size, className }: { manager: 
             {manager.grade && (
                 <EscortGradeBadge grade={manager.grade} />
             )}
+            {manager.verified && (
+              <span className={cn(CHIP, 'border-none bg-[#e4f0ff] text-[#3576d6]', s.tag)}>인증완료</span>
+            )}
           </div>
           <p className={cn('flex flex-wrap items-center font-medium text-brand', s.stats)}>
             {manager.rating > 0 ? (
               <span className="flex items-center gap-1.5">
                 <Image src="/icons/client/star.svg" alt="별점" width={s.icon} height={s.icon} />
                 {manager.rating.toFixed(1)}
+                {manager.ratingCount !== undefined && ` (${manager.ratingCount})`}
               </span>
             ) : (
               <span>평가 없음</span>
@@ -90,6 +94,11 @@ export default function ManagerProfile({ manager, size, className }: { manager: 
             <span>
               완료 동행 <strong className="font-semibold">{manager.completedCount}회</strong>
             </span>
+            {manager.noShowCount !== undefined && (
+              <span>
+                노쇼 <strong className="font-semibold">{manager.noShowCount}회</strong>
+              </span>
+            )}
             {manager.region && (
               <span className="flex items-center gap-1.5">
                 <Image src="/icons/pin.svg" alt="" width={s.icon} height={s.icon} />
