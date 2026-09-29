@@ -62,6 +62,12 @@ export default function ApplicantsPage() {
   }, [postId]);
 
   const decide = async (applicationId: number, decision: 'approved' | 'rejected') => {
+    const confirmed =
+      decision === 'approved'
+        ? window.confirm('이 지원자를 승인하시겠습니까? 승인하면 같은 공고의 나머지 대기 중인 지원은 자동으로 거절됩니다.')
+        : window.confirm('이 지원자를 거절하시겠습니까?');
+    if (!confirmed) return;
+
     setPendingId(applicationId);
     setDecisionError(undefined);
     try {

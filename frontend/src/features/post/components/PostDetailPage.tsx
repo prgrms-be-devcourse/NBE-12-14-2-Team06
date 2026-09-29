@@ -227,6 +227,7 @@ function PostDetailPageBody({ viewer }: Props) {
       router.push(`/login?next=${encodeURIComponent(pathname)}`);
       return;
     }
+    if (!window.confirm('이 공고에 지원하시겠습니까?')) return;
     // TODO: 지원 API(POST /api/v1/applications/{postId})는 동행 매니저(ESCORT) 로그인 쿠키가 있어야 합니다.
     setApplyState('applying');
     setApplyError(undefined);

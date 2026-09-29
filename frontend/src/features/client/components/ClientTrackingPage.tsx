@@ -210,6 +210,7 @@ export default function ClientTrackingPage() {
    */
   const handleComplete = async () => {
     if (postId === undefined) return;
+    if (!window.confirm('동행을 완료 처리하시겠습니까? 실제 동행 시간을 기준으로 정산·결제가 진행됩니다.')) return;
     setCompleting(true);
     setCompleteError(undefined);
     try {
