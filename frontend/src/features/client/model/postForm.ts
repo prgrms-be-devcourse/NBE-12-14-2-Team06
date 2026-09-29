@@ -91,6 +91,9 @@ export function parsePay(hourlyPay: string): number {
   return Number(hourlyPay.replace(/[^0-9]/g, '')) || 0;
 }
 
+/** 등록 가능한 최소 시급. 2026년 최저시급(10,320원) × 플랫폼 수수료 10% 포함 (백엔드 PostWriteRequest.hourlyPay 의 @Min 과 같은 값이어야 합니다) */
+export const MIN_HOURLY_PAY = 11352;
+
 /** "2026-09-20" + "10:00" → "2026-09-20T10:00:00" (백엔드 LocalDateTime 포맷) */
 export function toIsoDateTime(date: string, time: string): string {
   return `${date}T${time}:00`;
