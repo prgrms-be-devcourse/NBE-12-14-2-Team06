@@ -87,6 +87,12 @@ export type ClientEscortCase = {
    * 리뷰 작성·정산 같은 "Post 완료"가 필요한 기능은 stage 대신 이 값을 봐야 합니다.
    */
   postCompleted: boolean;
+  /**
+   * 이 동행 건에 리뷰가 이미 작성되었는지. 동행인이 받은 리뷰 목록
+   * (GET /api/v1/users/{escortId}/reviews)에서 applicationId 로 찾습니다.
+   * 목록 조회가 실패하면 알 수 없어 false 가 되는데, 중복 작성은 서버가 막습니다.
+   */
+  reviewed: boolean;
   title: string;
   hospitalName: string;
   region: string;
