@@ -20,3 +20,10 @@ custom:
     api-key: ${CLAUDE_API_KEY}
     model: claude-sonnet-5
     max-tokens: 1024
+  admin:
+    username: ${ADMIN_USERNAME}
+    password: ${ADMIN_PASSWORD}
+    email: ${ADMIN_EMAIL}
+    phone-num: ${ADMIN_PHONE_NUM}
+    name: ${ADMIN_NAME:관리자}
+    region: ${ADMIN_REGION:서울}
