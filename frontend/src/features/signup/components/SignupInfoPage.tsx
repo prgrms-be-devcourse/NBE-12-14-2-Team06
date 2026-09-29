@@ -17,7 +17,6 @@ import CheckButton from './form/CheckButton';
 import FormCard from './form/FormCard';
 import FormField from './form/FormField';
 import GenderRadioGroup from './form/GenderRadioGroup';
-import RoleSwitch from './form/RoleSwitch';
 import SelectInput from './form/SelectInput';
 import StepNavButton from './form/StepNavButton';
 import TextArea from './form/TextArea';
@@ -294,10 +293,6 @@ export default function SignupInfoPage() {
               />
               <FormCard className="px-5 py-8 lg:px-[33px] lg:py-[39px]">
                 <div className={GRID}>
-                  <div className="lg:col-span-2">
-                    <RoleSwitch role={role} locked={accountCreated} />
-                  </div>
-
                   <FormField label="이름*" htmlFor="signup-name">
                     <TextInput
                       id="signup-name"
