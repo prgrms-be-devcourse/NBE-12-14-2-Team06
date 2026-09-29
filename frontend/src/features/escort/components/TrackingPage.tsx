@@ -134,6 +134,7 @@ export default function TrackingPage() {
 
   const handleAdvance = async () => {
     if (finished) return;
+    if (!window.confirm(`'${nextLabel}'(으)로 진행 상태를 변경하시겠습니까?`)) return;
     setAdvancing(true);
     setProgressError(undefined);
     try {

@@ -134,6 +134,7 @@ export default function ReportWritePage() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!window.confirm('보고서를 제출하시겠습니까? 제출 후에는 수정할 수 없습니다.')) return;
     setSubmitError('');
 
     const form = new FormData(event.currentTarget);
