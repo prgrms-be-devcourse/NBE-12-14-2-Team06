@@ -251,6 +251,11 @@ public class UserService {
         User user = this.userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("회원 정보를 찾을 수 없습니다."));
 
+        // 의뢰인만 프로필 생성 가능
+        if (user.getRole() != Role.CLIENT) {
+            throw new ForbiddenException(3, "의뢰인만 의뢰인 프로필을 생성할 수 있습니다.");
+        }
+
         if (this.clientProfileRepository.existsById(userId)) {
             throw new DuplicatedException(4, "이미 의뢰인 프로필이 존재합니다.");
         }
@@ -312,6 +317,11 @@ public class UserService {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("회원 정보를 찾을 수 없습니다."));
+
+        // 동행 매니저만 동행인 프로필 생성 가능
+        if (user.getRole() != Role.ESCORT) {
+            throw new ForbiddenException(3, "동행 매니저만 동행인 프로필을 생성할 수 있습니다.");
+        }
 
         if (escortProfileRepository.existsById(userId)) {
             throw new DuplicatedException(5, "이미 존재하는 동행 매니저 프로필입니다.");

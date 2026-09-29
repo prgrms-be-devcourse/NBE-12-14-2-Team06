@@ -69,7 +69,7 @@ public class EscortProfileConcurrencyTest {
                 "Password123!",
                 "user" + i + "@test.com",
                 "테스트",
-                Role.CLIENT,
+                Role.ESCORT,
                 Gender.MALE,
                 LocalDate.of(1990, 1, 1),
                 "010" + String.format("%08d", i),   // 01000000000 ~ 01000000009
