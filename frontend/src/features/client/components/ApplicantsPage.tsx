@@ -191,6 +191,9 @@ export default function ApplicantsPage() {
                   ratingCount: applicant.profile?.ratingCount,
                   noShowCount: applicant.profile?.noShowCount,
                   verified: applicant.profile?.verified,
+                  age: applicant.profile?.age,
+                  gender: applicant.profile?.gender,
+                  region: applicant.profile?.region,
                 };
                 return (
                   <li
