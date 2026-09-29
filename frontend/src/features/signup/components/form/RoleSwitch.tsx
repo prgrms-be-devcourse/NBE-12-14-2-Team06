@@ -16,8 +16,10 @@ const ITEMS: { role: SignupRole; label: string }[] = [
  * 누르면 주소의 ?role= 만 바꾸고, 그에 맞는 입력칸이 나옵니다.
  * 이미 입력한 값은 SignupContext 에 남아 있어 유형을 오가도 그대로입니다.
  * 뒤로 가기에 같은 단계가 쌓이지 않도록 replace 로 이동합니다.
+ *
+ * locked 면 모양은 그대로 두고 눌러도 이동하지 않습니다. (이미 이 유형으로 계정이 만들어진 경우)
  */
-export default function RoleSwitch({ role }: { role: SignupRole }) {
+export default function RoleSwitch({ role, locked = false }: { role: SignupRole; locked?: boolean }) {
   const pathname = usePathname();
 
   return (
@@ -34,6 +36,8 @@ export default function RoleSwitch({ role }: { role: SignupRole }) {
             href={`${pathname}?role=${item.role}`}
             replace
             aria-current={selected ? 'true' : undefined}
+            aria-disabled={locked || undefined}
+            onClick={locked ? (event) => event.preventDefault() : undefined}
             className={cn(
               'flex h-11 w-[120px] shrink-0 items-center justify-center p-2.5 text-base leading-5 font-semibold whitespace-nowrap transition-colors',
               'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand',

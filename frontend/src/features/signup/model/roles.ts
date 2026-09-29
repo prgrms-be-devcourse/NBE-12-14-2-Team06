@@ -9,7 +9,7 @@ export const ROLE_OPTIONS: RoleOption[] = [
     imageAlt: '지팡이를 짚고 서 있는 어르신 일러스트',
     cta: '의뢰인으로 가입하기',
     variant: 'solid',
-    href: '/signup/info?role=CLIENT',
+    href: '/signup/terms?role=CLIENT',
     benefits: [
       '원하는 날짜와 시간을 선택해 동행을 요청 할 수 있어요',
       '지원한 동행 매니저를 확인하고 선택할 수 있어요',
@@ -24,7 +24,7 @@ export const ROLE_OPTIONS: RoleOption[] = [
     imageAlt: '휠체어에 탄 어르신과 함께 있는 동행 매니저 일러스트',
     cta: '동행 매니저로 가입하기',
     variant: 'ghost',
-    href: '/signup/info?role=ESCORT',
+    href: '/signup/terms?role=ESCORT',
     benefits: [
       '원하는 공고를 찾아 지원할 수 있어요',
       '내 일정에 맞춰 자유롭게 활동할 수 있어요',
