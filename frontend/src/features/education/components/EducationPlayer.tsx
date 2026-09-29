@@ -90,7 +90,8 @@ export default function EducationPlayer({ video, verified }: Props) {
             {tracker.verified ? '이제 공고에 지원할 수 있습니다.' : '남은 필수 영상을 모두 시청하면 교육 이수가 완료됩니다.'}
           </p>
           <Link
-            href={tracker.verified ? '/posts' : '/mypage/education'}
+            // 동행 매니저는 지원용 목록(/escort/posts)으로 보냅니다. (헤더 "공고 찾기"·가입 완료 화면과 같은 곳)
+            href={tracker.verified ? '/escort/posts' : '/mypage/education'}
             className="flex h-[27px] items-center rounded-[30px] bg-brand px-7 text-xs leading-4 font-semibold text-white transition-colors hover:bg-brand-hover"
           >
             {tracker.verified ? '공고 보러 가기' : '교육 영상 목록'}
