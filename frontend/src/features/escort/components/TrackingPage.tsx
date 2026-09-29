@@ -127,6 +127,8 @@ export default function TrackingPage() {
   // 완료한 단계 수(doneCount)로 화면 3단계(매칭 완료/동행 중/동행 완료)와 타임라인을 다시 계산합니다.
   const timeline = TIMELINE_BASE.map((step, index) => ({ ...step, done: index < doneCount }));
   const finished = doneCount >= PROGRESS_ORDER.length;
+  // 병원 도착(AT_HOSPITAL)까지 끝냈으면 동행이 끝나기 전에도 보고서를 쓸 수 있게 합니다.
+  const arrivedAtHospital = doneCount > PROGRESS_ORDER.indexOf('AT_HOSPITAL');
   const stage: EscortStage = finished ? 'done' : doneCount >= 2 ? 'ongoing' : 'ready';
   const info = STAGE_INFO[stage];
   const nextLabel = timeline[doneCount]?.label;
@@ -134,6 +136,7 @@ export default function TrackingPage() {
 
   const handleAdvance = async () => {
     if (finished) return;
+    if (!window.confirm(`'${nextLabel}'(으)로 진행 상태를 변경하시겠습니까?`)) return;
     setAdvancing(true);
     setProgressError(undefined);
     try {
@@ -229,21 +232,28 @@ export default function TrackingPage() {
                   </p>
                 )}
                 <div className="mt-5 flex flex-col gap-1.5">
-                  {finished ? (
-                    hasReport ? (
-                      <Link href={`/escort/${escort.applicationId}/report`} className={cn(BUTTON, 'bg-brand text-white hover:bg-brand-hover')}>
-                        보고서 조회
-                      </Link>
-                    ) : (
-                      <Link href={`/escort/${escort.applicationId}/report/new`} className={cn(BUTTON, 'bg-brand text-white hover:bg-brand-hover')}>
-                        {info.primary}
-                      </Link>
-                    )
-                  ) : (
+                  {!finished && (
                     <button type="button" onClick={handleAdvance} disabled={advancing} className={cn(BUTTON, 'bg-brand text-white hover:bg-brand-hover')}>
                       {advancing ? '처리 중…' : nextLabel}
                     </button>
                   )}
+                  {/* 남은 단계(귀가 중·귀가 완료)가 있을 때는 진행 버튼이 주 버튼이라 보고서 버튼은 외곽선으로 둡니다. */}
+                  {arrivedAtHospital &&
+                    (hasReport ? (
+                      <Link
+                        href={`/escort/${escort.applicationId}/report`}
+                        className={cn(BUTTON, finished ? 'bg-brand text-white hover:bg-brand-hover' : 'border border-line bg-white text-brand hover:bg-line-soft')}
+                      >
+                        보고서 조회
+                      </Link>
+                    ) : (
+                      <Link
+                        href={`/escort/${escort.applicationId}/report/new`}
+                        className={cn(BUTTON, finished ? 'bg-brand text-white hover:bg-brand-hover' : 'border border-line bg-white text-brand hover:bg-line-soft')}
+                      >
+                        보고서 작성
+                      </Link>
+                    ))}
                   {finished ? (
                     <>
                       <Link href={detailHref} className={cn(BUTTON, 'border border-line bg-white text-brand hover:bg-line-soft')}>공고 상세보기</Link>

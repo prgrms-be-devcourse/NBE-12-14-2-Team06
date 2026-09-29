@@ -67,6 +67,9 @@ export type EscortProfileDto = {
   ratingCount: number;
   noShowCount: number;
   grade: EscortGrade;
+  age: number;
+  gender: 'MALE' | 'FEMALE';
+  region: string;
 };
 
 /** 화면에서 쓰기 좋게 다듬은 지원자 한 명 (목록 + 프로필을 합친 모양) */

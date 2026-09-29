@@ -18,7 +18,11 @@ export function formatDotDate(value: string): string {
 
 /** "오전 9:00" · "오후 12:30" */
 export function formatTime(value: string): string {
-  const date = parseDateTime(value);
+  return formatClockTime(parseDateTime(value));
+}
+
+/** Date 를 "오전 9:00" 꼴로 — 백엔드 문자열이 아닌 시각(예: 임시 저장 시각)에 씁니다. */
+export function formatClockTime(date: Date): string {
   const hour = date.getHours();
   const minute = String(date.getMinutes()).padStart(2, '0');
   return `${hour < 12 ? '오전' : '오후'} ${hour % 12 || 12}:${minute}`;

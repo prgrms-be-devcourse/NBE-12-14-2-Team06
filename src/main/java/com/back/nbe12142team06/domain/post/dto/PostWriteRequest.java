@@ -31,7 +31,7 @@ public record PostWriteRequest(
         BigDecimal pickupLat,
         @NotNull(message = "픽업 경도는 필수 항목입니다.")
         BigDecimal pickupLng,
-        @Min(value = 1, message = "시급은 1원 이상이어야 합니다.")
+        @Min(value = 11352, message = "시급은 최저시급(10,320원) 기준 수수료 10%를 더한 11,352원 이상이어야 합니다.")
         int hourlyPay,
         @NotNull(message = "모집 시작 시간은 필수 항목입니다.")
         LocalDateTime recruitStartAt,

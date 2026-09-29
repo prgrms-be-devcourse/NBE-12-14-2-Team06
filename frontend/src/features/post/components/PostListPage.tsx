@@ -122,6 +122,7 @@ export default function PostListPage({
       router.push(`/login?next=${encodeURIComponent(pathname)}`);
       return;
     }
+    if (!window.confirm('이 공고에 지원하시겠습니까?')) return;
     setApplyStatus((prev) => ({ ...prev, [postId]: 'applying' }));
     try {
       await applyToPost(postId);

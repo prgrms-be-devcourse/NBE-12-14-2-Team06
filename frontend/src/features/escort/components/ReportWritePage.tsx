@@ -11,7 +11,9 @@ import { cn } from '@/lib/cn';
 import { showUnimplemented } from '@/lib/unimplemented';
 import { writeReport } from '@/features/report';
 import { fetchReportTarget } from '../api';
+import { formatClockTime } from '../lib/date';
 import { DEPARTMENTS } from '../model/departments';
+import { clearReportDraft, loadReportDraft, saveReportDraft, type ReportDraft, type ReportDraftFields } from '../model/reportDraft';
 import type { ReportTarget } from '../types';
 
 const MAX_PHOTOS = 4;
@@ -48,6 +50,27 @@ type TargetResult =
   | { status: 'error'; message: string }
   | { status: 'ready'; target: ReportTarget };
 
+/** 임시 저장 상태. key 는 지금 보고 있는 동행 건 — 다른 건으로 옮겨가면 다시 읽어야 합니다. */
+type DraftState = { key: number; loaded?: ReportDraft; savedAt?: number };
+
+function readDraftState(applicationId: number): DraftState {
+  const loaded = loadReportDraft(applicationId);
+  return { key: applicationId, loaded, savedAt: loaded?.savedAt };
+}
+
+/** 폼의 현재 입력값을 임시 저장용 모양으로 (제출할 때는 여기서 공백만 다듬어 씁니다). */
+function readFields(form: HTMLFormElement): ReportDraftFields {
+  const data = new FormData(form);
+  const value = (name: string) => String(data.get(name) ?? '');
+  return { department: value('department'), purpose: value('purpose'), summary: value('summary'), notes: value('notes') };
+}
+
+/** 저장 시각을 "분"까지만 보여주므로, 같은 분 안에서 또 저장됐으면 다시 그리지 않습니다. */
+function sameMinute(a: number | undefined, b: number | undefined): boolean {
+  if (a === undefined || b === undefined) return a === b;
+  return Math.floor(a / 60_000) === Math.floor(b / 60_000);
+}
+
 /**
  * 동행 보고서 작성 — Figma 동행 매니저_보고서 작성 화면 61:1269
  *
@@ -55,6 +78,9 @@ type TargetResult =
  * 제출은 POST /api/v1/applications/{applicationId}/report 입니다.
  * 형식 검사는 브라우저 기본 검사(required)를 씁니다.
  * 첨부 사진은 서버에 업로드 API 가 없어 미리보기만 보여주고 전송하지 않습니다.
+ *
+ * 입력값은 칠 때마다 localStorage 에 임시 저장해(model/reportDraft.ts) 다시 들어오면 이어서 쓸 수 있고,
+ * 제출에 성공하면 지웁니다. 사진은 브라우저 안에서만 사는 blob 이라 임시 저장 대상이 아닙니다.
  */
 export default function ReportWritePage() {
   const { loading: authLoading, user } = useRequireAuth('ESCORT');
@@ -66,6 +92,11 @@ export default function ReportWritePage() {
   const [photos, setPhotos] = useState<{ name: string; url: string }[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [draft, setDraft] = useState<DraftState>(() => readDraftState(applicationId));
+
+  // 같은 화면이 다른 동행 건으로 재사용될 수 있어, 그때는 그 건의 임시 저장본으로 바꿉니다.
+  // 주소가 숫자가 아니면 applicationId 가 NaN 이라, !== 대신 Object.is 로 비교해야 무한 렌더가 안 납니다.
+  if (!Object.is(draft.key, applicationId)) setDraft(readDraftState(applicationId));
 
   // 미리보기 주소는 화면을 떠날 때 정리합니다.
   useEffect(() => () => photos.forEach((photo) => URL.revokeObjectURL(photo.url)), [photos]);
@@ -132,21 +163,35 @@ export default function ReportWritePage() {
     event.target.value = '';
   };
 
+  /** 입력할 때마다 임시 저장합니다. 칸이 몇 개뿐이라 따로 지연을 두지 않고 바로 씁니다. */
+  const handleDraftChange = (event: FormEvent<HTMLFormElement>) => {
+    const savedAt = saveReportDraft(applicationId, readFields(event.currentTarget));
+    setDraft((prev) => (sameMinute(prev.savedAt, savedAt) ? prev : { ...prev, savedAt }));
+  };
+
+  /** 불러온 임시 저장본을 버리고 빈 폼으로 — form 의 key 가 바뀌면서 입력칸도 비워집니다. */
+  const handleDiscardDraft = () => {
+    if (!window.confirm('임시 저장된 내용을 지우고 새로 작성하시겠습니까?')) return;
+    clearReportDraft(applicationId);
+    setDraft({ key: applicationId });
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!window.confirm('보고서를 제출하시겠습니까? 제출 후에는 수정할 수 없습니다.')) return;
     setSubmitError('');
 
-    const form = new FormData(event.currentTarget);
-    const value = (name: string) => String(form.get(name) ?? '').trim();
+    const fields = readFields(event.currentTarget);
 
     setSubmitting(true);
     try {
       await writeReport(escort.applicationId, {
-        department: value('department'),
-        purpose: value('purpose'),
-        originContent: value('summary'),
-        notes: value('notes'),
+        department: fields.department.trim(),
+        purpose: fields.purpose.trim(),
+        originContent: fields.summary.trim(),
+        notes: fields.notes.trim(),
       });
+      clearReportDraft(applicationId);
       router.push(`/escort/${escort.applicationId}/report/done`);
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : '보고서 제출에 실패했습니다.');
@@ -165,7 +210,23 @@ export default function ReportWritePage() {
           />
 
           <div className="grid items-start gap-[22px] lg:grid-cols-[minmax(0,745px)_minmax(0,511px)] lg:justify-center">
-            <form onSubmit={handleSubmit} className="flex min-w-0 flex-col gap-[34px] rounded-[30px] border border-line bg-white px-6 py-8 shadow-card">
+            <form
+              key={`${applicationId}:${draft.loaded ? 'draft' : 'blank'}`}
+              onSubmit={handleSubmit}
+              onChange={handleDraftChange}
+              className="flex min-w-0 flex-col gap-[34px] rounded-[30px] border border-line bg-white px-6 py-8 shadow-card"
+            >
+              {draft.loaded && (
+                <div className="flex flex-wrap items-center justify-between gap-2.5 rounded-[20px] border border-line bg-line-soft px-5 py-4">
+                  <p className="text-sm leading-5 font-medium text-brand">
+                    {formatClockTime(new Date(draft.loaded.savedAt))}에 임시 저장한 내용을 불러왔습니다.
+                  </p>
+                  <button type="button" onClick={handleDiscardDraft} className="text-sm leading-5 font-semibold text-brand underline underline-offset-4">
+                    새로 작성하기
+                  </button>
+                </div>
+              )}
+
               <div>
                 <SectionTitle>기본 정보</SectionTitle>
                 <div className="rounded-[30px] border border-line bg-line-soft px-5 py-5">
@@ -195,7 +256,13 @@ export default function ReportWritePage() {
                 <div className="flex flex-col gap-[5px]">
                   <FieldRow label="진료 과목*" htmlFor="report-department">
                     <div className="relative">
-                      <select id="report-department" name="department" required defaultValue="" className={cn(FIELD, 'h-[61px] appearance-none pr-12 invalid:text-brand-muted')}>
+                      <select
+                        id="report-department"
+                        name="department"
+                        required
+                        defaultValue={draft.loaded?.department ?? ''}
+                        className={cn(FIELD, 'h-[61px] appearance-none pr-12 invalid:text-brand-muted')}
+                      >
                         <option value="" disabled hidden>선택해주세요</option>
                         {DEPARTMENTS.map((department) => (
                           <option key={department.value} value={department.value} className="text-brand">{department.label}</option>
@@ -205,13 +272,21 @@ export default function ReportWritePage() {
                     </div>
                   </FieldRow>
                   <FieldRow label="진료 목적*" htmlFor="report-purpose">
-                    <input id="report-purpose" name="purpose" required placeholder="예) 수술 전 검사, 정기 검진 등" className={cn(FIELD, 'h-[61px]')} />
+                    <input
+                      id="report-purpose"
+                      name="purpose"
+                      required
+                      defaultValue={draft.loaded?.purpose}
+                      placeholder="예) 수술 전 검사, 정기 검진 등"
+                      className={cn(FIELD, 'h-[61px]')}
+                    />
                   </FieldRow>
                   <FieldRow label="진료 내용 요약*" htmlFor="report-summary">
                     <textarea
                       id="report-summary"
                       name="summary"
                       required
+                      defaultValue={draft.loaded?.summary}
                       placeholder={'진료 과정과 주요 내용을 작성해주세요.\n(예: 검사 항목, 진료 결과, 의사 소견 등)'}
                       className={cn(FIELD, 'h-[120px] resize-none py-[18px]')}
                     />
@@ -225,6 +300,7 @@ export default function ReportWritePage() {
                   id="report-notes"
                   name="notes"
                   aria-label="특이사항"
+                  defaultValue={draft.loaded?.notes}
                   placeholder={'동행 중 특이사항이 있다면 입력해주세요.\n(예: 대기 시간, 추가 검사, 의뢰인 상태, 특이 상황 등)'}
                   className={cn(FIELD, 'h-[120px] resize-none py-[18px]')}
                 />
@@ -270,6 +346,11 @@ export default function ReportWritePage() {
                   {submitError}
                 </p>
               )}
+
+              <div className="-mb-[22px] flex flex-wrap items-center gap-1.5 px-4 text-sm leading-5 font-medium text-brand-muted">
+                <span>작성 중인 내용은 이 브라우저에 임시 저장되어, 다시 들어오면 이어서 쓸 수 있습니다.</span>
+                <span aria-live="polite">{draft.savedAt !== undefined && `(${formatClockTime(new Date(draft.savedAt))} 저장됨)`}</span>
+              </div>
 
               <div className="flex gap-[15px]">
                 <Link href={`/escort/${escort.applicationId}`} className="flex h-[55px] flex-1 items-center justify-center rounded-[25px] border border-line bg-white text-base leading-[18px] font-semibold text-brand transition-colors hover:bg-line-soft">

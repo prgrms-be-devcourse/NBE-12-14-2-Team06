@@ -167,7 +167,7 @@ export default function ClientTrackingPage() {
       <AppShell>
         <section className="bg-white py-[100px] text-center">
           <p className="text-xl font-semibold text-brand">동행 정보를 찾을 수 없습니다.</p>
-          <Link href="/client/posts" className={cn(BUTTON, 'mx-auto mt-8 h-14 w-60 border border-line text-brand')}>
+          <Link href="/client/posts" className={cn(BUTTON, 'mx-auto mt-8 h-14 max-w-60 border border-line text-brand')}>
             작성한 공고로
           </Link>
         </section>
@@ -210,6 +210,7 @@ export default function ClientTrackingPage() {
    */
   const handleComplete = async () => {
     if (postId === undefined) return;
+    if (!window.confirm('동행을 완료 처리하시겠습니까? 실제 동행 시간을 기준으로 정산·결제가 진행됩니다.')) return;
     setCompleting(true);
     setCompleteError(undefined);
     try {
