@@ -13,30 +13,30 @@ export const TIMELINE_BASE: { label: string; description: string }[] = [
   { label: '귀가 완료', description: '귀가를 완료했습니다.' },
 ];
 
-/** 단계별 화면 문구·버튼 (Figma "진행 요약" 카드) */
+/**
+ * 단계별 화면 문구·버튼 (Figma "진행 요약" 카드)
+ * 주 버튼 문구는 TIMELINE_BASE 의 다음 단계 이름을 그대로 쓰므로 여기에 두지 않습니다.
+ */
 export const STAGE_INFO: Record<
   EscortStage,
-  { badge: string; badgeTone: 'blue' | 'strong'; guide: string[]; primary: string; third: string }
+  { badge: string; badgeTone: 'blue' | 'strong'; guide: string[]; third: string }
 > = {
   ready: {
     badge: '진행 중',
     badgeTone: 'blue',
     guide: ['동행 시작 전입니다.', '일정과 의뢰 정보를 확인해주세요.'],
-    primary: '동행 시작',
     third: '공고 상세보기',
   },
   ongoing: {
     badge: '진행 중',
     badgeTone: 'blue',
     guide: ['현재 동행이 진행 중입니다.', '안전하게 동행을 진행해주세요.'],
-    primary: '병원 도착',
     third: '공고 상세보기',
   },
   done: {
     badge: '완료',
     badgeTone: 'strong',
     guide: ['동행이 정상적으로 완료되었습니다.', '진료 내용을 정리하여 보고서를 작성해주세요.'],
-    primary: '보고서 작성',
     third: '정산 요청하기',
   },
 };
