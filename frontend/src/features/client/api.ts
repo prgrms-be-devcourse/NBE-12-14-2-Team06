@@ -4,7 +4,7 @@ import { fetchUserReviews } from '@/features/review';
 import { fetchRidesByPost, formatTransport } from '@/features/ride';
 import { api, apiPatch } from '@/lib/api';
 import { toClientEscortCase } from './model/escort';
-import { toManager, topReviewTagLabels } from './model/mapper';
+import { toManager, topReviewTags } from './model/mapper';
 import { toClientPost } from './model/posts';
 import type { ClientEscortCase, ClientPost } from './types';
 
@@ -25,9 +25,12 @@ export async function fetchClientEscortCase(postId: number, applicationId: numbe
 
   // 리뷰는 매니저 카드의 태그 계산용이라, 실패해도 나머지 화면은 그대로 보여줍니다.
   const reviews = await fetchUserReviews(profile.escortId).catch(() => []);
-  const manager = toManager(profile, topReviewTagLabels(reviews));
+  const manager = toManager(profile, topReviewTags(reviews));
+  // 이 동행 건의 리뷰 작성 여부도 같은 목록에서 봅니다 — ReviewDto 가 applicationId 를 들고 있어
+  // "이 글의 리뷰" 조회 API 없이 판정할 수 있습니다.
+  const reviewed = reviews.some((review) => review.applicationId === applicationId);
 
-  return toClientEscortCase(post, applicationId, manager, formatTransport(rides), progress.progress);
+  return toClientEscortCase(post, applicationId, manager, formatTransport(rides), progress.progress, reviewed);
 }
 
 /**

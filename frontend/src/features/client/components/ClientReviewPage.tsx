@@ -123,7 +123,7 @@ export default function ClientReviewPage() {
     setSubmitting(true);
     try {
       await writeReview(escort.applicationId, { rating, tags, content });
-      router.push(`/client/escort/${escort.applicationId}`);
+      router.push(`/client/escort/${escort.applicationId}?postId=${postId}`);
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : '리뷰 제출에 실패했습니다.');
       setSubmitting(false);

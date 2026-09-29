@@ -42,6 +42,10 @@ export type Manager = {
   grade?: EscortGrade;
   /** "서울 강남구". 값이 없으면 화면에서 이 줄을 생략합니다. */
   region?: string;
+  /**
+   * 많이 받은 리뷰 태그 (백엔드 ReviewTag ENUM 이름. 한글 문구·색은 화면에서 reviewTagInfo 로 구합니다).
+   * 표에 없는 값은 이름을 그대로 보여줍니다.
+   */
   tags?: string[];
   intro: string[];
   /** 평점을 매긴 사람 수. 값이 없으면 화면에서 별점 옆에 괄호를 생략합니다. */
@@ -87,6 +91,12 @@ export type ClientEscortCase = {
    * 리뷰 작성·정산 같은 "Post 완료"가 필요한 기능은 stage 대신 이 값을 봐야 합니다.
    */
   postCompleted: boolean;
+  /**
+   * 이 동행 건에 리뷰가 이미 작성되었는지. 동행인이 받은 리뷰 목록
+   * (GET /api/v1/users/{escortId}/reviews)에서 applicationId 로 찾습니다.
+   * 목록 조회가 실패하면 알 수 없어 false 가 되는데, 중복 작성은 서버가 막습니다.
+   */
+  reviewed: boolean;
   title: string;
   hospitalName: string;
   region: string;
