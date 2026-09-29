@@ -89,7 +89,7 @@ public class PaymentService {
         return payment;
     }
 
-    public Payment cancel(Payment payment, PaymentCancelRequest request, int cancelAmount) {
+    public Payment cancel(Payment payment, PaymentCancelRequest request, int cancelAmount, Boolean postCompleted) {
         String tossPaymentKey = payment.getPaymentKey();
         String cancelReason = request.cancelReason();
 
@@ -99,7 +99,7 @@ public class PaymentService {
 
         // DB 반영
         try {
-            if (payment.getBalanceAmount() > cancelAmount) {
+            if (payment.getBalanceAmount() > cancelAmount || (postCompleted != null && postCompleted)) {
                 paymentPersistenceService.paymentPartialCancelDb(payment.getId(), cancelReason, cancelAmount);
             } else {
                 paymentPersistenceService.paymentCancelDb(payment.getId(), cancelReason);
@@ -122,7 +122,7 @@ public class PaymentService {
     public Payment cancel(Long userId, Long paymentId, PaymentCancelRequest request) {
         Payment payment = findById(userId, paymentId);
         int amount = payment.getAmount();
-        return this.cancel(payment, request, amount);
+        return this.cancel(payment, request, amount, null);
     }
 
     public void verifyAmount(String amount, SaveAmountRequest request) {
@@ -161,7 +161,7 @@ public class PaymentService {
             cancel(
                     payments.getFirst(),
                     new PaymentCancelRequest("결제 금액: %s, 이용 금액: %s".formatted(balanceAmount + payoutAmount, payoutAmount)),
-                    balanceAmount
+                    balanceAmount, true
             );
         }
 
