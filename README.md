@@ -43,10 +43,10 @@
     <summary style="font-weight: bold">독거 노인의 비율</summary>
 
 ![singleelderlyratio](/readme-images/single_elderly_ratio.png)
- 
+
 - 독거 노인의 비율이 해마다 약 0.5%씩 증가
 - 고령자의 수와 독거 노인의 비율이 **함께 증가**하며, 사회적 위험을 기하급수적으로 **증폭** 초래
-- 출처: 국가데이터처, 「장래가구추계 2022」, 「장래인구추계 2022」 2024 
+- 출처: 국가데이터처, 「장래가구추계 2022」, 「장래인구추계 2022」 2024
 
 </details>
 
@@ -78,6 +78,7 @@
 </div>
 
 ---
+
 # 📚 기술 스택 📚
 
 ### Front End
@@ -87,7 +88,6 @@
 ![css](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=CSS3&logoColor=white)
 ![typescript](https://img.shields.io/badge/typescript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
 ![react](https://img.shields.io/badge/react-61DAFB?style=for-the-badge&logo=react&logoColor=white)
-
 
 ### Back End
 
@@ -102,10 +102,12 @@
 ![gradle](https://img.shields.io/badge/gradle-02303A?style=for-the-badge&logo=gradle&logoColor=white)
 
 ### Third-Party
+
 ![claude](https://img.shields.io/badge/claude-D97757?style=for-the-badge&logo=claude&logoColor=white)
 ![tosspayment](https://img.shields.io/badge/tosspayment-007acc?style=for-the-badge&logo=tosspayment&logoColor=white)
 
 ### Infra
+
 ![railway](https://img.shields.io/badge/railway-0B0D0E?style=for-the-badge&logo=railway&logoColor=white)
 ![vercel](https://img.shields.io/badge/vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)
 
@@ -122,8 +124,10 @@
 
 # 👥 팀원
 
-
-
+|                [최훈희](https://github.com/hunhee99)<br>(BE, 팀장)                 |                 [장윤찬](https://github.com/globaltoper)<br>(BE)                  |                 [김신영](https://github.com/kimssin1991)<br>(BE)                 |                   [나희원](https://github.com/lion1230)<br>(BE)                   |                   [박현호](https://github.com/PHH1123)<br>(BE)                    |
+|:-----------------------------------------------------------------------------:|:------------------------------------------------------------------------------:|:-----------------------------------------------------------------------------:|:------------------------------------------------------------------------------:|:------------------------------------------------------------------------------:|
+| <img src='https://avatars.githubusercontent.com/u/67158609?v=4' width='100'/> | <img src='https://avatars.githubusercontent.com/u/276445634?v=4' width='100'/> | <img src='https://avatars.githubusercontent.com/u/82699095?v=4' width='100'/> | <img src='https://avatars.githubusercontent.com/u/301536526?v=4' width='100'/> | <img src='https://avatars.githubusercontent.com/u/193578436?v=4' width='100'/> |
+|    <p align="left">- 회원 도메인<br/>- 인증·인가<br/>- 교육 영상 시청 검증<br/>- ERD 설계</p>    |  <p align="left">- 진료 보고서 도메인<br>- 리뷰 도메인<br/>- AI 요약 연동<br/>- 전체 통합 테스트</p>   |      <p align="left">- 공고 도메인<br/>- 카카오맵 연동<br/>- 스케줄러<br/>- 로깅·모니터링</p>      |         <p align="left">- 지원 도메인<br>- 동행 진행 상태<br/>- UI·UX·와이어프레임</p>          |     <p align="left">- 결제, 정산 도메인<br/>- 이동수단 도메인<br/>- 정산 스케줄러<br/>- 서기</p>     |
 
 # ERD
 
@@ -245,11 +249,13 @@
 
 ### 현재 상황
 
-- 의뢰인이 공고를 올릴때 공고에 작성한 예상 결제 금액을 선결제 → 동행 완료 후 EscortProgressLog의 progress가 ARRIVED_HOME이 된 시각 - DEPARTED가 된 시각으로 최종 결제 금액을 산정한다.
+- 의뢰인이 공고를 올릴때 공고에 작성한 예상 결제 금액을 선결제 → 동행 완료 후 EscortProgressLog의 progress가 ARRIVED_HOME이 된 시각 - DEPARTED가 된 시각으로 최종 결제
+  금액을 산정한다.
 
 ### 문제점
 
-- 우리 서비스의 차별점으로 동행인, 의뢰인 모두 돈에 대한 신뢰는 생각할 필요 없게 하려고 했으나, 의뢰인이 언제 최종 금액을 재결제하든지 결제금액은 동행완료 시에 확정이라 동행인의 서비스에 대한 신뢰가 떨어질 수 있다.
+- 우리 서비스의 차별점으로 동행인, 의뢰인 모두 돈에 대한 신뢰는 생각할 필요 없게 하려고 했으나, 의뢰인이 언제 최종 금액을 재결제하든지 결제금액은 동행완료 시에 확정이라 동행인의 서비스에 대한 신뢰가 떨어질 수
+  있다.
 - 의뢰인이 최종 결제를 늦게 하더라도 아무 패널티가 가지 않는 것이 문제
 
 ### 해결 방법
@@ -270,7 +276,8 @@
         - 어쩔 수 없이 늦은 결제가 아닌 늦은 결제에 대해서 패널티를 줄 수 없음
         - 동행인의 서비스에 대한 신뢰가 떨어질 수 있음
 
-동행인의 신뢰, 의뢰인의 편의 사이의 트레이드오프 관계에 대해서 명확하게 밝히고 회의를 진행하였으며, 우리 서비스의 우선 타깃은 의뢰인이기에 의뢰인의 편의를 봐줄 수 있는 현재 계산식 유지로 결정되었다. 추가적으로 우리 서비스는 공고를 올릴때에 선결제를 진행하기에 최소한 이 부분에 대해서는 동행인도 보장받을 수 있다.
+동행인의 신뢰, 의뢰인의 편의 사이의 트레이드오프 관계에 대해서 명확하게 밝히고 회의를 진행하였으며, 우리 서비스의 우선 타깃은 의뢰인이기에 의뢰인의 편의를 봐줄 수 있는 현재 계산식 유지로 결정되었다. 추가적으로
+우리 서비스는 공고를 올릴때에 선결제를 진행하기에 최소한 이 부분에 대해서는 동행인도 보장받을 수 있다.
 
 </details>
 
@@ -330,17 +337,19 @@ curl -s -c cookies.txt -X POST http://localhost:8080/api/v1/auth/login \
   -d '{"username":"admin01","password":"password1!"}'
 ```
 
-### 변경 코드 -  BaseInitData에 관리자 계정 자동 생성 추가
+### 변경 코드 - BaseInitData에 관리자 계정 자동 생성 추가
 
 ---
 
 ```java
 // initPosts() 안, 기존 의뢰인 3명 생성 뒤에 추가
-createEscortWithProfile("escort01", "최동행", "010-2000-0001", "서울");
-createEscortWithProfile("escort02", "정동행", "010-2000-0002", "부산");
-createEscortWithProfile("escort03", "한동행", "010-2000-0003", "경기");
+createEscortWithProfile("escort01","최동행","010-2000-0001","서울");
 
-createAdmin("admin01", "관리자", "010-3000-0001", "서울");
+createEscortWithProfile("escort02","정동행","010-2000-0002","부산");
+
+createEscortWithProfile("escort03","한동행","010-2000-0003","경기");
+
+createAdmin("admin01","관리자","010-3000-0001","서울");
 
 // 회원가입 API 로는 ADMIN 을 만들 수 없어서(UserService.signUp 참고),
 // 로그인 확인용 관리자 계정이 필요할 때마다 DB 를 직접 만졌는데, 이제 dev 서버를 띄우면 자동으로 생김
@@ -438,7 +447,6 @@ private User createAdmin(String username, String name, String phoneNum, String r
     동일 지원자 중복 노출
     ```
 
-
 ### 해결 방법
 
 - 중복 지원 판단 시 Application의 상태까지 고려하도록 변경
@@ -459,7 +467,6 @@ private User createAdmin(String username, String name, String phoneNum, String r
     WHERE a.post.id = :postId
     AND a.status <> ApplicationStatus.CANCELED
     ```
-
 
 ## 결론
 
@@ -493,7 +500,8 @@ private User createAdmin(String username, String name, String phoneNum, String r
     2. 외부 API 호출
     3. DB 반영
     4. 3에서 실패 시 결제를 취소하는 외부 API 호출 및 로그 작성
-- 내부 메서드는 프록시를 생성하지 않고 바로 호출을 하기 때문에 트랜잭션 어노테이션이 적용되지 않는다.그러므로 직접 트랜잭션을 적용하거나 별도의 빈으로 등록해서 사용해야하는데, 여기서는 별도의 빈으로 분리해서 사용했다.
+- 내부 메서드는 프록시를 생성하지 않고 바로 호출을 하기 때문에 트랜잭션 어노테이션이 적용되지 않는다.그러므로 직접 트랜잭션을 적용하거나 별도의 빈으로 등록해서 사용해야하는데, 여기서는 별도의 빈으로 분리해서
+  사용했다.
     - PaymentService
     - PaymentPersistenceService
     - TossPaymentService
@@ -503,11 +511,12 @@ private User createAdmin(String username, String name, String phoneNum, String r
 ---
 
 ```java
+
 @PostMapping("/{paymentId}/confirm")
 public RsData<PaymentConfirmResponse> requestConfirm(@AuthenticationPrincipal SecurityUser actor,
                                                      @RequestBody PaymentConfirmRequest request,
                                                      @PathVariable Long paymentId,
-                                                     HttpSession session){
+                                                     HttpSession session) {
     Long userId = actor.getId();
 
     // 결제 정보 검증
@@ -534,8 +543,9 @@ public RsData<PaymentConfirmResponse> requestConfirm(@AuthenticationPrincipal Se
 ---
 
 ```java
+
 @Transactional
-public Payment confirm(PaymentConfirmRequest request, Long paymentId, Long userId){
+public Payment confirm(PaymentConfirmRequest request, Long paymentId, Long userId) {
 
     Payment payment = this.findById(userId, paymentId);
 
@@ -579,11 +589,12 @@ public Payment confirm(PaymentConfirmRequest request, Long paymentId, Long userI
 ---
 
 ```java
+
 @PostMapping("/{paymentId}/confirm")
 public RsData<PaymentConfirmResponse> requestConfirm(@AuthenticationPrincipal SecurityUser actor,
                                                      @RequestBody PaymentConfirmRequest request,
                                                      @PathVariable Long paymentId,
-                                                     HttpSession session){
+                                                     HttpSession session) {
     Long userId = actor.getId();
     String amount = (String) session.getAttribute("amount");
 
@@ -601,7 +612,7 @@ public RsData<PaymentConfirmResponse> requestConfirm(@AuthenticationPrincipal Se
 #### PaymentService
 
 ```java
-public Payment confirm(PaymentConfirmRequest request, Long paymentId, Long userId, String sessionAmount){
+public Payment confirm(PaymentConfirmRequest request, Long paymentId, Long userId, String sessionAmount) {
 
     Payment payment = this.findById(userId, paymentId);
     String tossPaymentKey = request.paymentKey();
@@ -634,8 +645,9 @@ public Payment confirm(PaymentConfirmRequest request, Long paymentId, Long userI
 #### PaymentPersistenceService
 
 ```java
+
 @Transactional
-public void paymentSaveDb(ResponseEntity<TossConfirmResponse> response, Long paymentId, String tossPaymentKey, String tossOrderId){
+public void paymentSaveDb(ResponseEntity<TossConfirmResponse> response, Long paymentId, String tossPaymentKey, String tossOrderId) {
     TossConfirmResponse body = response.getBody();
     Payment payment = paymentRepository.findById(paymentId)
             .orElseThrow(() -> new NotFoundException(10, "결제 정보를 찾을 수 없습니다."));
@@ -651,7 +663,7 @@ public void paymentSaveDb(ResponseEntity<TossConfirmResponse> response, Long pay
 #### TossPaymentService
 
 ```java
-public ResponseEntity<TossConfirmResponse> callApiConfirm(String tossPaymentKey, String tossOrderId, String amount){
+public ResponseEntity<TossConfirmResponse> callApiConfirm(String tossPaymentKey, String tossOrderId, String amount) {
 
     String requestBody = objectMapper.createObjectNode()
             .put("paymentKey", tossPaymentKey)
@@ -702,8 +714,8 @@ public ResponseEntity<TossConfirmResponse> callApiConfirm(String tossPaymentKey,
 - 예외가 직렬화 단계에서 터져 스택 트레이스가 Jackson 쪽에 찍혀, 처음에는 DTO 매핑 문제로 오해했다.
 - 테스트 클래스에 `@Transactional` 이 붙어 있어 테스트가 끝날 때까지 세션이 유지된다. 그래서 기존 테스트로는 재현되지 않았다. 테스트는 전부 통과하는데 실제 요청만 실패하는 상태였다.
 
-테스트 (@Transactional)  →  트랜잭션 유지  →  지연 로딩 성공  →  통과
-실제 요청                →  트랜잭션 종료  →  지연 로딩 실패  →  500
+테스트 (@Transactional)  → 트랜잭션 유지 → 지연 로딩 성공 → 통과
+실제 요청 → 트랜잭션 종료 → 지연 로딩 실패 → 500
 
 ### 해결 방법
 
@@ -722,6 +734,7 @@ public ResponseEntity<TossConfirmResponse> callApiConfirm(String tossPaymentKey,
 ### 현재 코드 - 컨트롤러
 
 ```java
+
 @GetMapping("/{userId}/reviews")
 public RsData<List<ReviewDto>> list(@PathVariable Long userId) {
 
@@ -774,6 +787,7 @@ public ReviewDto(Review review) {
 ---
 
 ```java
+
 @GetMapping("/{userId}/reviews")
 public RsData<List<ReviewDto>> list(@PathVariable Long userId) {
 
@@ -849,7 +863,8 @@ public ReviewDto(Review review) {
     - 비관적 락은 다른 트랜잭션에서 비관적 락을 걸며 데이터를 조회하면 애초에 조회 자체가 불가능하기 때문에 가능할 것 같다.
     - 하지만 지금 비관적 락을 걸어야 하는 위치가 애매하다.
     - 조회에서 비관적 락을 걸 경우 조회가 끝나면 락이 풀린다.
-    - 조회 + 외부 API 호출 + 변경을 하나의 트랜잭션으로 묶어 비관적 락을 걸면 결국 API 호출도 하나의 트랜잭션에 묶이게 되는거고, 이전 트러블 슈팅이었던 외부 API와 트랜잭션을 분리한 이유가 없어지므로 이 방법은 아닌 것 같다.
+    - 조회 + 외부 API 호출 + 변경을 하나의 트랜잭션으로 묶어 비관적 락을 걸면 결국 API 호출도 하나의 트랜잭션에 묶이게 되는거고, 이전 트러블 슈팅이었던 외부 API와 트랜잭션을 분리한 이유가
+      없어지므로 이 방법은 아닌 것 같다.
 3. 로직 분리
     - 제일 먼저 정산 중 상태로 바꾼다.
     - 바꿨다면 외부 API를 호출한다.
@@ -874,7 +889,8 @@ public ReviewDto(Review review) {
         - 앞에서 변경된 행이 0건이면 예외 던지고 1건이면 아래 로직을 수행(현재 서비스의 정산 API는 한 건의 정산마다 1번의 외부 API를 호출하도록 되어있습니다)
         - 외부 API 호출
         - 정산 데이터 상태 '완료'로 변경
-- 정산 스케줄링 서비스는 개별 적으로 조회 쿼리를 날리지 않고 1회 쿼리로 정산 데이터들을 조회 후개별 정산 진행할 때마다 정산 상태를 '정산 중'으로 변경합니다.외부 API 호출하는 데에 시간이 얼마나 걸릴 지 모르므로 정산 데이터를 묶어두지 않기 위함입니다.
+- 정산 스케줄링 서비스는 개별 적으로 조회 쿼리를 날리지 않고 1회 쿼리로 정산 데이터들을 조회 후개별 정산 진행할 때마다 정산 상태를 '정산 중'으로 변경합니다.외부 API 호출하는 데에 시간이 얼마나 걸릴 지
+  모르므로 정산 데이터를 묶어두지 않기 위함입니다.
 
 ### 현재 코드 - 서비스
 
@@ -884,7 +900,7 @@ public ReviewDto(Review review) {
 
 ```java
 // 단일 정산 요청
-public void request(Long userId, Long settlementId){
+public void request(Long userId, Long settlementId) {
 
     AccountDto accountDto = settlementPersistenceService.findAccountDto(userId, settlementId);
 
@@ -938,7 +954,7 @@ public int[] settlementProcess() {
     return new int[]{successCount + failedCount, successCount, failedCount};
 }
 
-private SettlementClientResponse settlementApi(int amount, String name, String account){
+private SettlementClientResponse settlementApi(int amount, String name, String account) {
     SettlementClientResponse response =
             (SettlementClientResponse) settlementClient.settlementRequest(new SettlementClientRequest(account, name, amount));
     return response;
@@ -948,12 +964,13 @@ private SettlementClientResponse settlementApi(int amount, String name, String a
 #### SettlementPersistenceService
 
 ```java
+
 @Transactional
-public int updateSettlement(Long settlementId, SettlementStatus status){
+public int updateSettlement(Long settlementId, SettlementStatus status) {
     return settlementRepository.updateStatus(settlementId, status);
 }
 
-public AccountDto findAccountDto(Long userId, Long settlementId){
+public AccountDto findAccountDto(Long userId, Long settlementId) {
     // 정산 데이터 조회
     return settlementRepository.findByIdAndState(userId, settlementId)
             .orElseThrow(() -> new NotFoundException(30, "찾으시는 정산 데이터가 없습니다."));
@@ -965,6 +982,7 @@ public AccountDto findAccountDto(Long userId, Long settlementId){
 ---
 
 ```java
+
 @Query("select s.id, ep.accountNumber, e.name, s.payoutAmount " +
         "from Settlement s " +
         "join s.escort e " +
@@ -988,7 +1006,7 @@ int updateStatus(@Param("id") Long id, @Param("status") SettlementStatus status)
 
 ```java
 // 단일 정산 요청
-public void request(Long userId, Long settlementId){
+public void request(Long userId, Long settlementId) {
 
     AccountDto accountDto = settlementPersistenceService.findAccountDto(userId, settlementId);
 
@@ -1059,7 +1077,7 @@ public int[] settlementProcess() {
     return new int[]{successCount + failedCount, successCount, failedCount};
 }
 
-private SettlementClientResponse settlementApi(int amount, String name, String account){
+private SettlementClientResponse settlementApi(int amount, String name, String account) {
     SettlementClientResponse response =
             (SettlementClientResponse) settlementClient.settlementRequest(new SettlementClientRequest(account, name, amount));
     return response;
@@ -1069,13 +1087,14 @@ private SettlementClientResponse settlementApi(int amount, String name, String a
 #### SettlementPersistenceService
 
 ```java
+
 @Transactional
-public int updateSettlement(Long settlementId, SettlementStatus status){
+public int updateSettlement(Long settlementId, SettlementStatus status) {
     return settlementRepository.updateStatus(settlementId, status);
 }
 
 @Transactional
-public int processingSettlement(Long settlementId){
+public int processingSettlement(Long settlementId) {
     return settlementRepository.updateProcessing(settlementId);
 }
 ```
@@ -1085,6 +1104,7 @@ public int processingSettlement(Long settlementId){
 ---
 
 ```java
+
 @Query("select s.id, ep.accountNumber, e.name, s.payoutAmount " +
         "from Settlement s " +
         "join s.escort e " +
@@ -1112,9 +1132,10 @@ int updateProcessing(@Param("settlementId") Long settlementId);
 ---
 
 ```java
+
 @SpringBootTest
 @ActiveProfiles("test")
-class SettlementConcurrencyTest{
+class SettlementConcurrencyTest {
 
     private static final int PAYOUT_AMOUNT = 60_000;
     private static final int SETTLEMENT_AMOUNT = (int) (PAYOUT_AMOUNT * 0.9);
@@ -1143,12 +1164,12 @@ class SettlementConcurrencyTest{
     private User escort;
 
     @AfterEach
-    void tearDown(){
+    void tearDown() {
         databaseCleaner.clean();
     }
 
     @BeforeEach
-    void setUp(){
+    void setUp() {
         noShowPenaltyRepository.deleteAll();
         settlementRepository.deleteAll();
 
@@ -1187,7 +1208,7 @@ class SettlementConcurrencyTest{
 
     @Test
     @DisplayName("[SettlementService] 동시성 스케줄러와 정산 요청")
-    void concurrency1() throws Exception{
+    void concurrency1() throws Exception {
 
         Post post = savePost("정산 경합 공고", PostStatus.COMPLETED);
         Application application = saveApplication(post, ApplicationStatus.ACCEPTED, post.getId());
@@ -1218,7 +1239,7 @@ class SettlementConcurrencyTest{
         Mockito.verify(settlementClient, times(1)).settlementRequest(any());
     }
 
-    private Post savePost(String title, PostStatus status){
+    private Post savePost(String title, PostStatus status) {
         return postRepository.save(Post.builder()
                 .client(client)
                 .title(title)
@@ -1240,7 +1261,7 @@ class SettlementConcurrencyTest{
                 .build());
     }
 
-    private Application saveApplication(Post post, ApplicationStatus status, Long acceptedPostId){
+    private Application saveApplication(Post post, ApplicationStatus status, Long acceptedPostId) {
         return applicationRepository.save(Application.builder()
                 .post(post)
                 .escort(escort)
@@ -1249,7 +1270,7 @@ class SettlementConcurrencyTest{
                 .build());
     }
 
-    private Settlement saveSettlement(Application application, int penaltyAmount){
+    private Settlement saveSettlement(Application application, int penaltyAmount) {
         return settlementRepository.save(Settlement.builder()
                 .payoutAmount(SETTLEMENT_AMOUNT - penaltyAmount)
                 .platformFee(PAYOUT_AMOUNT - SETTLEMENT_AMOUNT)
