@@ -69,6 +69,26 @@ public class PostController {
     }
 
     @Operation(
+            summary = "내 공고 목록 조회",
+            description = "로그인한 의뢰인이 작성한 공고 목록을 결제 상태와 무관하게 전부 조회합니다."
+    )
+    @GetMapping("/me")
+    public RsData<Page<PostDto>> myPosts(
+            @AuthenticationPrincipal SecurityUser actor,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+
+        Page<PostDto> postDtoPage = postService
+                .findMyPosts(actor.getId(), PageRequest.of(page, size))
+                .map(PostDto::new);
+
+        if (postDtoPage.isEmpty()) {
+            return new RsData<>("200-2", "조회 내역이 없습니다.", postDtoPage);
+        }
+        return new RsData<>("200-1", "내 공고 목록 조회 성공", postDtoPage);
+    }
+
+    @Operation(
             summary = "공고 상세 조회",
             description = "특정 공고의 상세 정보를 조회합니다."
     )

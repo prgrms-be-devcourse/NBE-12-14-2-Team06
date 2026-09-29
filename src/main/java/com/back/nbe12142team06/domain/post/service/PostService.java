@@ -51,6 +51,11 @@ public class PostService {
         return postRepository.findAllWithClient(pageable);
     }
 
+    // 내가 작성한 공고 목록 — 결제 상태와 무관하게 본인 소유 공고를 전부 보여준다(GET /api/v1/posts 와 달리 결제 DONE 필터 없음).
+    public Page<Post> findMyPosts(Long userId, Pageable pageable) {
+        return postRepository.findAllByClientId(userId, pageable);
+    }
+
     public Post findById(Long postId) {
         return postRepository.findByIdWithClient(postId)
                 .orElseThrow(() -> new NotFoundException(1, postId + "번 공고가 없습니다."));
