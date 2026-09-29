@@ -4,6 +4,6 @@
  */
 export { fetchUserReviews, writeReview } from './api';
 export type { WriteReviewPayload } from './api';
-export { MAX_TAGS, REVIEW_TAG_ROWS } from './model/tags';
-export type { ReviewTagOption } from './model/tags';
+export { MAX_TAGS, REVIEW_TAG_ROWS, reviewTagInfo } from './model/tags';
+export type { ReviewTagName, ReviewTagOption } from './model/tags';
 export type { ReviewDto } from './types';

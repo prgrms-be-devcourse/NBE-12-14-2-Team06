@@ -56,7 +56,10 @@ function summaryRows(escort: ClientEscortCase): { label: string; value: string[]
     rows.push({ label: '만날 장소', value: [escort.meetingPlace] });
   }
   if (escort.postCompleted) {
-    rows.push({ label: '안내 사항', value: ['동행이 정상적으로 완료되었습니다.', '동행인 리뷰를 해주세요.'] });
+    // 리뷰를 이미 썼으면 리뷰 요청 줄은 빼고 완료 안내만 남깁니다.
+    const value = ['동행이 정상적으로 완료되었습니다.'];
+    if (!escort.reviewed) value.push('동행인 리뷰를 해주세요.');
+    rows.push({ label: '안내 사항', value });
   }
   return rows;
 }
@@ -304,10 +307,17 @@ export default function ClientTrackingPage() {
                             정산하기
                           </button>
                         )}
-                        {/* 두 화면도 공고 정보가 필요한데 applicationId 만으로는 찾을 수 없어 postId 를 함께 넘깁니다. */}
-                        <Link href={`${base}/review?postId=${escort.postId}`} className={cn(BUTTON, GHOST)}>
-                          리뷰 작성
-                        </Link>
+                        {/* 리뷰는 동행 건당 한 번만 쓸 수 있어, 이미 썼으면 버튼을 잠급니다. */}
+                        {escort.reviewed ? (
+                          <button type="button" disabled className={cn(BUTTON, GHOST, 'cursor-not-allowed opacity-60 hover:bg-white')}>
+                            리뷰 작성 완료
+                          </button>
+                        ) : (
+                          /* 두 화면도 공고 정보가 필요한데 applicationId 만으로는 찾을 수 없어 postId 를 함께 넘깁니다. */
+                          <Link href={`${base}/review?postId=${escort.postId}`} className={cn(BUTTON, GHOST)}>
+                            리뷰 작성
+                          </Link>
+                        )}
                         <Link href={`${base}/report?postId=${escort.postId}`} className={cn(BUTTON, GHOST)}>
                           보고서 조회
                         </Link>

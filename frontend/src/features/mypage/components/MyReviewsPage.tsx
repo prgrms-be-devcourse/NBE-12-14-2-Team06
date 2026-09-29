@@ -5,27 +5,15 @@ import { useEffect, useState } from 'react';
 import { AppShell } from '@/components/layout';
 import { SectionHeading } from '@/components/ui';
 import { useRequireAuth } from '@/features/auth';
+import { reviewTagInfo } from '@/features/review';
 import { fetchMyEscortProfile, fetchMyReviews } from '../api';
-import type { ReviewDto, ReviewTagName } from '../types';
+import type { ReviewDto } from '../types';
 import DateRangeFilter from './DateRangeFilter';
 import EmptyState from './EmptyState';
 import MyPageShell from './MyPageShell';
 import StatBar from './StatBar';
 
 const TAG = 'inline-flex h-[18px] items-center rounded-full px-[15px] text-[10px] leading-[15px] font-semibold whitespace-nowrap';
-
-/** 백엔드 ReviewTag 이름 → 화면 문구·긍정 여부 */
-const TAG_INFO: Record<ReviewTagName, { label: string; positive: boolean }> = {
-  KIND: { label: '친절해요', positive: true },
-  PUNCTUAL: { label: '시간을 잘 지켜요', positive: true },
-  DETAILED_REPORT: { label: '보고서가 꼼꼼해요', positive: true },
-  GOOD_COMMUNICATION: { label: '소통이 잘 돼요', positive: true },
-  CAREFUL: { label: '어르신을 세심하게 챙겨요', positive: true },
-  LATE: { label: '시간 약속이 아쉬워요', positive: false },
-  POOR_COMMUNICATION: { label: '소통이 잘 안 됐어요', positive: false },
-  UNKIND: { label: '응대가 아쉬웠어요', positive: false },
-  INSUFFICIENT_REPORT: { label: '보고서 내용이 부족해요', positive: false },
-};
 
 /** "2026-09-22T10:00:00" → "2026.09.22" */
 function formatDate(value: string): string {
@@ -110,8 +98,8 @@ export default function MyReviewsPage() {
         {reviews.length > 0 ? (
           <ul className="grid w-full max-w-[910px] gap-4 sm:grid-cols-2">
             {reviews.map((review) => {
-              const positives = review.tags.filter((tag) => TAG_INFO[tag].positive);
-              const negatives = review.tags.filter((tag) => !TAG_INFO[tag].positive);
+              const positives = review.tags.filter((tag) => reviewTagInfo(tag).positive);
+              const negatives = review.tags.filter((tag) => !reviewTagInfo(tag).positive);
               return (
                 <li key={review.id}>
                   <article className="flex min-h-[271px] flex-col items-center justify-center gap-2.5 rounded-[30px] border-[0.68px] border-line bg-white px-[22px] py-5 shadow-[0_0.68px_2.7px_rgba(25,33,61,0.08)]">
@@ -124,10 +112,10 @@ export default function MyReviewsPage() {
                     {review.tags.length > 0 && (
                       <ul aria-label="리뷰 태그" className="flex flex-wrap justify-center gap-1.5">
                         {positives.map((tag) => (
-                          <li key={tag} className={`${TAG} bg-[#6796db] text-white`}>{TAG_INFO[tag].label}</li>
+                          <li key={tag} className={`${TAG} bg-[#6796db] text-white`}>{reviewTagInfo(tag).label}</li>
                         ))}
                         {negatives.map((tag) => (
-                          <li key={tag} className={`${TAG} bg-[#e6e8ec] text-brand`}>{TAG_INFO[tag].label}</li>
+                          <li key={tag} className={`${TAG} bg-[#e6e8ec] text-brand`}>{reviewTagInfo(tag).label}</li>
                         ))}
                       </ul>
                     )}

@@ -42,6 +42,7 @@ export function toClientEscortCase(
   manager: Manager,
   transport: string,
   progress: EscortProgress,
+  reviewed: boolean,
 ): ClientEscortCase {
   const stage = PROGRESS_TO_STAGE[progress];
   const doneCount = PROGRESS_ORDER.indexOf(progress) + 1;
@@ -50,6 +51,7 @@ export function toClientEscortCase(
     postId: post.id,
     stage,
     postCompleted: post.postStatus === '동행 완료',
+    reviewed,
     title: post.title,
     hospitalName: post.hospitalName,
     region: post.region,

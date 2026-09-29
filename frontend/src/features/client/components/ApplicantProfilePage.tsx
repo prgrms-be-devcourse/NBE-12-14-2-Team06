@@ -7,10 +7,12 @@ import { AppShell } from '@/components/layout';
 import { SectionHeading } from '@/components/ui';
 import { fetchEscortProfile, type EscortProfileDto } from '@/features/application';
 import { useRequireAuth } from '@/features/auth';
-import { fetchUserReviews, REVIEW_TAG_ROWS, type ReviewDto } from '@/features/review';
+import { fetchUserReviews, reviewTagInfo, type ReviewDto } from '@/features/review';
+import { cn } from '@/lib/cn';
 import ManagerProfile from './ManagerProfile';
 
-const TAG_LABEL: Record<string, string> = Object.fromEntries(REVIEW_TAG_ROWS.flat().map((tag) => [tag.value, tag.label]));
+/** 리뷰 태그 칩. 긍정은 파랑, 부정은 회색 — 마이페이지 "받은 리뷰"와 같은 규칙입니다. */
+const TAG = 'inline-flex h-[18px] items-center rounded-full px-[15px] text-[10px] leading-[15px] font-semibold whitespace-nowrap';
 
 /** "2026-09-22T10:00:00" → "2026.09.22" */
 function formatDate(value: string): string {
@@ -112,11 +114,14 @@ export default function ApplicantProfilePage() {
                     </p>
                     {review.tags.length > 0 && (
                       <ul aria-label="리뷰 태그" className="flex flex-wrap justify-center gap-1.5">
-                        {review.tags.map((tag) => (
-                          <li key={tag} className="inline-flex h-[18px] items-center rounded-full bg-line-soft px-[15px] text-[10px] leading-[15px] font-semibold whitespace-nowrap text-brand">
-                            {TAG_LABEL[tag] ?? tag}
-                          </li>
-                        ))}
+                        {review.tags.map((tag) => {
+                          const { label, positive } = reviewTagInfo(tag);
+                          return (
+                            <li key={tag} className={cn(TAG, positive ? 'bg-[#6796db] text-white' : 'bg-[#e6e8ec] text-brand')}>
+                              {label}
+                            </li>
+                          );
+                        })}
                       </ul>
                     )}
                     <p className="flex min-h-[61px] w-full items-center justify-center rounded-[25px] bg-[#e6e8ec] px-5 py-2.5 text-center text-xs leading-4 text-brand">
