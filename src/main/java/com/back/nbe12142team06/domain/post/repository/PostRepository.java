@@ -59,6 +59,14 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             "WHERE p.id = :id")
     Optional<Post> findByIdWithClient(@Param("id") Long id);
 
+    // 내가 작성한 공고 목록 — 결제 상태와 무관하게(READY·PARTIAL_CANCELED 등도) 본인 소유 공고는 전부 보여줘야 하므로
+    // search()/findAllWithClient() 의 "결제 DONE만" 조건을 넣지 않는다.
+    @Query("SELECT p " +
+            "FROM Post p JOIN FETCH p.client " +
+            "WHERE p.client.id = :clientId " +
+            "ORDER BY p.id DESC")
+    Page<Post> findAllByClientId(@Param("clientId") Long clientId, Pageable pageable);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT p FROM Post p WHERE p.id = :id")
     Optional<Post> findByIdWithLock(@Param("id") Long id);
