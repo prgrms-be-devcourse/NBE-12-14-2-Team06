@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 
@@ -19,6 +20,9 @@ public class ClaudeRestClientConfig {
 
     @Value("${custom.claude.api-key}")
     private String apiKey;
+    // 하드코딩 YAML로 관리
+    private final String AUTHROPIC_VERSION = "2023-06-01";
+    private final String BASE_URL = "https://api.anthropic.com";
 
     @Bean
     public RestClient claudeRestClient() {
@@ -30,11 +34,11 @@ public class ClaudeRestClientConfig {
         factory.setReadTimeout(Duration.ofSeconds(30));
 
         return RestClient.builder()
-                .baseUrl("https://api.anthropic.com")
+                .baseUrl(BASE_URL)
                 .requestFactory(factory)
                 .defaultHeader("x-api-key", apiKey)
-                .defaultHeader("anthropic-version", "2023-06-01")
-                .defaultHeader("Content-Type", "application/json")
+                .defaultHeader("anthropic-version", AUTHROPIC_VERSION)
+                .defaultHeader("Content-Type", MediaType.APPLICATION_JSON_VALUE)
                 .build();
     }
 }
