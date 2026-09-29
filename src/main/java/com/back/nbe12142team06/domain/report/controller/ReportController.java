@@ -42,7 +42,7 @@ public class ReportController {
         reportSummaryService.summarize(report.getId());
 
         return new RsData<>(
-                "201-1",
+                "201-51",
                 "%d번 동행 건의 보고서가 등록되었습니다.".formatted(applicationId),
                 reportService.findByApplicationId(applicationId, actor.getId())
         );
@@ -60,6 +60,6 @@ public class ReportController {
         ReportDto reportDto =
                 reportService.findByApplicationId(applicationId, actor.getId());
 
-        return new RsData<>("200-1", "보고서 조회 성공", reportDto);
+        return new RsData<>("200-51", "보고서 조회 성공", reportDto);
     }
 }

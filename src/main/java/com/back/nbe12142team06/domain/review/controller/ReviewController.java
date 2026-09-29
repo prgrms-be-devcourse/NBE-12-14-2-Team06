@@ -35,7 +35,7 @@ public class ReviewController {
         Review review = reviewService.write(applicationId, actor.getId(), request);
 
         return new RsData<>(
-                "201-1",
+                "201-61",
                 "%d번 동행 건의 리뷰가 등록되었습니다.".formatted(applicationId),
                 new ReviewWriteResponse(review)
         );

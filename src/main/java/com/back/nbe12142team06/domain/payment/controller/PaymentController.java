@@ -38,7 +38,7 @@ public class PaymentController {
 
         paymentService.confirm(request, paymentId, userId, amount);
 
-        return new RsData<>("200-10", "결제 승인에 성공했습니다.",
+        return new RsData<>("200-41", "결제 승인에 성공했습니다.",
                 new PaymentConfirmResponse(request));
     }
 
@@ -53,7 +53,7 @@ public class PaymentController {
 
         log.info("세션 저장 완료 - orderId: %s, amount: %s".formatted(request.orderId(), request.amount()));
 
-        return new RsData<>("201-n", "결제 정보 임시 저장에 성공했습니다.");
+        return new RsData<>("201-41", "결제 정보 임시 저장에 성공했습니다.");
     }
 
     @Operation(
@@ -67,7 +67,7 @@ public class PaymentController {
 
         paymentService.verifyAmount(amount, request);
 
-        return new RsData<>("200-n", "결제 정보가 유효합니다.");
+        return new RsData<>("200-42", "결제 정보가 유효합니다.");
     }
 
     @Operation(
@@ -80,7 +80,7 @@ public class PaymentController {
 
         List<Payment> payments = paymentService.findAll(userId);
 
-        return new RsData<>("200-n", "결제 정보를 불러왔습니다.",
+        return new RsData<>("200-43", "결제 정보를 불러왔습니다.",
                 payments.stream().map(PaymentResponse::new));
     }
 
@@ -95,7 +95,7 @@ public class PaymentController {
 
         Payment payment = paymentService.findById(userId, paymentId);
 
-        return new RsData<>("200-n", "결제 정보를 불러왔습니다.",
+        return new RsData<>("200-44", "결제 정보를 불러왔습니다.",
                 new PaymentResponse(payment));
     }
 
@@ -111,7 +111,7 @@ public class PaymentController {
 
         paymentService.cancel(userId, paymentId, request);
 
-        return new RsData<>("201-n", "결제 취소 성공했습니다.");
+        return new RsData<>("204-41", "결제 취소 성공했습니다.");
     }
 
     @Operation(
@@ -125,7 +125,7 @@ public class PaymentController {
 
         Payment payment = paymentService.findByPostIdAndReady(postId, userId);
 
-        return new RsData<>("200-n", "결제 정보를 불러왔습니다.",
+        return new RsData<>("200-45", "결제 정보를 불러왔습니다.",
                 payment == null ? null : new PaymentResponse(payment));
     }
 }

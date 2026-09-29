@@ -29,6 +29,6 @@ public class UserReviewController {
     @GetMapping("/{userId}/reviews")
     public RsData<List<ReviewDto>> list(@PathVariable Long userId) {
 
-        return new RsData<>("200-1", "리뷰 목록 조회 성공", reviewService.findAllByEscortId(userId));
+        return new RsData<>("200-61", "리뷰 목록 조회 성공", reviewService.findAllByEscortId(userId));
     }
 }

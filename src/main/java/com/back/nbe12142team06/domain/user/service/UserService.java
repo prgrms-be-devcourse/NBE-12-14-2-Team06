@@ -79,7 +79,7 @@ public class UserService {
     public User signUp(UserSignUpRequest request) {
         // Admin으로 가입 불가
         if (request.role() == Role.ADMIN) {
-            throw new BusinessException("400-3", "잘못된 요청입니다.");
+            throw new InvalidException(1, "잘못된 요청입니다.");
         }
 
         // username 중복 검사
@@ -114,7 +114,7 @@ public class UserService {
             log.info("[회원가입] userId={}, role={}", savedUser.getId(), savedUser.getRole());
             return savedUser;
         } catch (DataIntegrityViolationException e) {
-            throw new DuplicatedException(6, "이미 사용 중인 회원 정보입니다.");
+            throw new DuplicatedException(4, "이미 사용 중인 회원 정보입니다.");
         }
     }
 
@@ -125,7 +125,7 @@ public class UserService {
 
         if (opUser.isEmpty()) {
             log.warn("[로그인 실패] 존재하지 않는 아이디 username={}", request.username());
-            throw new UnauthorizedException("아이디 또는 비밀번호가 올바르지 않습니다.");
+            throw new UnauthorizedException(1, "아이디 또는 비밀번호가 올바르지 않습니다.");
         }
 
         User user = opUser.get();
@@ -145,7 +145,7 @@ public class UserService {
     @Transactional(readOnly = true)
     public User myProfile(Long id) {
         return this.userRepository.findById(id)
-                .orElseThrow(() -> new UnauthorizedException("회원 정보를 찾을 수 없습니다. 다시 로그인해주세요."));
+                .orElseThrow(() -> new UnauthorizedException(3, "회원 정보를 찾을 수 없습니다. 다시 로그인해주세요."));
     }
 
     // username 중복 검사
@@ -172,7 +172,7 @@ public class UserService {
     // 비밀번호 해싱값 대조
     public void checkPassword(String rawPassword, String encodedPassword) {
         if (!passwordEncoder.matches(rawPassword, encodedPassword)) {
-            throw new UnauthorizedException("아이디 또는 비밀번호가 올바르지 않습니다.");
+            throw new UnauthorizedException(2, "아이디 또는 비밀번호가 올바르지 않습니다.");
         }
     }
 
@@ -180,7 +180,7 @@ public class UserService {
     @Transactional
     public User updateMyProfile(Long id, UserProfileUpdateRequest request) {
         User user = this.userRepository.findById(id)
-                .orElseThrow(() -> new UnauthorizedException("회원 정보를 찾을 수 없습니다. 다시 로그인해주세요."));
+                .orElseThrow(() -> new UnauthorizedException(3, "회원 정보를 찾을 수 없습니다. 다시 로그인해주세요."));
 
         validateDuplicatedEmailAndPhone(id, request.email(), request.phoneNum());
 
@@ -201,7 +201,7 @@ public class UserService {
     public User updateUserByAdmin(Long userId, AdminUserProfileUpdateRequest request) {
 
         User user = this.userRepository.findByIdIncludingDeleted(userId)
-                .orElseThrow(() -> new NotFoundException("회원 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException(1, "회원 정보를 찾을 수 없습니다."));
 
         if (user.isDeleted()) {
             throw new InvalidException(2, "탈퇴한 회원의 정보는 수정할 수 없습니다.");
@@ -234,7 +234,7 @@ public class UserService {
     @Transactional
     public void deleteMyProfile(Long id) {
         User user = this.userRepository.findById(id)
-                .orElseThrow(() -> new UnauthorizedException("회원 정보를 찾을 수 없습니다. 다시 로그인해주세요."));
+                .orElseThrow(() -> new UnauthorizedException(3, "회원 정보를 찾을 수 없습니다. 다시 로그인해주세요."));
 
         if (user.getRole() == Role.ADMIN) {
             throw new InvalidException(3, "관리자는 자신의 계정을 탈퇴시킬 수 없습니다.");
@@ -249,15 +249,15 @@ public class UserService {
     @Transactional
     public ClientProfile createClientProfile(Long userId, ClientProfileRequest request) {
         User user = this.userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("회원 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException(1, "회원 정보를 찾을 수 없습니다."));
 
         // 의뢰인만 프로필 생성 가능
         if (user.getRole() != Role.CLIENT) {
-            throw new ForbiddenException(3, "의뢰인만 의뢰인 프로필을 생성할 수 있습니다.");
+            throw new ForbiddenException(1, "의뢰인만 의뢰인 프로필을 생성할 수 있습니다.");
         }
 
         if (this.clientProfileRepository.existsById(userId)) {
-            throw new DuplicatedException(4, "이미 의뢰인 프로필이 존재합니다.");
+            throw new DuplicatedException(5, "이미 의뢰인 프로필이 존재합니다.");
         }
 
         String careNote = (request.careNote() == null || request.careNote().isBlank()) ? DEFAULT_CLIENT_PROFILE_CARE_NOTE : request.careNote();
@@ -272,7 +272,7 @@ public class UserService {
     @Transactional(readOnly = true)
     public ClientProfile getClientProfile(Long clientId) {
         return this.clientProfileRepository.findById(clientId)
-                .orElseThrow(() -> new NotFoundException("의뢰인 프로필이 존재하지 않습니다."));
+                .orElseThrow(() -> new NotFoundException(2, "의뢰인 프로필이 존재하지 않습니다."));
     }
 
     // 의뢰인 자기 자신 프로필 수정
@@ -280,7 +280,7 @@ public class UserService {
     public ClientProfile updateClientProfile(Long id, ClientProfileModifyRequest request) {
 
         ClientProfile clientProfile = this.clientProfileRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("의뢰인 프로필이 존재하지 않습니다."));
+                .orElseThrow(() -> new NotFoundException(2, "의뢰인 프로필이 존재하지 않습니다."));
 
         String careNote = (request.careNote() == null || request.careNote().isBlank()) ? DEFAULT_CLIENT_PROFILE_CARE_NOTE : request.careNote();
 
@@ -293,7 +293,7 @@ public class UserService {
     @Transactional(readOnly = true)
     public ClientProfile getClientProfile(Long requesterId, Long clientId) {
         User requester = this.userRepository.findById(requesterId)
-                .orElseThrow(() -> new UnauthorizedException("회원 정보를 찾을 수 없습니다. 다시 로그인해주세요."));
+                .orElseThrow(() -> new UnauthorizedException(3, "회원 정보를 찾을 수 없습니다. 다시 로그인해주세요."));
 
         switch (requester.getRole()) {
             case ADMIN -> {}
@@ -301,14 +301,14 @@ public class UserService {
                 boolean isMatched = this.applicationRepository.hasActiveMatching(requesterId, clientId);
 
                 if (!isMatched) {
-                    throw new BusinessException("403-2", "매칭된 의뢰인의 프로필만 조회할 수 있습니다.");
+                    throw new ForbiddenException(2, "매칭된 의뢰인의 프로필만 조회할 수 있습니다.");
                 }
             }
-            default -> throw new BusinessException("403-2", "조회 권한이 없습니다.");
+            default -> throw new ForbiddenException(3, "조회 권한이 없습니다.");
         }
 
         return this.clientProfileRepository.findById(clientId)
-                .orElseThrow(() -> new NotFoundException("의뢰인 프로필이 존재하지 않습니다."));
+                .orElseThrow(() -> new NotFoundException(2, "의뢰인 프로필이 존재하지 않습니다."));
     }
 
     // 동행인 프로필 생성
@@ -316,7 +316,7 @@ public class UserService {
     public EscortProfile createEscortProfile(Long userId, EscortProfileRequest request) {
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("회원 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException(1, "회원 정보를 찾을 수 없습니다."));
 
         // 동행 매니저만 동행인 프로필 생성 가능
         if (user.getRole() != Role.ESCORT) {
@@ -324,7 +324,7 @@ public class UserService {
         }
 
         if (escortProfileRepository.existsById(userId)) {
-            throw new DuplicatedException(5, "이미 존재하는 동행 매니저 프로필입니다.");
+            throw new DuplicatedException(6, "이미 존재하는 동행 매니저 프로필입니다.");
         }
 
         // 프로필 생성 및 회원 연결
@@ -344,14 +344,14 @@ public class UserService {
     @Transactional(readOnly = true)
     public EscortProfile getEscortProfile(Long escortId) {
         return this.escortProfileRepository.findByIdWithUser(escortId)
-                .orElseThrow(() -> new NotFoundException("동행 매니저 프로필이 존재하지 않습니다."));
+                .orElseThrow(() -> new NotFoundException(3, "동행 매니저 프로필이 존재하지 않습니다."));
     }
 
     // 동행인 프로필 수정
     @Transactional
     public EscortProfile updateEscortProfile(Long escortId, EscortProfileModifyRequest request) {
         EscortProfile escortProfile = this.escortProfileRepository.findByIdWithUser(escortId)
-                .orElseThrow(() -> new NotFoundException("동행 매니저 프로필이 존재하지 않습니다."));
+                .orElseThrow(() -> new NotFoundException(3, "동행 매니저 프로필이 존재하지 않습니다."));
 
         escortProfile.updateProfile(request.intro(),  request.bankName(), request.accountHolder(), request.accountNumber());
 
@@ -363,14 +363,14 @@ public class UserService {
     @Transactional(readOnly = true)
     public User findByIdIncludingDeleted(Long userId) {
         return userRepository.findByIdIncludingDeleted(userId)
-                .orElseThrow(() -> new NotFoundException("회원 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException(1, "회원 정보를 찾을 수 없습니다."));
     }
 
     // [ADMIN] 회원 목록 조회 (탈퇴한 회원 정보도 가능)
     @Transactional(readOnly = true)
     public Page<User> findAllUsersIncludingDeleted(int page, int size) {
         if (page < 0) {
-            throw new InvalidException(1, "페이지 번호는 음수일 수 없습니다.");
+            throw new InvalidException(4, "페이지 번호는 음수일 수 없습니다.");
         }
 
         Pageable pageable = PageRequest.of(page, size);
@@ -382,7 +382,7 @@ public class UserService {
     @Transactional
     public void deleteUser(Long adminId, Long userId) {
         User user = this.userRepository.findByIdIncludingDeleted(userId)
-                .orElseThrow(() -> new NotFoundException("회원 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException(1, "회원 정보를 찾을 수 없습니다."));
 
         // 관리자는 자신에 대한 탈퇴 불가
         if (adminId.equals(userId)) {
@@ -391,7 +391,7 @@ public class UserService {
 
         // 이미 탈퇴한 회원은 탈퇴 불가
         if (user.isDeleted()) {
-            throw new InvalidException(4, "이미 탈퇴한 회원입니다.");
+            throw new InvalidException(5, "이미 탈퇴한 회원입니다.");
         }
 
         // 회원 정보, 프로필, 토큰 전부 삭제

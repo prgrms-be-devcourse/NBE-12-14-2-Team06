@@ -23,7 +23,7 @@ public class PaymentPersistenceService {
     public void paymentSaveDb(ResponseEntity<TossConfirmResponse> response, Long paymentId, String tossPaymentKey, String tossOrderId) {
         TossConfirmResponse body = response.getBody();
         Payment payment = paymentRepository.findById(paymentId)
-                .orElseThrow(() -> new NotFoundException(10, "결제 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException(41, "결제 정보를 찾을 수 없습니다."));
         if (body != null) {
             // 승인 시 상태 변경, 더티 체킹으로 자동 변경
             payment.ApprovePayment(tossOrderId, tossPaymentKey, body.method());
@@ -35,7 +35,7 @@ public class PaymentPersistenceService {
     @Transactional
     public Payment paymentCancelDb(Long paymentId, String cancelReason) {
         Payment payment = paymentRepository.findById(paymentId)
-                .orElseThrow(() -> new NotFoundException(10, "결제 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException(41, "결제 정보를 찾을 수 없습니다."));
         Payment newPayment = payment.cancelPayment(cancelReason);
         return paymentRepository.save(newPayment);
     }
@@ -43,7 +43,7 @@ public class PaymentPersistenceService {
     @Transactional
     public Payment paymentPartialCancelDb(Long paymentId, String cancelReason, int amount) {
         Payment payment = paymentRepository.findById(paymentId)
-                .orElseThrow(() -> new NotFoundException(10, "결제 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException(41, "결제 정보를 찾을 수 없습니다."));
         return payment.cancelPartialPayment(cancelReason, amount);
     }
 

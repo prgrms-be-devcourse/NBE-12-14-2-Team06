@@ -39,20 +39,20 @@ public class ReviewService {
     public Review write(Long applicationId, Long actorId, ReviewWriteRequest request) {
 
         Application application = applicationRepository.findById(applicationId)
-                .orElseThrow(() -> new NotFoundException(1, "존재하지 않는 동행 건입니다."));
+                .orElseThrow(() -> new NotFoundException(24, "지원을 찾을 수 없습니다."));
 
         // 리뷰는 해당 공고를 등록한 의뢰인만 작성 가능
         if (!application.getPost().getClient().getId().equals(actorId)) {
-            throw new ForbiddenException(1, "본인이 의뢰한 동행 건에만 리뷰를 작성할 수 있습니다.");
+            throw new ForbiddenException(61, "본인이 의뢰한 동행 건에만 리뷰를 작성할 수 있습니다.");
         }
 
         // 매칭이 확정된 동행 건에만 리뷰 작성 가능
         if (application.getStatus() != ApplicationStatus.ACCEPTED || application.getPost().getPostStatus() != PostStatus.COMPLETED) {
-            throw new InvalidException(1, "매칭이 확정된 동행 건에만 리뷰를 작성할 수 있습니다.");
+            throw new InvalidException(61, "매칭이 확정된 동행 건에만 리뷰를 작성할 수 있습니다.");
         }
 
         if (reviewRepository.existsByApplicationId(applicationId)) {
-            throw new DuplicatedException(1, "이미 리뷰가 작성된 동행 건입니다.");
+            throw new DuplicatedException(61, "이미 리뷰가 작성된 동행 건입니다.");
         }
 
         // 태그 미선택 시 null 이 들어오므로 빈 컬렉션으로 대체
@@ -91,7 +91,7 @@ public class ReviewService {
 
         // 리뷰가 0건인 것은 정상이므로, 회원 존재 여부만 확인
         if (!userRepository.existsById(escortId)) {
-            throw new NotFoundException(2, "존재하지 않는 회원입니다.");
+            throw new NotFoundException(1, "회원 정보를 찾을 수 없습니다.");
         }
 
         return reviewRepository.findAllByEscortIdWithApplication(escortId)

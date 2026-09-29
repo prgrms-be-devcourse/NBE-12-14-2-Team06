@@ -63,9 +63,9 @@ public class PostController {
                 .map(PostDto::new);
 
         if (postDtoPage.isEmpty()) {
-            return new RsData<>("200-2", "조회 내역이 없습니다.", postDtoPage);
+            return new RsData<>("200-12", "조회 내역이 없습니다.", postDtoPage);
         }
-        return new RsData<>("200-1", "목록 조회 성공", postDtoPage);
+        return new RsData<>("200-11", "목록 조회 성공", postDtoPage);
     }
 
     @Operation(
@@ -83,9 +83,9 @@ public class PostController {
                 .map(PostDto::new);
 
         if (postDtoPage.isEmpty()) {
-            return new RsData<>("200-2", "조회 내역이 없습니다.", postDtoPage);
+            return new RsData<>("200-14", "조회 내역이 없습니다.", postDtoPage);
         }
-        return new RsData<>("200-1", "내 공고 목록 조회 성공", postDtoPage);
+        return new RsData<>("200-13", "내 공고 목록 조회 성공", postDtoPage);
     }
 
     @Operation(
@@ -96,7 +96,7 @@ public class PostController {
     public RsData<PostDto> detail(@PathVariable Long postId) {
         PostDto postDto = new PostDto(postService.findById(postId));
 
-        return new RsData<>("200-1", "상세 조회 성공", postDto);
+        return new RsData<>("200-15", "상세 조회 성공", postDto);
     }
 
     @Operation(
@@ -110,7 +110,7 @@ public class PostController {
 
         PostWriteResponse response = postService.write(actor.getId(), request);
         return new RsData<>(
-                "201-1",
+                "201-11",
                 "%d번 글이 성공적으로 등록되었습니다".formatted(response.id()),
                 response
         );
@@ -129,7 +129,7 @@ public class PostController {
         postService.modify(postId, actor.getId(), request);
 
         return new RsData<>(
-                "200-1",
+                "200-16",
                 "%d번 게시물이 수정되었습니다.".formatted(postId)
         );
     }
@@ -146,7 +146,7 @@ public class PostController {
         postService.delete(postId,actor.getId());
 
         return new RsData<>(
-                "200-1",
+                "204-11",
                 "%d번 게시물이 삭제되었습니다.".formatted(postId)
         );
     }
@@ -163,7 +163,7 @@ public class PostController {
         postService.matchedCancel(postId,actor.getId());
 
         return new RsData<>(
-                "200-1",
+                "200-17",
                 "%d번 게시물의 매칭이 취소되었습니다.".formatted(postId)
         );
     }
@@ -180,7 +180,7 @@ public class PostController {
         postService.escortComplete(postId,actor.getId());
 
         return new RsData<>(
-                "200-1",
+                "200-18",
                 "%d번 공고가 완료되었습니다. 실제 동행시간 및 지급액을 확인해주세요.".formatted(postId)
         );
     }

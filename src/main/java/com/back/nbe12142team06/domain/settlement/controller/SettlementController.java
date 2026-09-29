@@ -35,7 +35,7 @@ public class SettlementController {
 
         settlementService.request(userId, settlementId);
 
-        return new RsData<>("200-30", "정산에 성공했습니다.");
+        return new RsData<>("200-71", "정산에 성공했습니다.");
     }
 
     @Operation(
@@ -57,7 +57,7 @@ public class SettlementController {
         Page<SettlementResponse> response = settlementService.findAll(userId, startDate, endDate, PageRequest.of(page, size,
                 Sort.by(sort, "application.post.escortStartAt")));
 
-        return new RsData<>("200-31", "정산 목록을 가져왔습니다.",
+        return new RsData<>("200-72", "정산 목록을 가져왔습니다.",
                 response);
     }
 
@@ -73,7 +73,7 @@ public class SettlementController {
 
         SettlementResponse response = settlementService.findSettlement(userId, settlementId);
 
-        return new RsData<>("200-32", "정산 상세 데이터를 조회했습니다.",
+        return new RsData<>("200-73", "정산 상세 데이터를 조회했습니다.",
                 response);
     }
 }

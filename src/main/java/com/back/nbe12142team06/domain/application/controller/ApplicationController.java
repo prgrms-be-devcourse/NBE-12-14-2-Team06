@@ -31,7 +31,7 @@ public class ApplicationController {
         ApplicationApplyResponse response = applicationService.apply(postId, actor.getId());
 
         return new RsData<>(
-                "201-1",
+                "201-21",
                 "지원이 완료되었습니다.",
                 response
         );
@@ -50,7 +50,7 @@ public class ApplicationController {
                 applicationService.list(postId, actor.getId(), PageRequest.of(page, size));
 
         return new RsData<>(
-                "200-1",
+                "200-21",
                 "지원 목록 조회가 완료되었습니다.",
                 responses
         );
@@ -65,7 +65,7 @@ public class ApplicationController {
         ApplicationAcceptResponse response = applicationService.accept(applicationId, actor.getId());
 
         return new RsData<>(
-            "200-1",
+            "200-22",
             "지원 승인이 완료되었습니다.",
             response
         );
@@ -80,7 +80,7 @@ public class ApplicationController {
         applicationService.reject(applicationId, actor.getId());
 
         return new RsData<>(
-                "200-1",
+                "200-23",
                 "지원 거절이 완료되었습니다.",
                 null
         );
@@ -95,7 +95,7 @@ public class ApplicationController {
         applicationService.cancel(applicationId, actor.getId());
 
         return new RsData<>(
-                "200-1",
+                "200-24",
                 "지원 취소가 완료되었습니다.",
                 null
         );
@@ -111,7 +111,7 @@ public class ApplicationController {
         applicationService.updateProgress(applicationId, actor.getId(), request.progress());
 
         return new RsData<>(
-                "200-1",
+                "200-25",
                 "동행 진행 상태가 변경되었습니다.",
                 null
         );
@@ -127,7 +127,7 @@ public class ApplicationController {
         ApplicationProgressResponse response = applicationService.getProgress(applicationId, actor.getId());
 
         return new RsData<>(
-                "200-1",
+                "200-26",
                 "동행 진행 상태 조회가 완료되었습니다.",
                 response
         );
@@ -143,7 +143,7 @@ public class ApplicationController {
                 applicationService.getEscortProfile(applicationId, actor.getId());
 
         return new RsData<>(
-                "200-2",
+                "200-27",
                 "지원자 프로필 조회가 완료되었습니다.",
                 response
         );
@@ -159,7 +159,7 @@ public class ApplicationController {
                 applicationService.getClientProfile(applicationId, actor.getId());
 
         return new RsData<>(
-                "200-2",
+                "200-28",
                 "매칭된 의뢰인 프로필 조회가 완료되었습니다.",
                 response
         );
@@ -174,7 +174,7 @@ public class ApplicationController {
                 applicationService.getMyApplications(actor.getId());
 
         return new RsData<>(
-                "200-1",
+                "200-29",
                 "내 지원 목록 조회가 완료되었습니다.",
                 responses
         );
