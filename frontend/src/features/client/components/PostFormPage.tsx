@@ -8,6 +8,7 @@ import { AppShell } from '@/components/layout';
 import { Container, SectionHeading } from '@/components/ui';
 import { LOGIN_HOME_BY_ROLE, useRequireAuth } from '@/features/auth';
 import { createPost, fetchPostRaw, updatePost, type PostDto, type PostWriteRequest } from '@/features/post';
+import { fetchRidesByPost, type RideDto } from '@/features/ride';
 import { cn } from '@/lib/cn';
 import type { PlaceSearchResult } from '@/lib/kakaoMap';
 import {
@@ -26,6 +27,7 @@ import {
   parsePay,
   splitRegion,
   toIsoDateTime,
+  toRideLabel,
   toRideSelect,
   todayDateString,
 } from '../model/postForm';
@@ -56,9 +58,11 @@ const ERROR_TEXT = 'px-4 text-sm leading-5 font-medium text-[#b91d1d]';
 const LIST_ITEM = 'flex items-center gap-[15px] py-1 text-sm leading-6 font-semibold text-brand';
 const CARD_TITLE = 'mb-4 flex items-center gap-[15px] text-2xl leading-6 font-semibold text-brand';
 
-/** 백엔드 공고 응답을 수정 폼의 초기값으로 바꿉니다. */
-function toFormValues(dto: PostDto): PostFormValues {
+/** 백엔드 공고 응답 + 이동수단(Ride 2건)을 수정 폼의 초기값으로 바꿉니다. */
+function toFormValues(dto: PostDto, rides: RideDto[]): PostFormValues {
   const { region, district } = splitRegion(dto.hospitalAddress);
+  const rideToHospital = rides.find((ride) => ride.direction === 'TO_HOSPITAL');
+  const rideToHome = rides.find((ride) => ride.direction === 'TO_HOME');
   return {
     title: dto.title,
     hospitalName: dto.hospitalName,
@@ -74,10 +78,9 @@ function toFormValues(dto: PostDto): PostFormValues {
     startTime: dto.escortStartAt.slice(11, 16),
     endTime: dto.escortEndAt.slice(11, 16),
     hourlyPay: dto.hourlyPay.toLocaleString(),
-    // ⚠️ 이동수단은 PostDto 가 아니라 Ride(GET /api/v1/rides/posts/{postId})에 있고, 동행인원은 백엔드에 없습니다.
-    //    그래서 수정 화면에서는 둘 다 다시 선택해야 합니다.
-    transportOut: '',
-    transportBack: '',
+    // ⚠️ 동행인원은 백엔드에 없는 값이라 수정 화면에서 다시 선택해야 합니다.
+    transportOut: toRideLabel(rideToHospital?.selected),
+    transportBack: toRideLabel(rideToHome?.selected),
     party: '',
     reportRequested: dto.reportRequired,
     description: dto.content,
@@ -101,10 +104,11 @@ function formatPay(value: string): string {
  * 등록(POST)·수정(PUT) 모두 실제 백엔드에 연결되어 있습니다.
  * ⚠️ 병원명·출발지는 카카오맵 검색 결과에서 골라야만 위도·경도가 채워집니다 (백엔드가 필수로 요구합니다).
  *    그래서 Figma 의 "지역(시/도·구/군) 선택" 칸은 없앴고, 병원 주소에서 자동으로 뽑습니다.
- * 이동수단은 PostWriteRequest 의 rideSelectToHospital·rideSelectToHome 으로 함께 보냅니다
- * (백엔드가 공고 등록과 같은 트랜잭션에서 Ride 2건을 이 값으로 만듭니다).
+ * 이동수단은 PostWriteRequest 의 rideSelectToHospital·rideSelectToHome 으로 함께 보냅니다.
+ * 등록(POST)은 PostService.write 가 같은 트랜잭션에서 Ride 2건을 만들고, 수정(PUT)은 PostService.modify 가
+ * RideService.updateRide 로 기존 Ride 2건을 갱신합니다 — 수정 폼을 열 때도 GET /api/v1/rides/posts/{postId}로
+ * 기존 선택값을 불러와 채웁니다(toFormValues).
  * TODO: 동행인원은 백엔드에 없는 값이라 서버로 보내지 않습니다.
- * TODO: 수정(PUT)은 이동수단을 보내도 백엔드 PostService.modify 가 Ride 를 건드리지 않아 반영되지 않습니다.
  *
  * 공고 등록·수정은 의뢰인(CLIENT) 또는 관리자(ADMIN)만 할 수 있습니다(백엔드 PostService.write/modify 와 동일 규칙).
  * ⚠️ 이건 UX 용 가드일 뿐입니다 — 실제 차단은 백엔드가 하고, 여기선 로그인 안 했거나 역할이 안 맞는
@@ -134,8 +138,8 @@ export default function PostFormPage() {
   useEffect(() => {
     if (!editing) return;
     let ignore = false;
-    fetchPostRaw(postId)
-      .then((dto) => !ignore && setResult({ postId, initial: toFormValues(dto) }))
+    Promise.all([fetchPostRaw(postId), fetchRidesByPost(postId)])
+      .then(([dto, rides]) => !ignore && setResult({ postId, initial: toFormValues(dto, rides) }))
       .catch((error: Error) => !ignore && setResult({ postId, error: error.message }));
     return () => {
       ignore = true;
