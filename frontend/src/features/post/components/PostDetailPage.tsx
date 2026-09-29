@@ -327,7 +327,7 @@ function PostDetailPageBody({ viewer }: Props) {
           <div className="flex min-w-0 flex-col gap-[22px]">
             {/* 제목 */}
             <section className="flex flex-col items-center gap-6 rounded-[30px] border border-line-soft bg-white px-6 py-5 shadow-card sm:flex-row sm:px-8 lg:min-h-[210px]">
-              <Image src="/icons/image-placeholder.svg" alt="" width={100} height={100} className="size-[100px] shrink-0" />
+              <Image src="/images/post/eggplant.png" alt="" width={100} height={100} className="size-[100px] shrink-0 object-contain" />
               <div className="flex min-w-0 flex-1 flex-col gap-[15px]">
                 <div className="flex items-center justify-between gap-3">
                   <StatusLabel tone={label.tone} size="large">

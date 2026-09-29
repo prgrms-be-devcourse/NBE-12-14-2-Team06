@@ -67,7 +67,7 @@ export default function ManagerProfile({ manager, size, className }: { manager: 
     <div className={cn('flex min-w-0 flex-col gap-3', className)}>
       <div className={cn('flex min-w-0 items-center', s.gap)}>
         <div className={cn('grid shrink-0 place-items-center bg-line-soft', s.avatar)}>
-          <Image src="/icons/avatar.svg" alt="" width={36} height={38} style={{ width: s.avatarIcon, height: 'auto' }} />
+          <Image src="/images/post/eggplant.png" alt="" width={36} height={38} className="object-contain" style={{ width: s.avatarIcon, height: 'auto' }} />
         </div>
         <div className={cn('flex min-w-0 flex-1 flex-col', s.info)}>
           <div className="flex flex-wrap items-center gap-1.5">
