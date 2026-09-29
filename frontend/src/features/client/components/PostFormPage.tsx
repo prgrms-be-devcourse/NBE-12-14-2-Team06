@@ -13,6 +13,7 @@ import { cn } from '@/lib/cn';
 import type { PlaceSearchResult } from '@/lib/kakaoMap';
 import {
   EMPTY_FORM,
+  MIN_HOURLY_PAY,
   PARTY_OPTIONS,
   SAMPLE_FORM,
   TIME_OPTIONS,
@@ -365,6 +366,11 @@ function PostFormFields({ postId, initial, sample }: FormFieldsProps) {
       return;
     }
 
+    if (parsePay(hourlyPay) < MIN_HOURLY_PAY) {
+      setSubmitError(`시급은 최저시급(10,320원)에 수수료 10%를 더한 ${MIN_HOURLY_PAY.toLocaleString()}원 이상이어야 합니다.`);
+      return;
+    }
+
     const payload: PostWriteRequest = {
       title: value('title'),
       content: value('description'),
@@ -506,18 +512,21 @@ function PostFormFields({ postId, initial, sample }: FormFieldsProps) {
 
               <FormSection title="요청 조건">
                 <FormRow label="시급(금액)*" htmlFor="post-pay">
-                  <div className="relative min-w-0 sm:w-[273px]">
-                    <input
-                        id="post-pay"
-                        name="hourlyPay"
-                        required
-                        inputMode="numeric"
-                        value={hourlyPay}
-                        onChange={(event) => setHourlyPay(formatPay(event.target.value))}
-                        placeholder="예) 12,000"
-                        className={cn(FIELD, 'pr-12')}
-                    />
-                    <span className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-base text-brand-muted">원</span>
+                  <div className="flex min-w-0 flex-col gap-1.5 sm:w-[273px]">
+                    <div className="relative min-w-0">
+                      <input
+                          id="post-pay"
+                          name="hourlyPay"
+                          required
+                          inputMode="numeric"
+                          value={hourlyPay}
+                          onChange={(event) => setHourlyPay(formatPay(event.target.value))}
+                          placeholder="예) 12,000"
+                          className={cn(FIELD, 'pr-12')}
+                      />
+                      <span className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-base text-brand-muted">원</span>
+                    </div>
+                    <p className="text-xs leading-4 font-medium text-brand-muted">최저시급 기준 {MIN_HOURLY_PAY.toLocaleString()}원 이상 입력해주세요.</p>
                   </div>
                 </FormRow>
                 <FormRow label="이동수단*" htmlFor="post-transport-out">
