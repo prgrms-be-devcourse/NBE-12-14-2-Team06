@@ -16,11 +16,15 @@ type FilterSelectProps = {
   onChange: (value: string) => void;
 };
 
-/** 라벨이 위에 붙은 선택 상자 (Figma 필터 선택 박스 160×55) */
+/**
+ * 라벨이 위에 붙은 선택 상자 (Figma 필터 선택 박스 160×55)
+ * 폭은 190px 으로 넓혔습니다 — 160px 에서는 좌우 여백(22 + 40)을 빼면 글자 자리가 98px 뿐이라
+ * "10,000원 이상" 같은 가장 긴 선택지가 잘렸습니다.
+ */
 function FilterSelect({ id, label, value, options, onChange }: FilterSelectProps) {
   const changed = value !== options[0].value;
   return (
-    <div className="flex w-[160px] flex-col gap-2">
+    <div className="flex w-[190px] flex-col gap-2">
       <label htmlFor={id} className="text-base leading-5 font-semibold text-brand">
         {label}
       </label>
@@ -100,7 +104,8 @@ export default function PostSearchPanel({
         </button>
       </div>
 
-      <div className="mx-auto flex w-full max-w-[1049px] flex-wrap gap-x-[17px] gap-y-4">
+      {/* 검색창과 같은 폭(1049px) 안에서 필터 4개 + 초기화를 양끝에 붙이고 사이 간격을 균일하게 나눕니다. */}
+      <div className="mx-auto flex w-full max-w-[1049px] flex-wrap justify-between gap-x-[17px] gap-y-4">
         <FilterSelect
           id="post-region"
           label="지역"
@@ -134,7 +139,8 @@ export default function PostSearchPanel({
           <button
             type="button"
             onClick={onReset}
-            className="flex h-[55px] w-[150px] items-center justify-center gap-[15px] rounded-[30px] border border-line-soft bg-white text-lg leading-[18px] font-semibold text-brand shadow-card transition-colors hover:bg-line-soft"
+            // 크기(171×55)와 모서리는 위의 "검색하기" 버튼과 같게 맞췄습니다.
+            className="flex h-[55px] w-[171px] items-center justify-center gap-[15px] rounded-[30px] border border-line-soft bg-white text-lg leading-[18px] font-semibold text-brand shadow-card transition-colors hover:bg-line-soft"
           >
             <Image src="/icons/reset.svg" alt="" width={14.75} height={14.75} className="size-[13px]" />
             초기화
