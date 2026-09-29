@@ -42,6 +42,10 @@ export type Manager = {
   grade?: EscortGrade;
   /** "서울 강남구". 값이 없으면 화면에서 이 줄을 생략합니다. */
   region?: string;
+  /**
+   * 많이 받은 리뷰 태그 (백엔드 ReviewTag ENUM 이름. 한글 문구·색은 화면에서 reviewTagInfo 로 구합니다).
+   * 표에 없는 값은 이름을 그대로 보여줍니다.
+   */
   tags?: string[];
   intro: string[];
   /** 평점을 매긴 사람 수. 값이 없으면 화면에서 별점 옆에 괄호를 생략합니다. */

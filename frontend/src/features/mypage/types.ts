@@ -1,4 +1,6 @@
 import type { EscortGrade } from '@/features/application';
+// 태그 이름·문구·긍정 여부 표는 review 도메인 한 곳에만 둡니다 (features/review/model/tags.ts).
+import type { ReviewTagName } from '@/features/review';
 
 /** 내가 신청한 공고의 진행 상태 */
 export type ApplicationStatus = 'pending' | 'matched' | 'inProgress' | 'completed' | 'rejected' | 'canceled';
@@ -48,18 +50,6 @@ export type SettlementDto = {
   settledAt: string | null;
   post: SettlementPost;
 };
-
-/** 백엔드 ReviewTag(긍정/부정 태그) 이름 → 화면 문구 */
-export type ReviewTagName =
-  | 'KIND'
-  | 'PUNCTUAL'
-  | 'DETAILED_REPORT'
-  | 'GOOD_COMMUNICATION'
-  | 'CAREFUL'
-  | 'LATE'
-  | 'POOR_COMMUNICATION'
-  | 'UNKIND'
-  | 'INSUFFICIENT_REPORT';
 
 /** 백엔드 GET /api/v1/users/{userId}/reviews 응답 한 줄 (ReviewDto) */
 export type ReviewDto = {
