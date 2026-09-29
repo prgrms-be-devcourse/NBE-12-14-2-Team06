@@ -256,6 +256,21 @@ function PostDetailPageBody({ viewer }: Props) {
     );
   }
 
+  // /client/posts/[postId] 는 CLIENT 로그인이면 누구든 들어올 수 있어서(useRequireAuth 는 역할만 봅니다),
+  // 공고 작성자 본인이 아니면 여기서 막습니다. (GET /posts/{id} 자체는 누구나 볼 수 있는 공개 조회라 서버는 막지 않습니다)
+  if (isClient && post.clientId !== user?.username) {
+    return (
+      <AppShell>
+        <section className="bg-white py-[100px] text-center">
+          <p className="text-xl font-semibold text-brand">본인이 작성한 공고만 볼 수 있습니다.</p>
+          <Link href={listHref} className={cn(BUTTON, 'mx-auto mt-8 h-14 w-60 border border-line text-xl text-brand')}>
+            내 공고 목록으로
+          </Link>
+        </section>
+      </AppShell>
+    );
+  }
+
   // 의뢰인은 자기 공고의 진행 상태(모집 중 · 매칭 완료 · 진행 중 · 동행 완료 …)를 봅니다.
   // 동행 매니저·비로그인은 "지원할 수 있는지"가 중요해서 신규/오늘 마감 같은 모집 배지를 그대로 씁니다.
   const label = isClient ? postStatusLabel(post.postStatus) : BADGE[post.badge];
