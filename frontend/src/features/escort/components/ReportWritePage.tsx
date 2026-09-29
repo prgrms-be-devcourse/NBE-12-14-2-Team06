@@ -281,7 +281,7 @@ export default function ReportWritePage() {
                       className={cn(FIELD, 'h-[61px]')}
                     />
                   </FieldRow>
-                  <FieldRow label="진료 내용 요약*" htmlFor="report-summary">
+                  <FieldRow label="진료 내용*" htmlFor="report-summary">
                     <textarea
                       id="report-summary"
                       name="summary"
