@@ -9,14 +9,23 @@ import {
   type SetStateAction,
 } from 'react';
 import { INITIAL_FORM_VALUES } from '../model';
-import type { SignupFormValues, VerifiedValues } from '../types';
+import type { SignupFormValues, SignupRole, VerifiedValues } from '../types';
 
 type SignupContextValue = {
   values: SignupFormValues;
   setValues: Dispatch<SetStateAction<SignupFormValues>>;
-  /** 중복 확인을 통과한 값. 약관 단계에서 돌아와도 다시 확인하지 않도록 여기에 둡니다. */
+  /** 중복 확인을 통과한 값. 다른 단계에 다녀와도 다시 확인하지 않도록 여기에 둡니다. */
   verified: VerifiedValues;
   setVerified: Dispatch<SetStateAction<VerifiedValues>>;
+  /** 약관 동의 여부 (약관 id → 체크). 정보 입력 단계에서 필수 동의를 확인하고, 이전으로 돌아와도 유지됩니다. */
+  agreements: Record<string, boolean>;
+  setAgreements: Dispatch<SetStateAction<Record<string, boolean>>>;
+  /**
+   * 계정(POST /api/v1/users)은 만들어졌는데 프로필 생성이 실패한 경우, 그 계정의 역할. 아니면 null.
+   * 다시 "가입하기"를 누르면 가입은 건너뛰고 프로필만 요청합니다. (다시 가입하면 아이디 중복으로 막힙니다)
+   */
+  createdRole: SignupRole | null;
+  setCreatedRole: Dispatch<SetStateAction<SignupRole | null>>;
 };
 
 const SignupContext = createContext<SignupContextValue | null>(null);
@@ -28,7 +37,15 @@ const SignupContext = createContext<SignupContextValue | null>(null);
 export function SignupProvider({ children }: { children: ReactNode }) {
   const [values, setValues] = useState<SignupFormValues>(INITIAL_FORM_VALUES);
   const [verified, setVerified] = useState<VerifiedValues>({ username: '', email: '' });
-  return <SignupContext value={{ values, setValues, verified, setVerified }}>{children}</SignupContext>;
+  const [agreements, setAgreements] = useState<Record<string, boolean>>({});
+  const [createdRole, setCreatedRole] = useState<SignupRole | null>(null);
+  return (
+    <SignupContext
+      value={{ values, setValues, verified, setVerified, agreements, setAgreements, createdRole, setCreatedRole }}
+    >
+      {children}
+    </SignupContext>
+  );
 }
 
 export function useSignup() {
