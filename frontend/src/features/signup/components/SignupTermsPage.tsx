@@ -1,11 +1,9 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import type { FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/layout';
 import { Container, SectionHeading } from '@/components/ui';
-import { useAuth } from '@/features/auth';
-import { signUpWithProfile } from '../api';
 import { useSignupRole } from '../hooks/useSignupRole';
 import { AGREEMENT_GROUPS } from '../model';
 import { useSignup } from '../state/SignupContext';
@@ -14,24 +12,19 @@ import StepNavButton from './form/StepNavButton';
 import AgreementCard from './terms/AgreementCard';
 
 const SECTION_TITLE = 'flex h-[30px] items-center text-xl leading-6 font-semibold text-brand lg:text-2xl';
-const ERROR_TEXT = 'px-4 text-sm leading-5 font-medium text-[#b91d1d]';
 
 /**
- * 회원가입 3단계(약관 동의)
+ * 회원가입 2단계(약관 동의)
  * Figma 공통_회원가입_개인정보동의(의뢰인) 564:17321 · (동행매니저) 564:17438
  *
  * 필수 항목은 체크하지 않으면 제출되지 않습니다(브라우저 기본 검사).
+ * 동의 여부는 SignupContext 에 두고, 실제 가입은 다음 단계(정보 입력)에서 요청합니다.
  */
 export default function SignupTermsPage() {
   const router = useRouter();
-  const { reload } = useAuth();
   const role = useSignupRole();
-  const { values, setValues } = useSignup();
+  const { agreements: checked, setAgreements: setChecked } = useSignup();
   const group = AGREEMENT_GROUPS[role];
-
-  const [checked, setChecked] = useState<Record<string, boolean>>({});
-  const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState('');
   const allRequiredChecked = group.required.every((item) => checked[item.id]);
 
   const handleToggle = (id: string) => (value: boolean) => {
@@ -46,22 +39,9 @@ export default function SignupTermsPage() {
     }));
   };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-
-    setSubmitting(true);
-    setSubmitError('');
-    try {
-      // 가입(POST /api/v1/users) 후, 거기서 받은 로그인 쿠키로 역할별 프로필까지 만듭니다.
-      await signUpWithProfile(values, role);
-      await reload(); // 가입하면 바로 로그인 상태라서, 헤더가 이름을 보여주도록 세션을 다시 읽습니다.
-      setValues((prev) => ({ ...prev, password: '', passwordConfirm: '' })); // 비밀번호는 더 들고 있지 않습니다.
-      router.push(`/signup/complete?role=${role}`);
-    } catch (error) {
-      // 아이디·이메일·전화번호 중복(409-1·2·3) 등 실패 사유는 백엔드 문구를 그대로 보여 줍니다.
-      setSubmitError(error instanceof Error ? error.message : '회원가입에 실패했습니다.');
-      setSubmitting(false);
-    }
+    router.push(`/signup/info?role=${role}`);
   };
 
   return (
@@ -69,7 +49,7 @@ export default function SignupTermsPage() {
       <section className="bg-white py-[50px]">
         <Container className="flex flex-col items-center">
           <div className="mb-8 flex w-full justify-center lg:mb-[50px]">
-            <SignupStepper current={3} />
+            <SignupStepper current={2} />
           </div>
 
           <SectionHeading
@@ -127,17 +107,9 @@ export default function SignupTermsPage() {
               ))}
             </section>
 
-            {submitError && (
-              <p role="alert" className={ERROR_TEXT}>
-                {submitError}
-              </p>
-            )}
-
             <div className="mt-5 flex w-full gap-2.5">
-              <StepNavButton href={`/signup/info?role=${role}`}>이전</StepNavButton>
-              <StepNavButton variant="solid" disabled={submitting}>
-                {submitting ? '가입 중...' : '가입하기'}
-              </StepNavButton>
+              <StepNavButton href="/signup">이전</StepNavButton>
+              <StepNavButton variant="solid">다음</StepNavButton>
             </div>
           </form>
         </Container>
