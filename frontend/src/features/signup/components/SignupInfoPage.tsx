@@ -202,20 +202,32 @@ export default function SignupInfoPage() {
     (label) => label !== false,
   );
 
-  // 중복 확인이 남아 있으면 "다음"은 흐리게 보이고, 누르면 팝업으로 알려 줍니다.
-  // 브라우저 기본 검사보다 먼저 돌아야 해서 제출(onSubmit)이 아니라 클릭에서 막습니다.
-  const handleNextClick = (event: MouseEvent<HTMLButtonElement>) => {
-    if (unverified.length === 0) return;
-    event.preventDefault();
+  /** 중복 확인이 남았으면 팝업으로 알려 주고 true. */
+  const alertUnverified = () => {
+    if (unverified.length === 0) return false;
     window.alert(`${unverified.join(', ')} 중복 확인을 해주세요.`);
     (usernameCheck.verified ? emailRef : usernameRef).current?.focus();
+    return true;
   };
+
+  // 중복 확인이 남아 있으면 "가입하기"는 흐리게 보이고, 누르면 팝업으로 알려 줍니다.
+  // 브라우저 기본 검사보다 먼저 돌아야 해서 클릭에서 막습니다. (버튼을 거치지 않는 제출은 handleSubmit 에서 한 번 더 막습니다)
+  const handleNextClick = (event: MouseEvent<HTMLButtonElement>) => {
+    if (alertUnverified()) event.preventDefault();
+  };
+
+  /**
+   * 가입 요청이 오가는 중인지. submitting 상태는 다시 그려진 뒤에야 버튼을 막으므로,
+   * 그 사이에 한 번 더 제출되어 가입 요청이 두 번 나가는 것을 여기서 바로 막습니다.
+   */
+  const submittingRef = useRef(false);
 
   /** 거절 사유를 붙일 칸이 지금 화면에 있는지. 없으면 버튼 위 한 줄로 보여 줍니다. */
   const hasField = (key: FieldKey) => !!formRef.current?.querySelector(`[name="${key}"]`);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (submittingRef.current || alertUnverified()) return;
 
     setFieldError(null);
     setSubmitError('');
@@ -226,6 +238,7 @@ export default function SignupInfoPage() {
       return;
     }
 
+    submittingRef.current = true;
     setSubmitting(true);
     // 계정이 이미 있으면 그 역할로 프로필만 다시 만듭니다.
     const profileRole = createdRole ?? role;
@@ -253,6 +266,7 @@ export default function SignupInfoPage() {
       } else {
         setSubmitError(next?.text ?? (error instanceof Error ? error.message : '회원가입에 실패했습니다.'));
       }
+      submittingRef.current = false;
       setSubmitting(false);
     }
   };
