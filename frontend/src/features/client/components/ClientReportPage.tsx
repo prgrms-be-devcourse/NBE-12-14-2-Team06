@@ -17,7 +17,8 @@ import TripSummary from './TripSummary';
 
 const CARD = 'rounded-[30px] border border-line bg-white px-6 py-8 shadow-card lg:px-[35px]';
 const TITLE = 'text-2xl leading-6 font-semibold text-brand';
-const MENU_BUTTON = 'flex h-11 w-full items-center justify-center gap-2.5 rounded-[25px] border border-line bg-white text-base leading-[18px] font-semibold text-brand transition-colors hover:bg-line-soft';
+const BUTTON = 'flex h-11 w-full items-center justify-center gap-2.5 rounded-[25px] text-base leading-[18px] font-semibold transition-colors';
+const MENU_BUTTON = cn(BUTTON, 'border border-line bg-white text-brand hover:bg-line-soft');
 
 type ReportResult =
   | { status: 'notFound' }
@@ -230,7 +231,7 @@ export default function ClientReportPage() {
                 <h2 className={cn(TITLE, 'mb-6')}>관련 메뉴</h2>
                 <div className="flex flex-col gap-2.5">
                   {/* 리뷰 화면도 공고 정보가 필요해 postId 를 함께 넘깁니다. */}
-                  <Link href={`/client/escort/${escort.applicationId}/review?postId=${escort.postId}`} className={cn(MENU_BUTTON, 'border-brand bg-brand text-white hover:bg-brand-hover')}>
+                  <Link href={`/client/escort/${escort.applicationId}/review?postId=${escort.postId}`} className={cn(BUTTON, 'border border-brand bg-brand text-white hover:bg-brand-hover')}>
                     리뷰 작성하기
                   </Link>
                   <Link href="/client/posts" className={MENU_BUTTON}>

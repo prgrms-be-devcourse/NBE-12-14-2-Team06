@@ -55,7 +55,7 @@ function summaryRows(escort: ClientEscortCase): { label: string; value: string[]
   if (escort.stage === 'ready') {
     rows.push({ label: '만날 장소', value: [escort.meetingPlace] });
   }
-  if (escort.stage === 'done') {
+  if (escort.postCompleted) {
     rows.push({ label: '안내 사항', value: ['동행이 정상적으로 완료되었습니다.', '동행인 리뷰를 해주세요.'] });
   }
   return rows;
@@ -68,7 +68,8 @@ function summaryRows(escort: ClientEscortCase): { label: string; value: string[]
  * postId 쿼리가 있으면 실제 API 로 채웁니다(공고: GET /api/v1/posts/{postId}, 매니저: .../escort-profile,
  * 이동수단: GET /api/v1/rides/posts/{postId}). 다른 화면에서 postId 없이 들어올 수도 있어, 그때는
  * 지금처럼 모의 데이터(model/escort.ts)를 보여줍니다.
- * ⚠️ 진행 단계는 공고 상태로 3단계까지만 대신하고, 타임라인 시각·실시간 위치·결제·정산은 아직 모의 값입니다.
+ * 진행 단계(5종)는 GET /api/v1/applications/{id}/progress 로 실제 조회합니다(model/escort.ts 의
+ * PROGRESS_TO_STAGE 참고). ⚠️ 타임라인 단계별 "시각"과 지도의 실시간 위치는 아직 API 가 없어 모의 값입니다.
  */
 export default function ClientTrackingPage() {
   const { loading: authLoading, user } = useRequireAuth('CLIENT');
@@ -103,7 +104,7 @@ export default function ClientTrackingPage() {
   }, [postId, applicationId, reloadKey]);
 
   // 동행이 끝나야 "추가 결제"가 생깁니다. 완료 전의 READY 결제는 아직 안 낸 최초 결제라 물어보면 안 됩니다.
-  const completed = live.key === postId && live.escort?.stage === 'done';
+  const completed = live.key === postId && !!live.escort?.postCompleted;
 
   useEffect(() => {
     if (postId === undefined || !completed) return;
@@ -282,14 +283,11 @@ export default function ClientTrackingPage() {
                 {(hasStageButtons || kakaoT) && (
                   <div className="mt-5 flex flex-col gap-[5px]">
                     {/* TODO: 추가 결제 · 정산 API 연결 */}
-                    {escort.stage === 'ongoing' && (
+                    {/* stage 는 동행 매니저의 실제 진행 단계라 ARRIVED_HOME 에 닿으면 바로 'done' 이 되지만,
+                        Post 는 이 버튼을 눌러야 완료됩니다 — 그래서 stage 가 아니라 postCompleted 로 가립니다. */}
+                    {!escort.postCompleted && escort.stage !== 'ready' && (
                       <button type="button" onClick={handleComplete} disabled={completing} className={cn(BUTTON, SOLID, 'disabled:cursor-not-allowed disabled:opacity-60')}>
                         {completing ? '처리 중...' : '동행 완료 처리'}
-                      </button>
-                    )}
-                    {escort.stage === 'arrived' && showUnimplemented() && (
-                      <button type="button" className={cn(BUTTON, SOLID)}>
-                        동행 종료
                       </button>
                     )}
                     {pendingPayment && (
@@ -297,7 +295,7 @@ export default function ClientTrackingPage() {
                         {`${pendingPayment.amount.toLocaleString()}원 추가 결제`}
                       </Link>
                     )}
-                    {escort.stage === 'done' && (
+                    {escort.postCompleted && (
                       <>
                         {/* 추가 결제가 남아 있으면 정산부터 할 수 없어서 그때는 숨깁니다. */}
                         {!pendingPayment && showUnimplemented() && (

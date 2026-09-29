@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Container, SectionHeading } from '@/components/ui';
 import { applyToPost, fetchMyApplications } from '@/features/application';
@@ -48,9 +48,10 @@ export default function PostListPage({
                                        detailBasePath = '/posts',
                                      }: PostListPageProps) {
   // 지원은 동행 매니저(ESCORT)만 할 수 있어서, 의뢰인(CLIENT)에게는 버튼을 눌리지 않게 둡니다.
-  const { user } = useCurrentUser();
+  const { user, unauthenticated } = useCurrentUser();
   const isClient = user?.role === 'CLIENT';
   const router = useRouter();
+  const pathname = usePathname();
 
   const [filters, setFilters] = useState<PostFilters>(DEFAULT_FILTERS);
   const [keywordInput, setKeywordInput] = useState('');
@@ -115,8 +116,12 @@ export default function PostListPage({
     setPage(0);
   };
 
-  // TODO: 지원 API(POST /api/v1/applications/{postId})는 동행 매니저(ESCORT) 로그인 쿠키가 있어야 합니다.
   const handleApply = async (postId: number) => {
+    // 로그인 안 한 상태면 API 를 부르지 않고 바로 로그인 화면으로 보냅니다 (PostDetailPage 와 동일한 처리).
+    if (unauthenticated) {
+      router.push(`/login?next=${encodeURIComponent(pathname)}`);
+      return;
+    }
     setApplyStatus((prev) => ({ ...prev, [postId]: 'applying' }));
     try {
       await applyToPost(postId);

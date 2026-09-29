@@ -11,9 +11,11 @@ import com.back.nbe12142team06.domain.penalty.service.NoShowPenaltyService;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.entity.PostStatus;
 import com.back.nbe12142team06.domain.post.repository.PostRepository;
+import com.back.nbe12142team06.domain.user.entity.ClientProfile;
 import com.back.nbe12142team06.domain.user.entity.EscortProfile;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Role;
+import com.back.nbe12142team06.domain.user.repository.ClientProfileRepository;
 import com.back.nbe12142team06.domain.user.repository.EscortProfileRepository;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
 import com.back.nbe12142team06.global.exception.DuplicatedException;
@@ -40,6 +42,7 @@ public class ApplicationService {
     private final EscortProfileRepository escortProfileRepository;
     private final EscortProgressLogRepository escortProgressLogRepository;
     private final NoShowPenaltyService noShowPenaltyService;
+    private final ClientProfileRepository clientProfileRepository;
 
     @Transactional
     public ApplicationApplyResponse apply(Long postId, Long userId) {
@@ -367,7 +370,31 @@ public class ApplicationService {
                 escortProfile.getGrade()
         );
     }
+    @Transactional(readOnly = true)
+    public ApplicationClientProfileResponse getClientProfile(Long applicationId, Long userId) {
 
+        Application application = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new NotFoundException("지원을 찾을 수 없습니다."));
+
+        // 본인이 승인받은 지원 건의 의뢰인 정보만 조회 가능
+        if (!application.getEscort().getId().equals(userId)) {
+            throw new ForbiddenException("매칭된 의뢰인의 프로필만 조회할 수 있습니다.");
+        }
+
+        User client = application.getPost().getClient();
+
+        ClientProfile clientProfile = clientProfileRepository.findById(client.getId())
+                .orElseThrow(() -> new NotFoundException("의뢰인 프로필을 찾을 수 없습니다."));
+
+        return new ApplicationClientProfileResponse(
+                client.getId(),
+                client.getName(),
+                client.getPhoneNum(),
+                clientProfile.getEmergencyContactName(),
+                clientProfile.getEmergencyContactPhone(),
+                clientProfile.getCareNote()
+        );
+    }
     @Transactional(readOnly = true)
     public List<MyApplicationResponse> getMyApplications(Long userId) {
 

@@ -2025,7 +2025,7 @@ public class ApplicationControllerTest {
 
         resultActions
                 .andExpect(handler().handlerType(ApplicationController.class))
-                .andExpect(handler().methodName("profile"))
+                .andExpect(handler().methodName("escortProfile"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value("200-2"))
                 .andExpect(jsonPath("$.msg")
@@ -2114,7 +2114,7 @@ public class ApplicationControllerTest {
 
         resultActions
                 .andExpect(handler().handlerType(ApplicationController.class))
-                .andExpect(handler().methodName("profile"))
+                .andExpect(handler().methodName("escortProfile"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.statusCode").value("404"))
                 .andExpect(jsonPath("$.msg")

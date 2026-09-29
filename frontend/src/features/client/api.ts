@@ -1,4 +1,4 @@
-import { fetchApplicants, fetchEscortProfile } from '@/features/application';
+import { fetchApplicants, fetchEscortProfile, fetchProgress } from '@/features/application';
 import { fetchMyProfile } from '@/features/auth';
 import { fetchPostRaw, fetchPosts, type PostFilters } from '@/features/post';
 import { fetchUserReviews } from '@/features/review';
@@ -17,17 +17,18 @@ import type { ClientEscortCase, ClientPost } from './types';
  *    없어서 applicationId 만으로는 공고를 찾을 수 없기 때문입니다. 그 API 가 생기면 쿼리 의존을 걷어내세요.
  */
 export async function fetchClientEscortCase(postId: number, applicationId: number): Promise<ClientEscortCase> {
-  const [post, profile, rides] = await Promise.all([
+  const [post, profile, rides, progress] = await Promise.all([
     fetchPostRaw(postId),
     fetchEscortProfile(applicationId),
     fetchRidesByPost(postId),
+    fetchProgress(applicationId),
   ]);
 
   // 리뷰는 매니저 카드의 태그 계산용이라, 실패해도 나머지 화면은 그대로 보여줍니다.
   const reviews = await fetchUserReviews(profile.escortId).catch(() => []);
   const manager = toManager(profile, topReviewTagLabels(reviews));
 
-  return toClientEscortCase(post, applicationId, manager, formatTransport(rides));
+  return toClientEscortCase(post, applicationId, manager, formatTransport(rides), progress.progress);
 }
 
 /**

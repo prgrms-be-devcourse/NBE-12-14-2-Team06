@@ -1,3 +1,4 @@
+import { PROGRESS_ORDER, type EscortProgress } from '@/features/application';
 import type { PostDto } from '@/features/post';
 import { formatDotDateTime, formatScheduleLabel } from '../lib/date';
 import type { ClientEscortCase, ClientEscortStage, Manager } from '../types';
@@ -17,30 +18,38 @@ const TIMELINE_BASE = [
   { label: '귀가 완료', description: '동행이 완료되었습니다.' },
 ];
 
-/** 타임라인 6단계 중 3단계(ready/ongoing/done)마다 몇 번째까지 완료로 볼지 */
-const STAGE_DONE_COUNT: Record<'ready' | 'ongoing' | 'done', number> = { ready: 1, ongoing: 3, done: 6 };
-
 /**
- * 백엔드 PostDto.postStatus(한글) → 진행 단계 3종.
- * ⚠️ 동행 진행 단계(EscortProgress)를 "읽는" API 가 없어서(쓰기 PATCH만 있음) 공고 상태로 대신합니다.
+ * 백엔드 EscortProgress(GET .../progress 로 실제 조회) → 화면 5단계.
+ * PROGRESS_ORDER: NOT_STARTED, DEPARTED, TO_HOSPITAL, AT_HOSPITAL, TO_HOME, ARRIVED_HOME.
+ * 병원 도착(AT_HOSPITAL)부터 GOING_HOME 이 true 로 바뀌어야 해서 arrived/finishing 을 따로 둡니다.
  */
-function toClientEscortStage(postStatus: string): 'ready' | 'ongoing' | 'done' {
-  if (postStatus === '동행 진행 중') return 'ongoing';
-  if (postStatus === '동행 완료') return 'done';
-  return 'ready'; // '매칭 완료' 및 그 외 상태의 기본값
-}
+const PROGRESS_TO_STAGE: Record<EscortProgress, ClientEscortStage> = {
+  NOT_STARTED: 'ready',
+  DEPARTED: 'ongoing',
+  TO_HOSPITAL: 'ongoing',
+  AT_HOSPITAL: 'arrived',
+  TO_HOME: 'finishing',
+  ARRIVED_HOME: 'done',
+};
 
 /**
  * 실제 API 로 만든 의뢰인 동행 현황.
- * ⚠️ 타임라인 단계별 "시각"과 지도의 "최근 업데이트"는 EscortProgress 를 읽는 API 가 없어 비워 둡니다
- *    (예전엔 모의 값을 넣었습니다). 지도의 실시간 위치도 API 가 없어 MapCard 의 정적 이미지입니다.
+ * ⚠️ 지도의 "최근 업데이트"·실시간 위치는 아직 API 가 없어 MapCard 의 정적 이미지 그대로입니다.
  */
-export function toClientEscortCase(post: PostDto, applicationId: number, manager: Manager, transport: string): ClientEscortCase {
-  const stage = toClientEscortStage(post.postStatus);
+export function toClientEscortCase(
+  post: PostDto,
+  applicationId: number,
+  manager: Manager,
+  transport: string,
+  progress: EscortProgress,
+): ClientEscortCase {
+  const stage = PROGRESS_TO_STAGE[progress];
+  const doneCount = PROGRESS_ORDER.indexOf(progress) + 1;
   return {
     applicationId,
     postId: post.id,
     stage,
+    postCompleted: post.postStatus === '동행 완료',
     title: post.title,
     hospitalName: post.hospitalName,
     region: post.region,
@@ -54,7 +63,7 @@ export function toClientEscortCase(post: PostDto, applicationId: number, manager
     pickupPoint: { name: '집', lat: post.pickupLat, lng: post.pickupLng },
     hospitalPoint: { name: post.hospitalName, lat: post.hospitalLat, lng: post.hospitalLng },
     manager,
-    timeline: TIMELINE_BASE.map((step, index) => ({ ...step, done: index < STAGE_DONE_COUNT[stage] })),
+    timeline: TIMELINE_BASE.map((step, index) => ({ ...step, done: index < doneCount })),
   };
 }
 
