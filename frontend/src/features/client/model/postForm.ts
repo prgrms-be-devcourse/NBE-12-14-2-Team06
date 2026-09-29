@@ -26,6 +26,12 @@ export const TRANSPORT_OPTIONS = Object.keys(RIDE_SELECT_BY_LABEL);
 export function toRideSelect(label: string): RideSelect | undefined {
   return RIDE_SELECT_BY_LABEL[label];
 }
+
+/** "TAXI" → "택시" (수정 폼에 기존 이동수단을 채울 때 씁니다). 없으면(null) 빈 문자열 — 다시 선택해야 합니다. */
+export function toRideLabel(select: RideSelect | null | undefined): string {
+  if (!select) return '';
+  return TRANSPORT_OPTIONS.find((label) => RIDE_SELECT_BY_LABEL[label] === select) ?? '';
+}
 export const PARTY_OPTIONS = ['1명 (본인만)', '2명 (보호자 동반)', '3명 이상'];
 
 export const EMPTY_FORM: PostFormValues = {
