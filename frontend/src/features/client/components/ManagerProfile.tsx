@@ -99,6 +99,11 @@ export default function ManagerProfile({ manager, size, className }: { manager: 
                 노쇼 <strong className="font-semibold">{manager.noShowCount}회</strong>
               </span>
             )}
+            {manager.age !== undefined && (
+              <span>
+                {manager.age}세{manager.gender && ` · ${manager.gender === 'MALE' ? '남성' : '여성'}`}
+              </span>
+            )}
             {manager.region && (
               <span className="flex items-center gap-1.5">
                 <Image src="/icons/pin.svg" alt="" width={s.icon} height={s.icon} />

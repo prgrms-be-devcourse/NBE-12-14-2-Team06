@@ -83,6 +83,9 @@ export default function ApplicantProfilePage() {
     ratingCount: profile.ratingCount,
     noShowCount: profile.noShowCount,
     verified: profile.verified,
+    age: profile.age,
+    gender: profile.gender,
+    region: profile.region,
   };
 
   return (

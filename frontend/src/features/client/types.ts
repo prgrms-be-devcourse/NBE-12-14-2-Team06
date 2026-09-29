@@ -33,7 +33,7 @@ export type ClientPost = {
 
 /**
  * 동행 매니저 프로필 (지원자 카드 · 동행 정보 카드 공용).
- * ⚠️ 지역(region)·태그(tags)는 백엔드 지원자 프로필 API(escort-profile)에 없어서, 실제 데이터로 채울 땐 빠집니다.
+ * ⚠️ 태그(tags)는 백엔드 지원자 프로필 API(escort-profile)에 없어서, 실제 데이터로 채울 땐 빠집니다.
  */
 export type Manager = {
   name: string;
@@ -50,6 +50,9 @@ export type Manager = {
   noShowCount?: number;
   /** 신원 인증 여부. true 일 때만 인증 배지를 보여줍니다. */
   verified?: boolean;
+  /** 나이(만 나이). 값이 없으면 화면에서 이 항목을 생략합니다. */
+  age?: number;
+  gender?: 'MALE' | 'FEMALE';
 };
 
 /** 공고에 지원한 동행 매니저 */

@@ -29,7 +29,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Period;
 import java.util.List;
 
 @Slf4j
@@ -358,6 +360,8 @@ public class ApplicationService {
                 : (double) escortProfile.getRatingSum()
                 / escortProfile.getRatingCount();
 
+        int age = Period.between(escort.getBirthDate(), LocalDate.now()).getYears();
+
         return new ApplicationEscortProfileResponse(
                 escort.getId(),
                 escort.getName(),
@@ -367,7 +371,10 @@ public class ApplicationService {
                 rating,
                 escortProfile.getRatingCount(),
                 escortProfile.getNoShowCount(),
-                escortProfile.getGrade()
+                escortProfile.getGrade(),
+                age,
+                escort.getGender(),
+                escort.getRegion()
         );
     }
     @Transactional(readOnly = true)
