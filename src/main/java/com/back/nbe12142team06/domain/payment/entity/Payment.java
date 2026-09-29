@@ -27,10 +27,12 @@ public class Payment extends BaseSoftDeleteTimeEntity {
     private Long id;
 
     // 결제 금액, 최소 0원 보다 커야함
-    @Column(
-            nullable = false,
-            check = @CheckConstraint(name = "chk_amount", constraint = "amount > 0")
-    )
+    // 너무 빠른 동행의 종료로 이용 금액이 0원인 경우도 있음
+    // deprecated
+//    @Column(
+//            nullable = false,
+//            check = @CheckConstraint(name = "chk_amount", constraint = "amount > 0")
+//    )
     private int amount;
 
     // 시간 당 금액
