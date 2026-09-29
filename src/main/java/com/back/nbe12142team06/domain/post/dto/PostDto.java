@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 
 public record PostDto(
         Long id,
+        String client_id,
         String title,
         String content,
         String patientNote,
@@ -18,25 +19,21 @@ public record PostDto(
         BigDecimal pickupLat,
         BigDecimal pickupLng,
         int hourlyPay,
+        LocalDateTime recruitStartAt,
+        LocalDateTime recruitEndAt,
         LocalDateTime escortStartAt,
         LocalDateTime escortEndAt,
-        LocalDateTime deadlineAt,
+        BigDecimal escortHours,
+        BigDecimal totalPay,
         String postStatus,
         boolean reportRequired,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
-
-        // 필요하다면 client 정보 일부만 노출
-  /*      Long clientId,      // User ID만
-        String clientName,  // User 이름만*/
-
 ) {
     public PostDto(Post post) {
         this(
-                // Post 생성자에서
-      /*          post.getClient().getId(),
-                post.getClient().getName(),*/
                 post.getId(),
+                post.getClient().getUsername(),
                 post.getTitle(),
                 post.getContent(),
                 post.getPatientNote(),
@@ -49,9 +46,12 @@ public record PostDto(
                 post.getPickupLat(),
                 post.getPickupLng(),
                 post.getHourlyPay(),
+                post.getRecruitStartAt(),
+                post.getRecruitEndAt(),
                 post.getEscortStartAt(),
                 post.getEscortEndAt(),
-                post.getDeadlineAt(),
+                post.getEscortHours(),
+                post.getTotalPay(),
                 post.getPostStatus().getDescription(),
                 post.isReportRequired(),
                 post.getCreatedAt(),

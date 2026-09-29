@@ -1,9 +1,12 @@
 package com.back.nbe12142team06.domain.user.service;
 
 import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpRequest;
+import com.back.nbe12142team06.domain.user.dto.profile.EscortProfileRequest;
+import com.back.nbe12142team06.domain.user.entity.EscortProfile;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Gender;
 import com.back.nbe12142team06.domain.user.enums.Role;
+import com.back.nbe12142team06.domain.user.repository.EscortProfileRepository;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
 import com.back.nbe12142team06.global.exception.DuplicatedException;
 import jakarta.persistence.EntityManager;
@@ -33,6 +36,8 @@ public class UserServiceTest {
     private EntityManager em;
     @Autowired
     private PasswordEncoder passwordEncoder;
+    @Autowired
+    private EscortProfileRepository escortProfileRepository;
 
 
     @Test
@@ -152,8 +157,50 @@ public class UserServiceTest {
     }
 
     @Test
-    @DisplayName("[UserService] 회원가입 - 비밀번호 암호화")
+    @DisplayName("[UserService] 회원가입 - 이미 사용 중인 전화번호로 가입 시 예외")
     void t4(){
+        // phoneNum = "010-1234-5678"
+        User saved = this.userService.signUp(
+                new UserSignUpRequest(
+                        "user1",
+                        "1234",
+                        "user@test.test",
+                        "유저1",
+                        Role.CLIENT,
+                        Gender.MALE,
+                        LocalDate.of(1990, 5, 6),
+                        "010-1234-5678",
+                        "서울"
+                )
+        );
+
+        // phoneNum = "010-1234-5678"
+        DuplicatedException e = catchThrowableOfType(() ->
+                        this.userService.signUp(
+                                new UserSignUpRequest(
+                                        "user2",
+                                        "1234",
+                                        "user2@test.test",
+                                        "유저A",
+                                        Role.CLIENT,
+                                        Gender.MALE,
+                                        LocalDate.of(1990, 5, 6),
+                                        "010-1234-5678",
+                                        "경기"
+                                )
+                        ),
+                DuplicatedException.class
+        );
+
+        assertThat(e).isNotNull();
+        assertThat(e.getMessage()).isEqualTo("이미 사용 중인 전화번호입니다.");
+        assertThat(e.getStatusCode()).isEqualTo("409-3");
+    }
+
+
+    @Test
+    @DisplayName("[UserService] 회원가입 - 비밀번호 암호화")
+    void t5(){
         User saved = this.userService.signUp(
                 new UserSignUpRequest(
                         "user1",
@@ -177,5 +224,42 @@ public class UserServiceTest {
         assertThat(userCheck.getPassword()).isNotEqualTo("1234");
         // 비밀번호가 지정한 방식으로 정확히 암호화되어 저장되어 있는지 검증
         assertThat(passwordEncoder.matches("1234", userCheck.getPassword())).isTrue();
+    }
+
+    @Test
+    @DisplayName("[UserService] 동행 매니저 프로필 생성")
+    void t6() {
+
+        // 회원 생성
+        User saved = this.userService.signUp(
+                new UserSignUpRequest(
+                        "user1",
+                        "1234",
+                        "user@test.test",
+                        "유저1",
+                        Role.ESCORT,
+                        Gender.MALE,
+                        LocalDate.of(1990, 5, 6),
+                        "010-1234-5678",
+                        "서울"
+                )
+        );
+
+        this.userService.createEscortProfile(
+                saved.getId(),
+                new EscortProfileRequest(
+                        "동행 매니저 입니다.",
+                        "오픈은행",
+                        "유저1",
+                        "123-000000-123")
+        );
+
+        em.flush();
+        em.clear();
+
+        EscortProfile profileCheck = this.escortProfileRepository.findById(saved.getId()).get();
+
+        assertThat(profileCheck.getBankName()).isEqualTo("오픈은행");
+        assertThat(profileCheck.getAccountNumber()).isEqualTo("123-000000-123");
     }
 }

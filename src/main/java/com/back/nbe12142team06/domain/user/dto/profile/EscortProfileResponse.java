@@ -1,0 +1,34 @@
+package com.back.nbe12142team06.domain.user.dto.profile;
+
+import com.back.nbe12142team06.domain.user.entity.EscortProfile;
+import com.back.nbe12142team06.domain.user.enums.EscortGrade;
+
+public record EscortProfileResponse(
+        Long userId,
+        String name,
+        String region,
+        String intro,
+        Double averageRating,
+        Integer completedCount,
+        EscortGrade grade,
+        Boolean verified,
+        String bankName,
+        String accountHolder,
+        String accountNumber
+) {
+    public EscortProfileResponse(EscortProfile escortProfile){
+        this(
+                escortProfile.getUserId(),
+                escortProfile.getUser().getName(),
+                escortProfile.getUser().getRegion(),
+                escortProfile.getIntro(),
+                escortProfile.getAverageRating(),
+                escortProfile.getCompletedCount(),
+                escortProfile.getGrade(),
+                escortProfile.getVerified(),
+                escortProfile.getBankName(),
+                escortProfile.getAccountHolder(),
+                escortProfile.getAccountNumber()
+        );
+    }
+}

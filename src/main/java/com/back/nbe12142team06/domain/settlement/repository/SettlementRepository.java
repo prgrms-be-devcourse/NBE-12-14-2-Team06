@@ -1,7 +1,59 @@
 package com.back.nbe12142team06.domain.settlement.repository;
 
+import com.back.nbe12142team06.domain.settlement.dto.AccountDto;
 import com.back.nbe12142team06.domain.settlement.entity.Settlement;
+import com.back.nbe12142team06.domain.settlement.entity.SettlementStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
 
 public interface SettlementRepository extends JpaRepository<Settlement, Long> {
+
+    @Query("select s.id, ep.accountNumber, e.name, s.payoutAmount " +
+            "from Settlement s " +
+            "join s.escort e " +
+            "join EscortProfile ep on ep.userId=e.id " +
+            "where s.id=:settlementId and e.id=:userId " +
+            "and (s.settlementStatus='PENDING' or s.settlementStatus='FAILED' or s.settlementStatus='PROCESSING')")
+    Optional<AccountDto> findByIdAndState(@Param("userId") Long userId,
+                                          @Param("settlementId") Long settlementId);
+
+    @Query("select s " +
+            "from Settlement s " +
+            "join fetch User u on s.escort=u " +
+            "join fetch Application a on s.application=a " +
+            "join fetch Post p on a.post=p " +
+            "where u.id=:userId and p.escortStartAt between :startDate and :endDate")
+    Page<Settlement> findAllByUserIdAndDate(@Param("userId") Long userId,
+                                            @Param("startDate") LocalDateTime startDate,
+                                            @Param("endDate") LocalDateTime endDate,
+                                            Pageable pageable);
+
+
+    @Query("select s.id, ep.accountNumber, e.name, s.payoutAmount " +
+            "from Settlement s " +
+            "join s.escort e " +
+            "join EscortProfile ep on ep.userId=e.id " +
+            "where (s.settlementStatus='PENDING' or s.settlementStatus='FAILED') and s.settledDate <= current_date")
+    List<AccountDto> findAllByStatusAndDate();
+
+    // clearAutomatically는 1차 캐시를 비워줌 -> 테스트에서 검증할 때 status 반영이 안되서 추가
+    @Modifying(clearAutomatically = true)
+    @Query("update Settlement s set s.settlementStatus=:status where s.id=:id")
+    int updateStatus(@Param("id") Long id, @Param("status") SettlementStatus status);
+
+    @Modifying
+    @Query("update Settlement s " +
+            "set s.settlementStatus=SettlementStatus.PROCESSING " +
+            "where s.id=:settlementId " +
+            "and (s.settlementStatus=SettlementStatus.PENDING or s.settlementStatus=SettlementStatus.FAILED)")
+    int updateProcessing(@Param("settlementId") Long settlementId);
 }

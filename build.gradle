@@ -52,6 +52,8 @@ dependencies {
     testAnnotationProcessor("org.projectlombok:lombok")
     testCompileOnly("org.projectlombok:lombok")
 
+    //모니터링
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
 }
 
 tasks.named('test', Test) {
@@ -61,4 +63,7 @@ tasks.named('test', Test) {
         events "passed", "skipped", "failed"
         exceptionFormat "full"
     }
+}
+if (project.hasProperty('production')) {
+    // Railway 배포용 (빈 블록으로도 충분)
 }

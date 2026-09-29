@@ -5,11 +5,14 @@ import com.back.nbe12142team06.domain.user.enums.Role;
 import com.back.nbe12142team06.global.entity.BaseSoftDeleteTimeEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.SQLRestriction;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -52,13 +55,19 @@ public class User extends BaseSoftDeleteTimeEntity {
     private LocalDate birthDate;
 
     // 회원 전화번호
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false, length = 20, unique = true)
     private String phoneNum;
 
     // 지역
     @Column(nullable = false, length = 50)
     private String region;
 
+    @Version
+    @ColumnDefault("0")
+    @Column(nullable = false)
+    private Long version;
+
+    @Builder
     public User(String username, String password, String email, String name, Role role, Gender gender, LocalDate birthDate, String phoneNum, String region) {
         this.username = username;
         this.password = password;
@@ -69,5 +78,28 @@ public class User extends BaseSoftDeleteTimeEntity {
         this.birthDate = birthDate;
         this.phoneNum = phoneNum;
         this.region = region;
+    }
+
+    // 회원 정보 수정
+    public void updateUser(String password, String email, String name, LocalDate birthDate, String phoneNum, String region){
+        this.password = password;
+        this.email = email;
+        this.name = name;
+        this.birthDate = birthDate;
+        this.phoneNum = phoneNum;
+        this.region = region;
+    }
+
+    // 회원 탈퇴 시
+    public void deleteUser(){
+        this.setDeletedAt(LocalDateTime.now());
+        this.username = "deleted_%d".formatted(this.id);
+        this.email = "deleted_%d".formatted(this.id);
+        this.phoneNum = "deleted_%d".formatted(this.id);
+    }
+
+    // 탈퇴 여부
+    public boolean isDeleted() {
+        return this.getDeletedAt() != null;
     }
 }

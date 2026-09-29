@@ -1,0 +1,95 @@
+import type { EscortGrade } from '@/features/application';
+// 태그 이름·문구·긍정 여부 표는 review 도메인 한 곳에만 둡니다 (features/review/model/tags.ts).
+import type { ReviewTagName } from '@/features/review';
+
+/** 내가 신청한 공고의 진행 상태 */
+export type ApplicationStatus = 'pending' | 'matched' | 'inProgress' | 'completed' | 'rejected' | 'canceled';
+
+/** 마이페이지 신청 카드 한 장 */
+export type Application = {
+  id: number;
+  /** 상세보기로 이동할 공고 번호 */
+  postId: number;
+  title: string;
+  hospitalName: string;
+  /** "서울 양천구" */
+  location: string;
+  /** "2026.11.16.(금)" */
+  dateLabel: string;
+  /** "오후 15:00" */
+  timeLabel: string;
+  durationLabel: string;
+  payLabel: string;
+  description: string[];
+  status: ApplicationStatus;
+};
+
+/** 백엔드 SettlementStatus */
+export type SettlementStatus = 'PENDING' | 'COMPLETED' | 'FAILED';
+
+/** 백엔드 SettlementResponse 의 post 부분 (settlement 카드에 필요한 값만) */
+export type SettlementPost = {
+  id: number;
+  title: string;
+  hospitalName: string;
+  region: string;
+  escortStartAt: string;
+  escortHours: number;
+};
+
+/** 백엔드 GET /api/v1/settlements 응답 한 줄 (SettlementResponse) */
+export type SettlementDto = {
+  id: number;
+  /** 실지급액. 패널티가 이미 차감된 금액입니다. */
+  payoutAmount: number;
+  platformFee: number;
+  /** 노쇼 패널티로 차감된 금액. 차감이 없으면 0 */
+  penaltyAmount: number;
+  status: SettlementStatus;
+  /** 정산 완료된 날짜. 아직 정산 전이면 null */
+  settledAt: string | null;
+  post: SettlementPost;
+};
+
+/** 백엔드 GET /api/v1/users/{userId}/reviews 응답 한 줄 (ReviewDto) */
+export type ReviewDto = {
+  id: number;
+  applicationId: number;
+  rating: number;
+  tags: ReviewTagName[];
+  content: string | null;
+  createdAt: string;
+};
+
+/** 최근 활동 요약 한 칸 */
+export type ActivityStat = {
+  label: string;
+  count: number;
+  icon: string;
+};
+
+/** 백엔드 GET/POST/PUT /api/v1/users/profile/client 응답 (ClientProfileResponse) */
+export type ClientProfileDto = {
+  userId: number;
+  emergencyContactName: string;
+  emergencyContactPhone: string;
+  careNote: string | null;
+};
+
+/** 백엔드 GET/PUT /api/v1/users/profile/escort 응답 (EscortProfileResponse) */
+export type EscortProfileDto = {
+  userId: number;
+  name: string;
+  region: string;
+  intro: string | null;
+  averageRating: number | null;
+  completedCount: number;
+  grade: EscortGrade;
+  verified: boolean;
+  bankName: string | null;
+  accountHolder: string | null;
+  accountNumber: string | null;
+};
+
+/** 마이페이지를 보는 사람. 왼쪽 메뉴와 내용이 달라집니다. */
+export type MyPageRole = 'escort' | 'client';

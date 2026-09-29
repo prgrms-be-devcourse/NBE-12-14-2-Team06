@@ -1,14 +1,79 @@
 package com.back.nbe12142team06.domain.settlement.controller;
 
+import com.back.nbe12142team06.domain.settlement.dto.SettlementResponse;
+import com.back.nbe12142team06.domain.settlement.entity.Settlement;
 import com.back.nbe12142team06.domain.settlement.service.SettlementService;
+import com.back.nbe12142team06.global.response.RsData;
+import com.back.nbe12142team06.global.security.SecurityUser;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+
+@Tag(name = "정산", description = "동행 정산 요청 및 조회 관련 API")
 @RestController
-@RequestMapping("/settlement")
+@RequestMapping("/api/v1/settlements")
 @RequiredArgsConstructor
 public class SettlementController {
 
     private final SettlementService settlementService;
+
+    @Operation(
+            summary = "정산 요청",
+            description = "특정 정산 건에 대해 정산을 요청합니다."
+    )
+    @PostMapping("/{settlementId}")
+    public RsData<?> settlementRequest(@AuthenticationPrincipal SecurityUser actor,
+                                       @PathVariable Long settlementId) {
+        Long userId = actor.getId();
+
+        settlementService.request(userId, settlementId);
+
+        return new RsData<>("200-30", "정산에 성공했습니다.");
+    }
+
+    @Operation(
+            summary = "정산 목록 조회",
+            description = "기간, 페이지 및 정렬 조건을 적용하여 현재 사용자의 정산 목록을 조회합니다."
+    )
+    @GetMapping
+    public RsData<Page<SettlementResponse>> settlementList(@AuthenticationPrincipal SecurityUser actor,
+                                                           @RequestParam(required = false) LocalDateTime startDate,
+                                                           @RequestParam(required = false) LocalDateTime endDate,
+                                                           @RequestParam(defaultValue = "0") int page,
+                                                           @RequestParam(defaultValue = "10") int size,
+                                                           @RequestParam(defaultValue = "DESC") Sort.Direction sort) {
+        Long userId = actor.getId();
+
+        startDate = startDate == null ? LocalDateTime.now().minusMonths(1) : startDate;
+        endDate = endDate == null ? LocalDateTime.now() : endDate;
+
+        Page<SettlementResponse> response = settlementService.findAll(userId, startDate, endDate, PageRequest.of(page, size,
+                Sort.by(sort, "application.post.escortStartAt")));
+
+        return new RsData<>("200-31", "정산 목록을 가져왔습니다.",
+                response);
+    }
+
+    @Operation(
+            summary = "정산 상세 조회",
+            description = "특정 정산 건의 상세 정보를 조회합니다."
+    )
+    @GetMapping("/{settlementId}")
+    public RsData<SettlementResponse> settlementDetail(@AuthenticationPrincipal SecurityUser actor,
+                                                       @PathVariable Long settlementId) {
+
+        Long userId = actor.getId();
+
+        SettlementResponse response = settlementService.findSettlement(userId, settlementId);
+
+        return new RsData<>("200-32", "정산 상세 데이터를 조회했습니다.",
+                response);
+    }
 }

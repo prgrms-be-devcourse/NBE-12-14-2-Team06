@@ -5,6 +5,7 @@ import com.back.nbe12142team06.domain.user.enums.Role;
 import jakarta.validation.constraints.*;
 
 import java.time.LocalDate;
+import java.util.Locale;
 
 public record UserSignUpRequest(
         @NotBlank(message = "아이디는 필수 항목입니다.")
@@ -37,4 +38,9 @@ public record UserSignUpRequest(
         @Size(max= 50)
         String region
         ) {
+        public UserSignUpRequest {
+                if (email != null) {
+                        email = email.strip().toLowerCase(Locale.ROOT);
+                }
+        }
 }

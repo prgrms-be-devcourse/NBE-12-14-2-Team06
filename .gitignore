@@ -38,3 +38,7 @@ out/
 
 ### Env ###
 .env
+
+### Claude ###
+.claude/
+.DS_Store

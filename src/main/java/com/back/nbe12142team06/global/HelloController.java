@@ -1,9 +1,10 @@
 package com.back.nbe12142team06.global;
 
-import org.springframework.stereotype.Controller;
+import io.swagger.v3.oas.annotations.Hidden;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Hidden
 @RestController
 public class HelloController {
     @GetMapping("/")

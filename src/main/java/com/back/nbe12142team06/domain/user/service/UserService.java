@@ -1,25 +1,87 @@
 package com.back.nbe12142team06.domain.user.service;
 
+import com.back.nbe12142team06.domain.application.repository.ApplicationRepository;
+import com.back.nbe12142team06.domain.auth.entity.RefreshToken;
+import com.back.nbe12142team06.domain.auth.repository.RefreshTokenRepository;
+import com.back.nbe12142team06.domain.education.service.EducationService;
+import com.back.nbe12142team06.domain.user.dto.admin.AdminUserProfileUpdateRequest;
+import com.back.nbe12142team06.domain.user.dto.login.UserLoginRequest;
+import com.back.nbe12142team06.domain.user.dto.profile.ClientProfileModifyRequest;
+import com.back.nbe12142team06.domain.user.dto.profile.ClientProfileRequest;
+import com.back.nbe12142team06.domain.user.dto.profile.EscortProfileModifyRequest;
+import com.back.nbe12142team06.domain.user.dto.profile.EscortProfileRequest;
 import com.back.nbe12142team06.domain.user.dto.signup.common.UserSignUpRequest;
+import com.back.nbe12142team06.domain.user.dto.user.UserProfileUpdateRequest;
+import com.back.nbe12142team06.domain.user.entity.ClientProfile;
+import com.back.nbe12142team06.domain.user.entity.EscortProfile;
 import com.back.nbe12142team06.domain.user.entity.User;
+import com.back.nbe12142team06.domain.user.enums.Role;
+import com.back.nbe12142team06.domain.user.repository.ClientProfileRepository;
+import com.back.nbe12142team06.domain.user.repository.EscortProfileRepository;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
-import com.back.nbe12142team06.global.exception.DuplicatedException;
+import com.back.nbe12142team06.global.exception.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserService {
     private static final int DUPLICATED_USERNAME = 1;
     private static final int DUPLICATED_EMAIL = 2;
+    private static final int DUPLICATED_PHONE_NUM = 3;
+
+    private static final String DEFAULT_CLIENT_PROFILE_CARE_NOTE = "특이사항 없음";
 
     private final UserRepository userRepository;
+    private final AuthTokenService authTokenService;
     private final PasswordEncoder passwordEncoder;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final EscortProfileRepository escortProfileRepository;
+    private final ClientProfileRepository clientProfileRepository;
+    private final ApplicationRepository applicationRepository;
+    private final EducationService educationService;
 
+    // 프로필 삭제, 리프레시 토큰 폐기, 회원 정보 삭제
+    private void withdraw(User user) {
+        Long userId = user.getId();
+
+        switch (user.getRole()) {
+            case CLIENT -> this.clientProfileRepository.deleteByUserId(userId);
+            case ESCORT -> {
+                this.educationService.deleteProgresses(userId);
+                this.escortProfileRepository.deleteByUserId(userId);
+            }
+        }
+
+        List<RefreshToken> refreshTokens = this.refreshTokenRepository.findAllByUserIdAndRevokedAtIsNull(userId);
+        for (RefreshToken refreshToken : refreshTokens) {
+            refreshToken.revoke();
+        }
+
+        user.deleteUser();
+        this.userRepository.save(user);
+    }
+
+    // 회원가입
     @Transactional
     public User signUp(UserSignUpRequest request) {
+        // Admin으로 가입 불가
+        if (request.role() == Role.ADMIN) {
+            throw new BusinessException("400-3", "잘못된 요청입니다.");
+        }
+
         // username 중복 검사
         if (this.userRepository.existsByUsername(request.username())) {
             throw new DuplicatedException(DUPLICATED_USERNAME, "이미 사용 중인 아이디입니다.");
@@ -28,10 +90,15 @@ public class UserService {
         if (this.userRepository.existsByEmail(request.email())) {
             throw new DuplicatedException(DUPLICATED_EMAIL, "이미 사용 중인 이메일입니다.");
         }
-        // 비밀번호 암호화
+        // phoneNum 중복 검사
+        if (this.userRepository.existsByPhoneNum(request.phoneNum())) {
+            throw new DuplicatedException(DUPLICATED_PHONE_NUM, "이미 사용 중인 전화번호입니다.");
+        }
+
+
         User user = new User(
                 request.username(),
-                passwordEncoder.encode(request.password()),
+                passwordEncoder.encode(request.password()), // 비밀번호 암호화
                 request.email(),
                 request.name(),
                 request.role(),
@@ -40,6 +107,295 @@ public class UserService {
                 request.phoneNum(),
                 request.region()
         );
+
+        // 동시성 자체는 유니크로 막혀 있는데 그 때 500번이 나가버리기 때문에 이를 409로 감싸기만 했습니다.
+        try {
+            User savedUser = this.userRepository.saveAndFlush(user);
+            log.info("[회원가입] userId={}, role={}", savedUser.getId(), savedUser.getRole());
+            return savedUser;
+        } catch (DataIntegrityViolationException e) {
+            throw new DuplicatedException(6, "이미 사용 중인 회원 정보입니다.");
+        }
+    }
+
+    // 로그인
+    @Transactional(readOnly = true)
+    public User login(UserLoginRequest request) {
+        Optional<User> opUser = this.userRepository.findByUsername(request.username());
+
+        if (opUser.isEmpty()) {
+            log.warn("[로그인 실패] 존재하지 않는 아이디 username={}", request.username());
+            throw new UnauthorizedException("아이디 또는 비밀번호가 올바르지 않습니다.");
+        }
+
+        User user = opUser.get();
+
+        try {
+            checkPassword(request.password(), user.getPassword());
+        } catch (UnauthorizedException e) {
+            log.warn("[로그인 실패] 비밀번호 불일치 userId={}", user.getId());
+            throw e;
+        }
+
+        log.info("[로그인 성공] userId={}, role={}", user.getId(), user.getRole());
+        return user;
+    }
+
+    // 상세정보 조회
+    @Transactional(readOnly = true)
+    public User myProfile(Long id) {
+        return this.userRepository.findById(id)
+                .orElseThrow(() -> new UnauthorizedException("회원 정보를 찾을 수 없습니다. 다시 로그인해주세요."));
+    }
+
+    // username 중복 검사
+    @Transactional(readOnly = true)
+    public boolean isUsernameAvailable(String username) {
+        return !this.userRepository.existsByUsername(username);
+    }
+
+    // email 중복 검사
+    public boolean isEmailAvailable(String email) {
+        return !this.userRepository.existsByEmail(email);
+    }
+
+    // access token 생성
+    public String genAccessToken(User user) {
+        return this.authTokenService.genAccessToken(user);
+    }
+
+    // access token 파싱
+    public Map<String, Object> payload(String jwt) {
+        return authTokenService.payload(jwt);
+    }
+
+    // 비밀번호 해싱값 대조
+    public void checkPassword(String rawPassword, String encodedPassword) {
+        if (!passwordEncoder.matches(rawPassword, encodedPassword)) {
+            throw new UnauthorizedException("아이디 또는 비밀번호가 올바르지 않습니다.");
+        }
+    }
+
+    // 회원 정보 수정
+    @Transactional
+    public User updateMyProfile(Long id, UserProfileUpdateRequest request) {
+        User user = this.userRepository.findById(id)
+                .orElseThrow(() -> new UnauthorizedException("회원 정보를 찾을 수 없습니다. 다시 로그인해주세요."));
+
+        validateDuplicatedEmailAndPhone(id, request.email(), request.phoneNum());
+
+        user.updateUser(
+                passwordEncoder.encode(request.password()),
+                request.email(),
+                request.name(),
+                request.birthDate(),
+                request.phoneNum(),
+                request.region()
+        );
+
         return this.userRepository.save(user);
     }
+
+    // [관리자] 회원 정보 수정
+    @Transactional
+    public User updateUserByAdmin(Long userId, AdminUserProfileUpdateRequest request) {
+
+        User user = this.userRepository.findByIdIncludingDeleted(userId)
+                .orElseThrow(() -> new NotFoundException("회원 정보를 찾을 수 없습니다."));
+
+        if (user.isDeleted()) {
+            throw new InvalidException(2, "탈퇴한 회원의 정보는 수정할 수 없습니다.");
+        }
+
+        validateDuplicatedEmailAndPhone(userId, request.email(), request.phoneNum());
+
+        user.updateUser(
+                user.getPassword(),   // 기존 비밀번호 해시 유지
+                request.email(),
+                request.name(),
+                request.birthDate(),
+                request.phoneNum(),
+                request.region()
+        );
+        return this.userRepository.save(user);
+    }
+
+    // 내 정보 수정·관리자 수정 공통 중복 검사
+    private void validateDuplicatedEmailAndPhone(Long id, String email, String phoneNum) {
+        if (this.userRepository.existsByEmailAndIdNot(email, id)) {
+            throw new DuplicatedException(DUPLICATED_EMAIL, "이미 사용 중인 이메일입니다.");
+        }
+        if (this.userRepository.existsByPhoneNumAndIdNot(phoneNum, id)) {
+            throw new DuplicatedException(DUPLICATED_PHONE_NUM, "이미 사용 중인 전화번호입니다.");
+        }
+    }
+
+    // 일반 회원의 회원 탈퇴
+    @Transactional
+    public void deleteMyProfile(Long id) {
+        User user = this.userRepository.findById(id)
+                .orElseThrow(() -> new UnauthorizedException("회원 정보를 찾을 수 없습니다. 다시 로그인해주세요."));
+
+        if (user.getRole() == Role.ADMIN) {
+            throw new InvalidException(3, "관리자는 자신의 계정을 탈퇴시킬 수 없습니다.");
+        }
+
+        // 회원 정보, 프로필, 토큰 전부 삭제
+        withdraw(user);
+        log.info("[회원 탈퇴] userId={}", id);
+    }
+
+    // 의뢰인 프로필 생성
+    @Transactional
+    public ClientProfile createClientProfile(Long userId, ClientProfileRequest request) {
+        User user = this.userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("회원 정보를 찾을 수 없습니다."));
+
+        // 의뢰인만 프로필 생성 가능
+        if (user.getRole() != Role.CLIENT) {
+            throw new ForbiddenException(3, "의뢰인만 의뢰인 프로필을 생성할 수 있습니다.");
+        }
+
+        if (this.clientProfileRepository.existsById(userId)) {
+            throw new DuplicatedException(4, "이미 의뢰인 프로필이 존재합니다.");
+        }
+
+        String careNote = (request.careNote() == null || request.careNote().isBlank()) ? DEFAULT_CLIENT_PROFILE_CARE_NOTE : request.careNote();
+
+        ClientProfile profile = new ClientProfile(user, request.emergencyContactName(), request.emergencyContactPhone(), careNote);
+
+
+        return this.clientProfileRepository.save(profile);
+    }
+
+    // 의뢰인 자기 자신 프로필 조회
+    @Transactional(readOnly = true)
+    public ClientProfile getClientProfile(Long clientId) {
+        return this.clientProfileRepository.findById(clientId)
+                .orElseThrow(() -> new NotFoundException("의뢰인 프로필이 존재하지 않습니다."));
+    }
+
+    // 의뢰인 자기 자신 프로필 수정
+    @Transactional
+    public ClientProfile updateClientProfile(Long id, ClientProfileModifyRequest request) {
+
+        ClientProfile clientProfile = this.clientProfileRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("의뢰인 프로필이 존재하지 않습니다."));
+
+        String careNote = (request.careNote() == null || request.careNote().isBlank()) ? DEFAULT_CLIENT_PROFILE_CARE_NOTE : request.careNote();
+
+        clientProfile.updateProfile(request.emergencyContactName(), request.emergencyContactPhone(), careNote);
+
+        return this.clientProfileRepository.save(clientProfile);
+    }
+
+    // [관리자, 매칭된 동행 매니저] 의뢰인 프로필 조회
+    @Transactional(readOnly = true)
+    public ClientProfile getClientProfile(Long requesterId, Long clientId) {
+        User requester = this.userRepository.findById(requesterId)
+                .orElseThrow(() -> new UnauthorizedException("회원 정보를 찾을 수 없습니다. 다시 로그인해주세요."));
+
+        switch (requester.getRole()) {
+            case ADMIN -> {}
+            case ESCORT -> {
+                boolean isMatched = this.applicationRepository.hasActiveMatching(requesterId, clientId);
+
+                if (!isMatched) {
+                    throw new BusinessException("403-2", "매칭된 의뢰인의 프로필만 조회할 수 있습니다.");
+                }
+            }
+            default -> throw new BusinessException("403-2", "조회 권한이 없습니다.");
+        }
+
+        return this.clientProfileRepository.findById(clientId)
+                .orElseThrow(() -> new NotFoundException("의뢰인 프로필이 존재하지 않습니다."));
+    }
+
+    // 동행인 프로필 생성
+    @Transactional
+    public EscortProfile createEscortProfile(Long userId, EscortProfileRequest request) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("회원 정보를 찾을 수 없습니다."));
+
+        // 동행 매니저만 동행인 프로필 생성 가능
+        if (user.getRole() != Role.ESCORT) {
+            throw new ForbiddenException(3, "동행 매니저만 동행인 프로필을 생성할 수 있습니다.");
+        }
+
+        if (escortProfileRepository.existsById(userId)) {
+            throw new DuplicatedException(5, "이미 존재하는 동행 매니저 프로필입니다.");
+        }
+
+        // 프로필 생성 및 회원 연결
+        EscortProfile escortProfile = new EscortProfile(user, request.intro(), request.bankName(), request.accountHolder(), request.accountNumber());
+        EscortProfile savedProfile = this.escortProfileRepository.save(escortProfile);
+
+        // 모든 교육 영상에 대한 진행 상황 생성
+        this.educationService.createProgresses(savedProfile);
+
+        return savedProfile;
+    }
+
+    // 동행인 프로필 조회
+    // findByIdWithUser 로 user 를 함께 가져옵니다. 응답 DTO(EscortProfileResponse 등)가
+    // escortProfile.getUser() 를 쓰는데, 트랜잭션이 끝난 뒤(컨트롤러)에 지연 로딩된 user 에
+    // 접근하면 LazyInitializationException 이 나기 때문입니다.
+    @Transactional(readOnly = true)
+    public EscortProfile getEscortProfile(Long escortId) {
+        return this.escortProfileRepository.findByIdWithUser(escortId)
+                .orElseThrow(() -> new NotFoundException("동행 매니저 프로필이 존재하지 않습니다."));
+    }
+
+    // 동행인 프로필 수정
+    @Transactional
+    public EscortProfile updateEscortProfile(Long escortId, EscortProfileModifyRequest request) {
+        EscortProfile escortProfile = this.escortProfileRepository.findByIdWithUser(escortId)
+                .orElseThrow(() -> new NotFoundException("동행 매니저 프로필이 존재하지 않습니다."));
+
+        escortProfile.updateProfile(request.intro(),  request.bankName(), request.accountHolder(), request.accountNumber());
+
+        return this.escortProfileRepository.save(escortProfile);
+    }
+
+
+    // [ADMIN] 회원 정보 조회 (탈퇴한 회원 정보도 가능)
+    @Transactional(readOnly = true)
+    public User findByIdIncludingDeleted(Long userId) {
+        return userRepository.findByIdIncludingDeleted(userId)
+                .orElseThrow(() -> new NotFoundException("회원 정보를 찾을 수 없습니다."));
+    }
+
+    // [ADMIN] 회원 목록 조회 (탈퇴한 회원 정보도 가능)
+    @Transactional(readOnly = true)
+    public Page<User> findAllUsersIncludingDeleted(int page, int size) {
+        if (page < 0) {
+            throw new InvalidException(1, "페이지 번호는 음수일 수 없습니다.");
+        }
+
+        Pageable pageable = PageRequest.of(page, size);
+
+        return this.userRepository.findAllIncludingDeleted(pageable);
+    }
+
+    // [ADMIN] 관리자용 회원 탈퇴
+    @Transactional
+    public void deleteUser(Long adminId, Long userId) {
+        User user = this.userRepository.findByIdIncludingDeleted(userId)
+                .orElseThrow(() -> new NotFoundException("회원 정보를 찾을 수 없습니다."));
+
+        // 관리자는 자신에 대한 탈퇴 불가
+        if (adminId.equals(userId)) {
+            throw new InvalidException(3, "관리자는 자신의 계정을 탈퇴시킬 수 없습니다.");
+        }
+
+        // 이미 탈퇴한 회원은 탈퇴 불가
+        if (user.isDeleted()) {
+            throw new InvalidException(4, "이미 탈퇴한 회원입니다.");
+        }
+
+        // 회원 정보, 프로필, 토큰 전부 삭제
+        withdraw(user);
+    }
+
 }

@@ -9,13 +9,22 @@ spring:
     hibernate:
       ddl-auto: create
 
-logging:
-  level:
-    org.hibernate.SQL: debug
-    org.hibernate.orm.jdbc.bind: trace
-    org.springframework.transaction.interceptor: trace
+#logback-spring.xml 생성으로 미이용(주석)처리
+#logging:
+    #  level:
+    #org.hibernate.SQL: debug
+    #org.hibernate.orm.jdbc.bind: trace
+    #org.springframework.transaction.interceptor: trace
 
 custom:
   jwt:
     secret-key: ${JWT_SECRET}
     expire-seconds: ${JWT_EXPIRATION}
+    refresh-expire-seconds: ${REFRESH_TOKEN_EXPIRATION}
+  cookie:
+    secure: false
+    same-site: Lax
+  claude:
+    api-key: ${CLAUDE_API_KEY}
+    model: claude-sonnet-5
+    max-tokens: 1024

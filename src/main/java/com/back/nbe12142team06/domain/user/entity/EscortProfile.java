@@ -1,10 +1,12 @@
 package com.back.nbe12142team06.domain.user.entity;
 
+import com.back.nbe12142team06.domain.user.enums.EscortGrade;
 import com.back.nbe12142team06.global.entity.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.time.LocalDateTime;
 
@@ -31,7 +33,7 @@ public class EscortProfile extends BaseTimeEntity {
     private LocalDateTime verifiedAt;
 
     // 자기소개
-    @Column(length = 500)
+    @Column(nullable = false, length = 500)
     private String intro;
 
     // 동행 완료 건수
@@ -50,8 +52,84 @@ public class EscortProfile extends BaseTimeEntity {
     @Column(nullable = false)
     private Integer noShowCount = 0;
 
-    // 유저만 연결 생성자
-    public EscortProfile(User user){
+    // 은행 이름
+    @Column(nullable = false, length = 20)
+    private String bankName;
+
+    // 예금주명
+    @Column(nullable = false, length = 50)
+    private String accountHolder;
+
+    // 계좌번호
+    @Column(nullable = false, length = 30)
+    private String accountNumber;
+
+    @Version
+    @ColumnDefault("0")
+    @Column(nullable = false)
+    private Long version;
+
+
+    public EscortProfile(User user, String intro, String bankName, String accountHolder, String accountNumber){
         this.user = user;
+        this.intro = intro;
+        this.bankName = bankName;
+        this.accountHolder = accountHolder;
+        this.accountNumber = accountNumber;
+    }
+
+    // 프로필 업데이트
+    public void updateProfile(String intro, String bankName, String accountHolder, String accountNumber){
+        this.intro = intro;
+        this.bankName = bankName;
+        this.accountHolder = accountHolder;
+        this.accountNumber = accountNumber;
+    }
+
+    // 평균 평점 (소수점 첫째 자리, 평가 없으면 null)
+    public Double getAverageRating() {
+        if (this.ratingCount == 0) {
+            return null;
+        }
+        return Math.round(this.ratingSum * 10.0 / this.ratingCount) / 10.0;
+    }
+
+    // 노쇼 횟수 증가
+    public void increaseNoShowCount() {
+        this.noShowCount++;
+    }
+
+
+    //등급 배지 기준
+    public EscortGrade getGrade() {
+        EscortGrade grade;
+
+        if (completedCount >= 30) {
+            grade = EscortGrade.EGGPLANT;
+        } else if (completedCount >= 10) {
+            grade = EscortGrade.FLOWER;
+        } else if (completedCount >= 5) {
+            grade = EscortGrade.SPROUT;
+        } else {
+            grade = EscortGrade.SEED;
+        }
+
+        if (noShowCount >= 3) {
+            return lowerGrade(grade, 2);
+        }
+        if (noShowCount >= 2) {
+            return lowerGrade(grade, 1);
+        }
+
+        return grade;
+    }
+
+    // 노쇼에 따른 등급 하락
+    private EscortGrade lowerGrade(EscortGrade grade, int steps) {
+        EscortGrade[] grades = EscortGrade.values();
+        int currentIndex = grade.ordinal();
+        int loweredIndex = Math.max(0, currentIndex - steps);
+
+        return grades[loweredIndex];
     }
 }

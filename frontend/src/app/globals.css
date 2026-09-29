@@ -1,0 +1,61 @@
+@import 'tailwindcss';
+
+/* ---------------------------------------------------------------
+   Figma: 공통_메인 (564:18017) 디자인 토큰
+   @theme 에 정의한 변수는 그대로 유틸리티가 됩니다.
+     --color-brand      → bg-brand / text-brand / border-brand
+     --radius-card      → rounded-card
+     --shadow-card      → shadow-card
+     --drop-shadow-soft → drop-shadow-soft
+   --------------------------------------------------------------- */
+@theme {
+  --font-sans: 'Pretendard Variable', Pretendard, 'Noto Sans KR', -apple-system,
+    BlinkMacSystemFont, 'Apple SD Gothic Neo', system-ui, sans-serif;
+
+  --color-brand: #6d758f;
+  --color-brand-hover: #5d6480;
+  --color-brand-muted: #b4b9c9;
+  --color-line: #e1e4ed;
+  --color-line-soft: #f1f3f7;
+  --color-footer: #777e90;
+
+  --radius-card: 30px;
+  --radius-pill: 40px;
+
+  --shadow-card: 0 1px 4px rgba(25, 33, 61, 0.08);
+  --drop-shadow-soft: 0 1px 2px rgba(25, 33, 61, 0.08);
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background: #fff;
+    color: var(--color-brand);
+    font-family: var(--font-sans);
+    /* 한글 줄바꿈이 단어 중간에서 끊기지 않게 */
+    word-break: keep-all;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
