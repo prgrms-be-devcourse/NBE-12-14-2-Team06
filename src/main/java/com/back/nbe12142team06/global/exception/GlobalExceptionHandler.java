@@ -27,13 +27,13 @@ public class GlobalExceptionHandler {
                 .sorted()
                 .collect(Collectors.joining(", "));
 
-        return new RsData<>("400-1", msg);
+        return new RsData<>("400-01", msg);
     }
 
     // DTO로 변환 자체가 불가할때 예시로 우리 role에는 없는 "role": "GG" 같은 요청
     @ExceptionHandler
     public RsData<?> httpMessageNotReadableExceptionHandler(HttpMessageNotReadableException e) {
-        return new RsData<>("400-2", "요청 본문의 형식이 올바르지 않습니다.");
+        return new RsData<>("400-02", "요청 본문의 형식이 올바르지 않습니다.");
     }
 
     @ExceptionHandler
@@ -74,7 +74,7 @@ public class GlobalExceptionHandler {
     // 이 예외가 거기서 500 으로 뭉개진다.
     @ExceptionHandler
     public RsData<?> dataIntegrityViolationExceptionHandler(DataIntegrityViolationException e) {
-        return new RsData<>("409", "이미 처리된 요청입니다.");
+        return new RsData<>("409-1", "이미 처리된 요청입니다.");
     }
 
     // 스프링이 던지는 "요청 자체가 잘못된" 예외들. 아래 Exception 핸들러가 가로채면 사용자 실수가 500 으로 나가서 따로 처리한다.
@@ -83,14 +83,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler
     public RsData<?> methodArgumentTypeMismatchExceptionHandler(MethodArgumentTypeMismatchException e) {
         log.warn("[400-01] 요청 파라미터 타입 오류: {}", e.getName());
-        return new RsData<>("400-01", "요청 파라미터의 형식이 올바르지 않습니다.");
+        return new RsData<>("400-03", "요청 파라미터의 형식이 올바르지 않습니다.");
     }
 
     // 필수 쿼리 파라미터 누락
     @ExceptionHandler
     public RsData<?> missingServletRequestParameterExceptionHandler(MissingServletRequestParameterException e) {
         log.warn("[400-02] 필수 요청 파라미터 누락: {}", e.getParameterName());
-        return new RsData<>("400-02", "필수 요청 파라미터가 없습니다: " + e.getParameterName());
+        return new RsData<>("400-04", "필수 요청 파라미터가 없습니다: " + e.getParameterName());
     }
 
     // 없는 URL 호출
