@@ -341,7 +341,7 @@ public class PostControllerTest {
     }
 
     @Test
-    @DisplayName("[PostController] 공고 등록 - 필수값 누락 시 400 반환")
+    @DisplayName("[PostController] 공고 등록 - 필수값 누락 시 400-01 반환")
     void t6() throws Exception {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime recruitStartAt = now.plusDays(1);
@@ -379,11 +379,11 @@ public class PostControllerTest {
                 .andExpect(handler().handlerType(PostController.class))
                 .andExpect(handler().methodName("write"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.statusCode").value("400-1"));
+                .andExpect(jsonPath("$.statusCode").value("400-01"));
     }
 
     @Test
-    @DisplayName("[PostController] 공고 등록 - 시급 0 이하 시 400 반환")
+    @DisplayName("[PostController] 공고 등록 - 시급 0 이하 시 400-01 반환")
     void t7() throws Exception {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime recruitStartAt = now.plusDays(1);
@@ -421,11 +421,11 @@ public class PostControllerTest {
                 .andExpect(handler().handlerType(PostController.class))
                 .andExpect(handler().methodName("write"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.statusCode").value("400-1"));
+                .andExpect(jsonPath("$.statusCode").value("400-01"));
     }
 
     @Test
-    @DisplayName("[PostController] 공고 등록 - 동행 시작 시간이 종료 시간보다 늦을 때 400 반환")
+    @DisplayName("[PostController] 공고 등록 - 동행 시작 시간이 종료 시간보다 늦을 때 400-14 반환")
     void t8() throws Exception {
         // escortStartAt > escortEndAt만 위반하고, 나머지는 현재 시각 기준 상대값으로 설정
         LocalDateTime now = LocalDateTime.now();
@@ -450,7 +450,7 @@ public class PostControllerTest {
     }
 
     @Test
-    @DisplayName("[PostController] 공고 등록 - 마감 시간이 동행 시작 시간보다 늦을 때 400 반환")
+    @DisplayName("[PostController] 공고 등록 - 마감 시간이 동행 시작 시간보다 늦을 때 400-13 반환")
     void t9() throws Exception {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime escortStartAt = now.plusDays(3);

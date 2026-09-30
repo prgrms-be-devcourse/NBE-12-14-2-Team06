@@ -165,8 +165,8 @@ class EscortFlowIntegrationTest {
                                     "careNote": "특이사항 없음"
                                 }
                                 """))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value("200-5"));
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.statusCode").value("201-2"));
     }
 
     private void createEscortProfile(Cookie escortCookie) throws Exception {
@@ -181,8 +181,8 @@ class EscortFlowIntegrationTest {
                                     "accountNumber": "123-456-7890"
                                 }
                                 """))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value("200-8"));
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.statusCode").value("201-3"));
     }
 
     // 동행인 프로필의 verified 를 리포지토리로 직접 켠다. 승인/자동거절, 권한 경계처럼
@@ -264,7 +264,7 @@ class EscortFlowIntegrationTest {
                                 {"positionSec": 1.0}
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value("200-1"));
+                .andExpect(jsonPath("$.statusCode").value("200-101"));
 
         assertThat(escortProfileRepository.findById(escortUserId).orElseThrow().getVerified()).isTrue();
 
@@ -280,7 +280,7 @@ class EscortFlowIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(postJson(recruitStartAt, recruitEndAt, escortStartAt, escortEndAt, hourlyPay)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.statusCode").value("201-1"))
+                .andExpect(jsonPath("$.statusCode").value("201-11"))
                 .andReturn().getResponse().getContentAsString();
 
         DocumentContext writeCtx = JsonPath.parse(writeResponse);
@@ -313,13 +313,13 @@ class EscortFlowIntegrationTest {
                                 {"paymentKey": "test-payment-key-%s", "orderId": "order-%s", "amount": "%s"}
                                 """.formatted(tag, tag, plannedAmount)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value("200-10"));
+                .andExpect(jsonPath("$.statusCode").value("200-41"));
 
         // 7. 동행인이 공고에 지원
         String applyResponse = mvc.perform(post("/api/v1/applications/{postId}", postId)
                         .cookie(escortCookie))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.statusCode").value("201-1"))
+                .andExpect(jsonPath("$.statusCode").value("201-21"))
                 .andReturn().getResponse().getContentAsString();
         Long applicationId = ((Number) JsonPath.parse(applyResponse).read("$.data.id")).longValue();
 
@@ -401,7 +401,7 @@ class EscortFlowIntegrationTest {
         // 응답 바디로는 확인할 수 없어 상태는 리포지토리로 검증한다.
         mvc.perform(patch("/api/v1/posts/{postId}/escortComplete", postId).cookie(clientCookie))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value("200-1"));
+                .andExpect(jsonPath("$.statusCode").value("200-18"));
 
         assertThat(postRepository.findById(postId).orElseThrow().getPostStatus()).isEqualTo(PostStatus.COMPLETED);
         assertThat(escortProfileRepository.findById(escortUserId).orElseThrow().getCompletedCount()).isEqualTo(1);
@@ -436,7 +436,7 @@ class EscortFlowIntegrationTest {
                                 }
                                 """))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.statusCode").value("201-1"));
+                .andExpect(jsonPath("$.statusCode").value("201-51"));
 
         // 13. 의뢰인이 리뷰 작성
         mvc.perform(post("/api/v1/applications/{applicationId}/reviews", applicationId)
@@ -448,7 +448,7 @@ class EscortFlowIntegrationTest {
                                 }
                                 """))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.statusCode").value("201-1"));
+                .andExpect(jsonPath("$.statusCode").value("201-61"));
 
         EscortProfile escortProfile = escortProfileRepository.findById(escortUserId).orElseThrow();
         assertThat(escortProfile.getRatingCount()).isEqualTo(1);
@@ -461,7 +461,7 @@ class EscortFlowIntegrationTest {
         mvc.perform(get("/api/v1/users/{userId}/reviews", escortUserId).cookie(escortCookie))
                 .andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value("200-1"))
+                .andExpect(jsonPath("$.statusCode").value("200-61"))
                 .andExpect(jsonPath("$.data.length()").value(1))
                 .andExpect(jsonPath("$.data[0].rating").value(5))
                 .andExpect(jsonPath("$.data[0].applicationId").value(applicationId));
@@ -542,7 +542,7 @@ class EscortFlowIntegrationTest {
     // 인증/권한 경계 2건만 추가한다.
 
     @Test
-    @DisplayName("[통합] 비로그인 상태로 공고 등록 시도 시 401 반환")
+    @DisplayName("[통합] 비로그인 상태로 공고 등록 시도 시 401-113 반환")
     void 비로그인_공고_등록_401() throws Exception {
 
         LocalDateTime now = LocalDateTime.now();
@@ -554,7 +554,7 @@ class EscortFlowIntegrationTest {
 
         resultActions
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.statusCode").value("401-1"));
+                .andExpect(jsonPath("$.statusCode").value("401-113"));
     }
 
     @Test

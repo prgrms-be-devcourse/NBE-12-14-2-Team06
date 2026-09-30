@@ -247,7 +247,7 @@ public class EducationControllerTest {
     }
 
     @Test
-    @DisplayName("[EducationController] 시청 기록 - 재생 위치 누락 시 400-1 반환")
+    @DisplayName("[EducationController] 시청 기록 - 재생 위치 누락 시 400-01 반환")
     void t5() throws Exception {
         EducationVideo video = createVideo();
         Cookie escortToken = escortReady("escort1");
@@ -256,12 +256,12 @@ public class EducationControllerTest {
 
         resultActions
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.statusCode").value("400-1"))
+                .andExpect(jsonPath("$.statusCode").value("400-01"))
                 .andExpect(jsonPath("$.msg").value("positionSec: 재생 위치는 필수입니다."));
     }
 
     @Test
-    @DisplayName("[EducationController] 시청 기록 - 음수 재생 위치 요청 시 400-1 반환")
+    @DisplayName("[EducationController] 시청 기록 - 음수 재생 위치 요청 시 400-01 반환")
     void t6() throws Exception {
         EducationVideo video = createVideo();
         Cookie escortToken = escortReady("escort1");
@@ -270,7 +270,7 @@ public class EducationControllerTest {
 
         resultActions
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.statusCode").value("400-1"))
+                .andExpect(jsonPath("$.statusCode").value("400-01"))
                 .andExpect(jsonPath("$.msg").value("positionSec: 재생 위치는 0 이상이어야 합니다."));
     }
 
@@ -305,7 +305,7 @@ public class EducationControllerTest {
     }
 
     @Test
-    @DisplayName("[EducationController] 시청 기록 - 로그인 없이 요청 시 401-1 반환")
+    @DisplayName("[EducationController] 시청 기록 - 로그인 없이 요청 시 401-113 반환")
     void t9() throws Exception {
         EducationVideo video = createVideo();
 
@@ -316,7 +316,7 @@ public class EducationControllerTest {
 
         resultActions
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.statusCode").value("401-1"))
+                .andExpect(jsonPath("$.statusCode").value("401-113"))
                 .andExpect(jsonPath("$.msg").value("로그인 후 이용해주세요."));
     }
 

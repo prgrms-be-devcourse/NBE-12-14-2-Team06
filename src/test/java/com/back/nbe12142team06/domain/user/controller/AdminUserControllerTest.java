@@ -238,7 +238,7 @@ public class AdminUserControllerTest {
     }
 
     @Test
-    @DisplayName("[AdminUserController] 회원 단건 조회 - 로그인 없이 조회 시 401-1 반환")
+    @DisplayName("[AdminUserController] 회원 단건 조회 - 로그인 없이 조회 시 401-113 반환")
     void t3() throws Exception {
         createTestAdmin();
         signUp("user1");
@@ -251,7 +251,7 @@ public class AdminUserControllerTest {
 
         resultActions
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.statusCode").value("401-1"))
+                .andExpect(jsonPath("$.statusCode").value("401-113"))
                 .andExpect(jsonPath("$.msg").value("로그인 후 이용해주세요."));
     }
 
@@ -361,7 +361,7 @@ public class AdminUserControllerTest {
     }
 
     @Test
-    @DisplayName("[AdminUserController] 회원 다건 조회 - 로그인 없이 요청 시 401-1 반환")
+    @DisplayName("[AdminUserController] 회원 다건 조회 - 로그인 없이 요청 시 401-113 반환")
     void t8() throws Exception {
 
         // 다수의 회원 생성
@@ -376,7 +376,7 @@ public class AdminUserControllerTest {
 
         resultActions
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.statusCode").value("401-1"))
+                .andExpect(jsonPath("$.statusCode").value("401-113"))
                 .andExpect(jsonPath("$.msg").value("로그인 후 이용해주세요."));
     }
 
@@ -487,7 +487,7 @@ public class AdminUserControllerTest {
     }
 
     @Test
-    @DisplayName("[AdminUserController] 회원 정보 수정 - 로그인 없이 수정 시 401-1 반환")
+    @DisplayName("[AdminUserController] 회원 정보 수정 - 로그인 없이 수정 시 401-113 반환")
     void t12() throws Exception {
         signUp("user1");
         Long user1Id = findUserId("user1");
@@ -511,7 +511,7 @@ public class AdminUserControllerTest {
 
         resultActions
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.statusCode").value("401-1"))
+                .andExpect(jsonPath("$.statusCode").value("401-113"))
                 .andExpect(jsonPath("$.msg").value("로그인 후 이용해주세요."));
     }
 

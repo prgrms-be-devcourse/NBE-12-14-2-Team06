@@ -378,7 +378,7 @@ public class UserControllerTest {
     }
 
     @Test
-    @DisplayName("[UserController] 회원가입 - 필수값 누락 시 400-1 반환")
+    @DisplayName("[UserController] 회원가입 - 필수값 누락 시 400-01 반환")
     void t5() throws Exception {
         // "username": "" 요청
         ResultActions resultActions = mvc.perform(post("/api/v1/users")
@@ -400,13 +400,13 @@ public class UserControllerTest {
 
         resultActions
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.statusCode").value("400-1"))
+                .andExpect(jsonPath("$.statusCode").value("400-01"))
                 .andExpect(jsonPath("$.msg").value("username: 아이디는 필수 항목입니다."));
     }
 
 
     @Test
-    @DisplayName("[UserController] 회원가입 - 존재하지 않는 gender 값으로 요청 시 400-2 반환")
+    @DisplayName("[UserController] 회원가입 - 존재하지 않는 gender 값으로 요청 시 400-02 반환")
     void t6() throws Exception {
         // "gender": "HELICOPTER"  요청
         ResultActions resultActions = mvc.perform(post("/api/v1/users")
@@ -428,7 +428,7 @@ public class UserControllerTest {
 
         resultActions
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.statusCode").value("400-2"));
+                .andExpect(jsonPath("$.statusCode").value("400-02"));
     }
 
 
@@ -541,12 +541,12 @@ public class UserControllerTest {
 
         resultActions
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.statusCode").value("401-1"))
+                .andExpect(jsonPath("$.statusCode").value("401-113"))
                 .andExpect(jsonPath("$.msg").value("로그인 후 이용해주세요."));
     }
 
     @Test
-    @DisplayName("[UserController] 내 정보 조회 - 위조된 토큰으로 요청 시 401-3")
+    @DisplayName("[UserController] 내 정보 조회 - 위조된 토큰으로 요청 시 401-112")
     void t14() throws Exception {
         String validToken = JwtProvider.toString(
                 secretKey, 600,
@@ -565,7 +565,7 @@ public class UserControllerTest {
 
         resultActions
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.statusCode").value("401-3"))
+                .andExpect(jsonPath("$.statusCode").value("401-112"))
                 .andExpect(jsonPath("$.msg").value("유효하지 않은 토큰입니다."));
     }
 
@@ -1473,7 +1473,7 @@ public class UserControllerTest {
     }
 
     @Test
-    @DisplayName("[UserController] 회원 탈퇴 - 로그인 없이 탈퇴 요청 시 401-1")
+    @DisplayName("[UserController] 회원 탈퇴 - 로그인 없이 탈퇴 요청 시 401-113")
     void t32() throws Exception {
         ResultActions resultActions = mvc.perform(
                         delete("/api/v1/users/profile")
@@ -1482,7 +1482,7 @@ public class UserControllerTest {
 
         resultActions
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.statusCode").value("401-1"))
+                .andExpect(jsonPath("$.statusCode").value("401-113"))
                 .andExpect(jsonPath("$.msg").value("로그인 후 이용해주세요."));
     }
 
@@ -1861,7 +1861,7 @@ public class UserControllerTest {
     }
 
     @Test
-    @DisplayName("[UserController] 의뢰인 프로필 타인 조회 - 로그인 없이 조회 시 401-1 반환")
+    @DisplayName("[UserController] 의뢰인 프로필 타인 조회 - 로그인 없이 조회 시 401-113 반환")
     void t46() throws Exception {
         Cookie clientToken = signUp("client1");
         createClientProfile(clientToken);
@@ -1874,7 +1874,7 @@ public class UserControllerTest {
 
         resultActions
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.statusCode").value("401-1"))
+                .andExpect(jsonPath("$.statusCode").value("401-113"))
                 .andExpect(jsonPath("$.msg").value("로그인 후 이용해주세요."));
     }
 
@@ -1991,7 +1991,7 @@ public class UserControllerTest {
     }
 
     @Test
-    @DisplayName("[UserController] 의뢰인 자기 자신 프로필 수정 - 로그인 없이 수정 시도 시 401-1 반환")
+    @DisplayName("[UserController] 의뢰인 자기 자신 프로필 수정 - 로그인 없이 수정 시도 시 401-113 반환")
     void t51() throws Exception {
         Cookie clientToken = signUp("client1");
 
@@ -2010,7 +2010,7 @@ public class UserControllerTest {
 
         resultActions
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.statusCode").value("401-1"))
+                .andExpect(jsonPath("$.statusCode").value("401-113"))
                 .andExpect(jsonPath("$.msg").value("로그인 후 이용해주세요."));
     }
 
@@ -2232,7 +2232,7 @@ public class UserControllerTest {
 
 
     @Test
-    @DisplayName("[UserController] 동행 매니저 프로필 수정 - 로그인 없이 수정 요청 시 401-1 반환")
+    @DisplayName("[UserController] 동행 매니저 프로필 수정 - 로그인 없이 수정 요청 시 401-113 반환")
     void t59() throws Exception {
         Cookie escortToken = signUp("escort1", "ESCORT");
 
@@ -2252,7 +2252,7 @@ public class UserControllerTest {
 
         resultActions
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.statusCode").value("401-1"))
+                .andExpect(jsonPath("$.statusCode").value("401-113"))
                 .andExpect(jsonPath("$.msg").value("로그인 후 이용해주세요."));
     }
 
