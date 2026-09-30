@@ -196,7 +196,7 @@ public class PostControllerTest {
                 .andExpect(handler().handlerType(PostController.class))
                 .andExpect(handler().methodName("list"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value("200-1"))
+                .andExpect(jsonPath("$.statusCode").value("200-11"))
                 .andExpect(jsonPath("$.msg").value("목록 조회 성공"))
                 .andExpect(jsonPath("$.data.content").isArray())
                 .andExpect(jsonPath("$.data.content.length()").value(1));
@@ -249,7 +249,7 @@ public class PostControllerTest {
                 .andExpect(handler().handlerType(PostController.class))
                 .andExpect(handler().methodName("detail"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value("200-1"))
+                .andExpect(jsonPath("$.statusCode").value("200-15"))
                 .andExpect(jsonPath("$.msg").value("상세 조회 성공"))
                 .andExpect(jsonPath("$.data.id").value(postId))
                 .andExpect(jsonPath("$.data.title").exists())
@@ -335,13 +335,13 @@ public class PostControllerTest {
                 .andExpect(handler().handlerType(PostController.class))
                 .andExpect(handler().methodName("write"))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.statusCode").value("201-1"))
+                .andExpect(jsonPath("$.statusCode").value("201-11"))
                 .andExpect(jsonPath("$.data.id").exists())
                 .andExpect(jsonPath("$.data.postStatus").value("모집 중"));
     }
 
     @Test
-    @DisplayName("[PostController] 공고 등록 - 필수값 누락 시 400 반환")
+    @DisplayName("[PostController] 공고 등록 - 필수값 누락 시 400-01 반환")
     void t6() throws Exception {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime recruitStartAt = now.plusDays(1);
@@ -379,11 +379,11 @@ public class PostControllerTest {
                 .andExpect(handler().handlerType(PostController.class))
                 .andExpect(handler().methodName("write"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.statusCode").value("400-1"));
+                .andExpect(jsonPath("$.statusCode").value("400-01"));
     }
 
     @Test
-    @DisplayName("[PostController] 공고 등록 - 시급 0 이하 시 400 반환")
+    @DisplayName("[PostController] 공고 등록 - 시급 0 이하 시 400-01 반환")
     void t7() throws Exception {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime recruitStartAt = now.plusDays(1);
@@ -421,11 +421,11 @@ public class PostControllerTest {
                 .andExpect(handler().handlerType(PostController.class))
                 .andExpect(handler().methodName("write"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.statusCode").value("400-1"));
+                .andExpect(jsonPath("$.statusCode").value("400-01"));
     }
 
     @Test
-    @DisplayName("[PostController] 공고 등록 - 동행 시작 시간이 종료 시간보다 늦을 때 400 반환")
+    @DisplayName("[PostController] 공고 등록 - 동행 시작 시간이 종료 시간보다 늦을 때 400-14 반환")
     void t8() throws Exception {
         // escortStartAt > escortEndAt만 위반하고, 나머지는 현재 시각 기준 상대값으로 설정
         LocalDateTime now = LocalDateTime.now();
@@ -445,12 +445,12 @@ public class PostControllerTest {
                 .andExpect(handler().handlerType(PostController.class))
                 .andExpect(handler().methodName("write"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.statusCode").value("400-2"))
+                .andExpect(jsonPath("$.statusCode").value("400-14"))
                 .andExpect(jsonPath("$.msg").value("동행 시작 시간은 종료 시간보다 빨라야 합니다."));
     }
 
     @Test
-    @DisplayName("[PostController] 공고 등록 - 마감 시간이 동행 시작 시간보다 늦을 때 400 반환")
+    @DisplayName("[PostController] 공고 등록 - 마감 시간이 동행 시작 시간보다 늦을 때 400-13 반환")
     void t9() throws Exception {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime escortStartAt = now.plusDays(3);
@@ -469,7 +469,7 @@ public class PostControllerTest {
                 .andExpect(handler().handlerType(PostController.class))
                 .andExpect(handler().methodName("write"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.statusCode").value("400-3"))
+                .andExpect(jsonPath("$.statusCode").value("400-13"))
                 .andExpect(jsonPath("$.msg").value("모집 마감 시간은 동행 시작 시간보다 빨라야 합니다."));
     }
 
@@ -505,8 +505,8 @@ public class PostControllerTest {
         resultActions
                 .andExpect(handler().handlerType(PostController.class))
                 .andExpect(handler().methodName("delete"))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.statusCode").value("401-14"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.statusCode").value("403-15"))
                 .andExpect(jsonPath("$.msg").value("본인이 작성한 공고만 삭제할 수 있습니다."));
     }
     @Test
@@ -547,7 +547,7 @@ public class PostControllerTest {
                 .andExpect(handler().handlerType(PostController.class))
                 .andExpect(handler().methodName("matchedCancel"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value("200-1"));
+                .andExpect(jsonPath("$.statusCode").value("200-17"));
     }
     @Test
     @DisplayName("[PostController] 공고 취소 - 의뢰인 본인이 매칭된 공고 취소 성공")
@@ -566,7 +566,7 @@ public class PostControllerTest {
                 .andExpect(handler().handlerType(PostController.class))
                 .andExpect(handler().methodName("matchedCancel"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value("200-1"));
+                .andExpect(jsonPath("$.statusCode").value("200-17"));
     }
     @Test
     @DisplayName("[PostController] 공고 취소 - 매칭 안 된 상태에서 취소 시도 시 400 반환")
@@ -582,10 +582,10 @@ public class PostControllerTest {
                 .andExpect(handler().handlerType(PostController.class))
                 .andExpect(handler().methodName("matchedCancel"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.statusCode").value("400-13"));
+                .andExpect(jsonPath("$.statusCode").value("400-18"));
     }
     @Test
-    @DisplayName("[PostController] 공고 취소 - 본인이 작성한 공고가 아닌 경우 401 반환")
+    @DisplayName("[PostController] 공고 취소 - 본인이 작성한 공고가 아닌 경우 403 반환")
     void t14() throws Exception {
         Long postId = registerPost();
         Post post = postRepository.findById(postId).orElseThrow();
@@ -608,8 +608,8 @@ public class PostControllerTest {
                 .andDo(print());
 
         resultActions
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.statusCode").value("401-16"));
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.statusCode").value("403-17"));
     }
     @Test
     @DisplayName("[PostController] 공고 취소 - 동행인(ESCORT) 역할은 취소 권한 없음 403 반환")
@@ -823,7 +823,7 @@ public class PostControllerTest {
                 .andExpect(handler().handlerType(PostController.class))
                 .andExpect(handler().methodName("escortComplete"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value("200-1"));
+                .andExpect(jsonPath("$.statusCode").value("200-18"));
 
         Post result = postRepository.findById(postId).orElseThrow();
         assertThat(result.getPostStatus()).isEqualTo(PostStatus.COMPLETED);
@@ -850,7 +850,7 @@ public class PostControllerTest {
 
         resultActions
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.statusCode").value("404-18"))
+                .andExpect(jsonPath("$.statusCode").value("404-22"))
                 .andExpect(jsonPath("$.msg").value("동행 출발 기록이 없습니다."));
     }
     @Test
@@ -873,7 +873,7 @@ public class PostControllerTest {
 
         resultActions
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.statusCode").value("404-19"))
+                .andExpect(jsonPath("$.statusCode").value("404-23"))
                 .andExpect(jsonPath("$.msg").value("귀가완료 기록이 없습니다."));
     }
     @Test
@@ -888,11 +888,11 @@ public class PostControllerTest {
 
         resultActions
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.statusCode").value("400-13"))
+                .andExpect(jsonPath("$.statusCode").value("400-19"))
                 .andExpect(jsonPath("$.msg").value("동행진행중 상태에서만 동행완료 처리할 수 있습니다."));
     }
     @Test
-    @DisplayName("[PostController] 동행완료 처리 - 본인이 작성한 공고가 아닌 경우 401")
+    @DisplayName("[PostController] 동행완료 처리 - 본인이 작성한 공고가 아닌 경우 403")
     void t26() throws Exception {
         Long postId = setUpInProgressPost();
 
@@ -912,8 +912,8 @@ public class PostControllerTest {
                 .andDo(print());
 
         resultActions
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.statusCode").value("401-16"));
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.statusCode").value("403-19"));
     }
     @Test
     @DisplayName("[PostController] 동행완료 처리 - 동행인(ESCORT) 역할은 권한 없음 403")
@@ -959,7 +959,7 @@ public class PostControllerTest {
 
         resultActions
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value("200-1"));
+                .andExpect(jsonPath("$.statusCode").value("200-16"));
 
         assertThat(selectedOf(postId, RideDirection.TO_HOSPITAL)).isEqualTo(RideSelect.WALK);
         assertThat(selectedOf(postId, RideDirection.TO_HOME)).isEqualTo(RideSelect.BUS);
@@ -988,6 +988,6 @@ public class PostControllerTest {
 
         resultActions
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.statusCode").value("400-20"));
+                .andExpect(jsonPath("$.statusCode").value("400-81"));
     }
 }

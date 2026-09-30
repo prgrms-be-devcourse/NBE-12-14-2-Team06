@@ -53,11 +53,11 @@ public class TossPaymentClient {
                     .retrieve()
                     .toEntity(TossConfirmResponse.class);
         } catch (RuntimeException e) {
-            throw new InternalServerErrorException(13, e.getMessage());
+            throw new InternalServerErrorException(43, e.getMessage());
         }
 
         if (!response.getStatusCode().is2xxSuccessful()) {
-            throw new InvalidException(11, "결제 승인에 실패했습니다.");
+            throw new InternalServerErrorException(43, "토스 결제 승인 API 호출 실패, 결제 승인에 실패했습니다.");
         }
 
         // [로그 정리] tossPaymentKey(결제 조회·취소에 쓰는 키)가 로그에 남아서 주석 처리하고, 아래에서는 키를 뺀 정보만 남김
@@ -88,11 +88,11 @@ public class TossPaymentClient {
                     .retrieve()
                     .toEntity(TossConfirmResponse.class);
         } catch (RuntimeException e) {
-            throw new InternalServerErrorException(13, e.getMessage());
+            throw new InternalServerErrorException(44, e.getMessage());
         }
 
         if (!response.getStatusCode().is2xxSuccessful()) {
-            throw new InvalidException(12, "결제 취소에 실패했습니다.");
+            throw new InternalServerErrorException(44, "토스 결제 취소 API 호출 실패, 결제 취소에 실패했습니다.");
         }
 
 

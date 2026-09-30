@@ -33,7 +33,7 @@ public class RideService {
             RideStatus status = ride.getRideStatus();
             if (status.equals(RideStatus.IN_PROGRESS) ||
                     status.equals(RideStatus.COMPLETED)) {
-                throw new InvalidException(20, "이미 이동 중이거나 이동 완료이므로 수정이 불가능합니다.");
+                throw new InvalidException(81, "이미 이동 중이거나 이동 완료이므로 수정이 불가능합니다.");
             }
 
             if (ride.getDirection().equals(RideDirection.TO_HOSPITAL)) {
@@ -50,7 +50,7 @@ public class RideService {
     public List<Ride> findByPostId(Long postId) {
         List<Ride> rides = rideRepository.findByPostId(postId);
         if (rides.isEmpty()) {
-            throw new NotFoundException(21, "찾으시는 이동 정보가 없습니다.");
+            throw new NotFoundException(81, "해당 공고의 이동 정보를 찾을 수 없습니다.");
         }
         return rides;
     }
@@ -71,10 +71,10 @@ public class RideService {
     // 상세 정보 찾기
     public Ride findById(Long userId, Long rideId) {
         Ride ride = rideRepository.findById(rideId).orElseThrow(() ->
-                new NotFoundException(20, "찾으시는 이동 정보가 없습니다."));
+                new NotFoundException(82, "이동 정보를 찾을 수 없습니다."));
 
         if (!validUser(ride, userId)) {
-            throw new ForbiddenException(20, "권한이 없습니다.");
+            throw new ForbiddenException(81, "이동 정보를 조회할 권한이 없습니다.");
         }
 
         return ride;

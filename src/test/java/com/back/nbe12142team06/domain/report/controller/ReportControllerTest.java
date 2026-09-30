@@ -165,7 +165,7 @@ public class ReportControllerTest {
 
         resultActions
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.statusCode").value("201-1"))
+                .andExpect(jsonPath("$.statusCode").value("201-51"))
                 .andExpect(jsonPath("$.data.department").value("정형외과"))
                 .andExpect(jsonPath("$.data.purpose").value("무릎 통증 검사"))
                 // 제목은 화면에서 받지 않고 서버가 "M월 d일 {과목} 진료 결과" 로 만든다
@@ -173,7 +173,7 @@ public class ReportControllerTest {
     }
 
     @Test
-    @DisplayName("[ReportController] 진료 보고서 작성 - 존재하지 않는 동행 건일 때 404-1 반환")
+    @DisplayName("[ReportController] 진료 보고서 작성 - 존재하지 않는 동행 건일 때 404-24 반환")
     void 보고서_작성_동행건_없음() throws Exception {
 
         ResultActions resultActions = mvc.perform(
@@ -191,11 +191,11 @@ public class ReportControllerTest {
 
         resultActions
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.statusCode").value("404-1"));
+                .andExpect(jsonPath("$.statusCode").value("404-24"));
     }
 
     @Test
-    @DisplayName("[ReportController] 진료 보고서 작성 - 해당 동행인이 아닐 때 403-1 반환")
+    @DisplayName("[ReportController] 진료 보고서 작성 - 해당 동행인이 아닐 때 403-51 반환")
     void 보고서_작성_권한_없음() throws Exception {
 
         ResultActions resultActions = mvc.perform(
@@ -213,11 +213,11 @@ public class ReportControllerTest {
 
         resultActions
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.statusCode").value("403-1"));
+                .andExpect(jsonPath("$.statusCode").value("403-51"));
     }
 
     @Test
-    @DisplayName("[ReportController] 진료 보고서 작성 - 이미 보고서가 존재할 때 409-1 반환")
+    @DisplayName("[ReportController] 진료 보고서 작성 - 이미 보고서가 존재할 때 409-51 반환")
     void 보고서_작성_중복() throws Exception {
 
         reportRepository.save(
@@ -245,7 +245,7 @@ public class ReportControllerTest {
 
         resultActions
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.statusCode").value("409-1"));
+                .andExpect(jsonPath("$.statusCode").value("409-51"));
     }
 
     @Test
@@ -291,14 +291,14 @@ public class ReportControllerTest {
 
         resultActions
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value("200-1"))
+                .andExpect(jsonPath("$.statusCode").value("200-51"))
                 .andExpect(jsonPath("$.data.title").value("9월 22일 정형외과 진료 결과"))
                 .andExpect(jsonPath("$.data.department").value("정형외과"))
                 .andExpect(jsonPath("$.data.applicationId").value(testApplicationId));
     }
 
     @Test
-    @DisplayName("[ReportController] 진료 보고서 조회 - 제3자가 조회 시 403-2 반환")
+    @DisplayName("[ReportController] 진료 보고서 조회 - 제3자가 조회 시 403-52 반환")
     void 보고서_조회_권한_없음() throws Exception {
 
         reportRepository.save(
@@ -318,11 +318,11 @@ public class ReportControllerTest {
 
         resultActions
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.statusCode").value("403-2"));
+                .andExpect(jsonPath("$.statusCode").value("403-52"));
     }
 
     @Test
-    @DisplayName("[ReportController] 진료 보고서 조회 - 존재하지 않는 동행 건일 때 404-1 반환")
+    @DisplayName("[ReportController] 진료 보고서 조회 - 존재하지 않는 동행 건일 때 404-24 반환")
     void 보고서_조회_동행건_없음() throws Exception {
 
         ResultActions resultActions = mvc.perform(
@@ -332,11 +332,11 @@ public class ReportControllerTest {
 
         resultActions
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.statusCode").value("404-1"));
+                .andExpect(jsonPath("$.statusCode").value("404-24"));
     }
 
     @Test
-    @DisplayName("[ReportController] 진료 보고서 조회 - 보고서가 아직 작성되지 않았을 때 404-2 반환")
+    @DisplayName("[ReportController] 진료 보고서 조회 - 보고서가 아직 작성되지 않았을 때 404-52 반환")
     void 보고서_조회_미작성() throws Exception {
 
         ResultActions resultActions = mvc.perform(
@@ -346,7 +346,7 @@ public class ReportControllerTest {
 
         resultActions
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.statusCode").value("404-2"));
+                .andExpect(jsonPath("$.statusCode").value("404-52"));
     }
 
     // ── AI 요약 ────────────────────────────────

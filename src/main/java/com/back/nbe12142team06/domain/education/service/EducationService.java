@@ -33,13 +33,13 @@ public class EducationService {
     @Transactional
     public EducationProgress recordProgress(Long userId, Long videoId, Double positionSec) {
         EscortProfile escortProfile = this.escortProfileRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("동행인 프로필이 존재하지 않습니다."));
+                .orElseThrow(() -> new NotFoundException(3, "동행 매니저 프로필이 존재하지 않습니다."));
 
         EducationVideo educationVideo = this.educationVideoRepository.findById(videoId)
-                .orElseThrow(() -> new NotFoundException("존재하지않는 교육 영상입니다."));
+                .orElseThrow(() -> new NotFoundException(101, "존재하지않는 교육 영상입니다."));
 
         EducationProgress progress = this.educationProgressRepository.findByEscortProfileAndEducationVideo(escortProfile, educationVideo)
-                .orElseThrow(() -> new NotFoundException("교육 진행 정보가 존재하지 않습니다."));
+                .orElseThrow(() -> new NotFoundException(102, "교육 진행 정보가 존재하지 않습니다."));
 
         // 이미 이수한 경우 더 기록하지 않음
         if (escortProfile.getVerified()) {
@@ -69,7 +69,7 @@ public class EducationService {
     @Transactional(readOnly = true)
     public List<EducationProgress> getProgresses(Long userId) {
         if (!this.escortProfileRepository.existsById(userId)) {
-            throw new NotFoundException("동행인 프로필이 존재하지 않습니다.");
+            throw new NotFoundException(3, "동행 매니저 프로필이 존재하지 않습니다.");
         }
 
         return this.educationProgressRepository.findAllByEscortProfileUserIdOrderByEducationVideoIdAsc(userId);
@@ -79,11 +79,11 @@ public class EducationService {
     @Transactional(readOnly = true)
     public EducationProgress getProgress(Long userId, Long videoId) {
         if (!this.escortProfileRepository.existsById(userId)) {
-            throw new NotFoundException("동행인 프로필이 존재하지 않습니다.");
+            throw new NotFoundException(3, "동행 매니저 프로필이 존재하지 않습니다.");
         }
 
         return this.educationProgressRepository.findByEscortProfileUserIdAndEducationVideoId(userId, videoId)
-                .orElseThrow(() -> new NotFoundException("존재하지않는 교육 영상입니다."));
+                .orElseThrow(() -> new NotFoundException(103, "존재하지않는 교육 영상입니다."));
     }
 
 

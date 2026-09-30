@@ -33,7 +33,7 @@ export function recordWatchLog(videoId: number, positionSec: number, { keepalive
 }
 
 /** 교육을 이수하지 않은 동행 매니저가 지원했을 때(ApplicationService.apply) 백엔드가 던지는 상태코드 */
-const EDUCATION_REQUIRED_STATUS = '403';
+const EDUCATION_REQUIRED_STATUS = '403-21';
 
 /** 공고 지원(applyToPost) 실패가 "교육 미이수" 때문인지 판단합니다. 교육 영상 화면으로 안내할 때 씁니다. */
 export function isEducationRequiredError(error: unknown): boolean {

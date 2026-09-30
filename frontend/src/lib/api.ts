@@ -24,6 +24,9 @@ export class ApiError extends Error {
 /** 액세스 토큰 재발급 경로. 이 요청이 401 이면 다시 재발급을 시도하지 않습니다(무한 반복 방지). */
 const REFRESH_PATH = '/api/v1/auth/refresh';
 
+/** 액세스 토큰 만료 상태코드(JwtAuthenticationEntryPoint). 이 경우에만 재발급 후 재시도합니다. */
+const TOKEN_EXPIRED_STATUS = '401-111';
+
 /**
  * 진행 중인 재발급 요청. 여러 요청이 동시에 401 을 받아도 재발급은 한 번만 하고 결과를 나눠 씁니다.
  */
@@ -53,18 +56,18 @@ function peekStatusCode(text: string): string {
  * 백엔드 API 호출 함수.
  * 성공하면 응답의 data 만 돌려주고, 실패하면 ApiError 를 던집니다.
  *
- * 액세스 토큰이 만료돼서 실패했을 때(401-2)는 재발급을 한 번 시도하고 같은 요청을 다시 보냅니다.
+ * 액세스 토큰이 만료돼서 실패했을 때(401-111)는 재발급을 한 번 시도하고 같은 요청을 다시 보냅니다.
  */
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
     // 1. 서버 호출 (응답이 올 때까지 기다림). 쿠키(로그인 토큰)는 같은 주소(프록시)라 자동으로 실립니다.
     let res = await fetch(path, { credentials: 'include', ...init });
     let text = await res.text();
 
-    // 1-1. 토큰 만료(401-2)면 재발급 후 재시도. 토큰 없음(401-1)·유효하지 않음(401-3)은 재시도해도 소용없습니다.
+    // 1-1. 토큰 만료(401-111)면 재발급 후 재시도. 유효하지 않음(401-112)·토큰 없음(401-113)은 재시도해도 소용없습니다.
     if (
         res.status === 401 &&
         path !== REFRESH_PATH &&
-        peekStatusCode(text) === '401-2' &&
+        peekStatusCode(text) === TOKEN_EXPIRED_STATUS &&
         (await refreshAccessToken())
     ) {
         res = await fetch(path, { credentials: 'include', ...init });

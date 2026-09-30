@@ -39,7 +39,7 @@ public class UserController {
         Boolean isAvailable = this.userService.isUsernameAvailable(username);
 
         return new RsData<>(
-                "200-2",
+                "200-1",
                 isAvailable ? "사용 가능한 아이디입니다." : "이미 사용 중인 아이디입니다.",
                 isAvailable
         );
@@ -92,7 +92,7 @@ public class UserController {
         User user = this.userService.myProfile(me.getId());
 
         return new RsData<>(
-                "200-1",
+                "200-3",
                 "내 정보 조회가 완료되었습니다.",
                 new UserResponse(user)
         );
@@ -110,7 +110,7 @@ public class UserController {
         User user = this.userService.updateMyProfile(me.getId(), request);
 
         return new RsData<>(
-                "200-3",
+                "200-4",
                 "회원 정보가 수정되었습니다.",
                 new UserResponse(user)
         );
@@ -129,7 +129,7 @@ public class UserController {
         this.rq.clearTokenCookies();
 
         return new RsData<>(
-                "200-4",
+                "204-1",
                 "회원 탈퇴가 완료되었습니다."
         );
     }
@@ -147,7 +147,7 @@ public class UserController {
         ClientProfile clientProfile = this.userService.createClientProfile(me.getId(), request);
 
         return new RsData<>(
-                "200-5",
+                "201-2",
                 "의뢰인 프로필이 생성되었습니다.",
                 new ClientProfileResponse(clientProfile)
                 );
@@ -164,7 +164,7 @@ public class UserController {
         ClientProfile clientProfile = this.userService.getClientProfile(me.getId());
 
         return new RsData<>(
-                "200-6",
+                "200-5",
                 "의뢰인 프로필 조회를 완료했습니다.",
                 new ClientProfileResponse(clientProfile)
         );
@@ -219,7 +219,7 @@ public class UserController {
         EscortProfile escort = this.userService.createEscortProfile(me.getId(), request);
 
         return new RsData<>(
-                "200-8",
+                "201-3",
                 "동행 매니저 프로필이 생성되었습니다.",
                 new EscortProfileResponse(escort)
         );
@@ -236,7 +236,7 @@ public class UserController {
         EscortProfile escortProfile = this.userService.getEscortProfile(me.getId());
 
         return new RsData<>(
-                "200-9",
+                "200-8",
                 "동행 매니저 프로필 조회를 완료했습니다.",
                 new EscortProfileResponse(escortProfile)
         );

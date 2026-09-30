@@ -160,8 +160,8 @@ class RideControllerTest {
         resultActions.andExpect(handler().handlerType(RideController.class));
         resultActions.andExpect(handler().methodName("getListByPostId"));
         resultActions.andExpect(status().isOk());
-        resultActions.andExpect(jsonPath("$.statusCode").value("200-21"));
-        resultActions.andExpect(jsonPath("$.msg").value("공고글 이동 정보를 불러왔습니다."));
+        resultActions.andExpect(jsonPath("$.statusCode").value("200-81"));
+        resultActions.andExpect(jsonPath("$.msg").value("해당 공고의 이동 정보를 불러왔습니다."));
         resultActions.andExpect(jsonPath("$.data[0].direction").value("TO_HOSPITAL"));
         resultActions.andExpect(jsonPath("$.data[0].selected").value("TAXI"));
     }
@@ -177,7 +177,7 @@ class RideControllerTest {
         resultActions.andExpect(handler().handlerType(RideController.class));
         resultActions.andExpect(handler().methodName("getRide"));
         resultActions.andExpect(status().isOk());
-        resultActions.andExpect(jsonPath("$.statusCode").value("200-22"));
+        resultActions.andExpect(jsonPath("$.statusCode").value("200-82"));
         resultActions.andExpect(jsonPath("$.msg").value("이동 정보를 불러왔습니다."));
         resultActions.andExpect(jsonPath("$.data.direction").value("TO_HOSPITAL"));
         resultActions.andExpect(jsonPath("$.data.status").value("ACCEPTED"));
@@ -195,8 +195,8 @@ class RideControllerTest {
         resultActions.andExpect(handler().handlerType(RideController.class));
         resultActions.andExpect(handler().methodName("getRide"));
         resultActions.andExpect(status().isNotFound());
-        resultActions.andExpect(jsonPath("$.statusCode").value("404-20"));
-        resultActions.andExpect(jsonPath("$.msg").value("찾으시는 이동 정보가 없습니다."));
+        resultActions.andExpect(jsonPath("$.statusCode").value("404-82"));
+        resultActions.andExpect(jsonPath("$.msg").value("이동 정보를 찾을 수 없습니다."));
     }
 
     @Test
@@ -210,7 +210,7 @@ class RideControllerTest {
         resultActions.andExpect(handler().handlerType(RideController.class));
         resultActions.andExpect(handler().methodName("getRide"));
         resultActions.andExpect(status().isForbidden());
-        resultActions.andExpect(jsonPath("$.statusCode").value("403-20"));
-        resultActions.andExpect(jsonPath("$.msg").value("권한이 없습니다."));
+        resultActions.andExpect(jsonPath("$.statusCode").value("403-81"));
+        resultActions.andExpect(jsonPath("$.msg").value("이동 정보를 조회할 권한이 없습니다."));
     }
 }

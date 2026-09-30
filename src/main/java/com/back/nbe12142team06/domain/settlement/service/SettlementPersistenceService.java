@@ -33,7 +33,7 @@ public class SettlementPersistenceService {
     public AccountDto findAccountDto(Long userId, Long settlementId) {
         // 정산 데이터 조회
         return settlementRepository.findByIdAndState(userId, settlementId)
-                .orElseThrow(() -> new NotFoundException(30, "찾으시는 정산 데이터가 없습니다."));
+                .orElseThrow(() -> new NotFoundException(71, "정산 데이터를 찾을 수 없습니다."));
     }
 
     @Transactional

@@ -49,8 +49,8 @@ public class RideController {
         List<RideResponse> rides = rideService.getListByPostId(postId);
 
         return new RsData<>(
-                "200-21",
-                "공고글 이동 정보를 불러왔습니다.",
+                "200-81",
+                "해당 공고의 이동 정보를 불러왔습니다.",
                 rides
         );
     }
@@ -66,7 +66,7 @@ public class RideController {
 
         Ride ride = rideService.findById(userId, rideId);
 
-        return new RsData<>("200-22", "이동 정보를 불러왔습니다.",
+        return new RsData<>("200-82", "이동 정보를 불러왔습니다.",
                 new RideResponse(ride));
     }
 
