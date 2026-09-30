@@ -80,7 +80,7 @@ const DTO_FIELDS: Record<string, FieldKey> = {
 /**
  * 가입 실패를 입력칸 에러로 바꿉니다. 어느 칸 문제인지 모르면 null.
  * - 409-1·2·3 : 아이디·이메일·전화번호 중복
- * - 400-1     : DTO 검증 실패. 백엔드가 "birthDate: 생년월일은 과거 날짜여야 합니다., ..." 형태로 주므로 첫 항목을 씁니다.
+ * - 400-01    : DTO 검증 실패. 백엔드가 "birthDate: 생년월일은 과거 날짜여야 합니다., ..." 형태로 주므로 첫 항목을 씁니다.
  */
 function toFieldError(error: unknown, values: SignupFormValues): FieldError | null {
   if (!(error instanceof ApiError)) return null;
@@ -88,7 +88,7 @@ function toFieldError(error: unknown, values: SignupFormValues): FieldError | nu
   const duplicate = DUPLICATE_FIELDS[error.statusCode];
   if (duplicate) return { key: duplicate, text: error.message };
 
-  if (error.statusCode === '400-1') {
+  if (error.statusCode === '400-01') {
     const match = /^(\w+): ([^,]+)/.exec(error.message);
     const key = match && (DTO_FIELDS[match[1]] ?? match[1]);
     if (key && key in values) return { key: key as FieldKey, text: match[2] };

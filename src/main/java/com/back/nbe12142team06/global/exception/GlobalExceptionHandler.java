@@ -74,7 +74,7 @@ public class GlobalExceptionHandler {
     // 이 예외가 거기서 500 으로 뭉개진다.
     @ExceptionHandler
     public RsData<?> dataIntegrityViolationExceptionHandler(DataIntegrityViolationException e) {
-        return new RsData<>("409-1", "이미 처리된 요청입니다.");
+        return new RsData<>("409-02", "이미 처리된 요청입니다.");
     }
 
     // 스프링이 던지는 "요청 자체가 잘못된" 예외들. 아래 Exception 핸들러가 가로채면 사용자 실수가 500 으로 나가서 따로 처리한다.
@@ -116,6 +116,6 @@ public class GlobalExceptionHandler {
     // 같은 데이터를 동시에 수정해 낙관적 락(@Version) 충돌이 난 경우
     @ExceptionHandler
     public RsData<?> concurrentUpdateHandler(OptimisticLockingFailureException e) {
-        return new RsData<>("409-0", "다른 요청과 충돌했습니다. 다시 시도해주세요.");
+        return new RsData<>("409-01", "다른 요청과 충돌했습니다. 다시 시도해주세요.");
     }
 }

@@ -23,8 +23,8 @@ export async function fetchReport(applicationId: number): Promise<ReportDto> {
   return api<ReportDto>(`/api/v1/applications/${applicationId}/report`);
 }
 
-/** 아직 보고서가 작성되지 않았을 때(404-2) 백엔드가 던지는 상태코드. 존재하지 않는 동행 건(404-1)과 구분하는 데 씁니다. */
-const REPORT_NOT_FOUND_STATUS = '404-2';
+/** 아직 보고서가 작성되지 않았을 때(ReportService.get) 백엔드가 던지는 상태코드. 존재하지 않는 동행 건(404-24)과 구분하는 데 씁니다. */
+const REPORT_NOT_FOUND_STATUS = '404-52';
 
 /** fetchReport 실패가 "보고서 미작성"인지 판단합니다. */
 export function isReportNotFoundError(error: unknown): boolean {
