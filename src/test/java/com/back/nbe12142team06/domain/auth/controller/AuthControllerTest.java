@@ -83,7 +83,7 @@ public class AuthControllerTest {
 
         resultActions
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value("200-1"))
+                .andExpect(jsonPath("$.statusCode").value("200-92"))
                 .andExpect(jsonPath("$.msg").value("김춘식님 반갑습니다."))
                 .andExpect(jsonPath("$.data.id").exists())
                 .andExpect(jsonPath("$.data.name").value("김춘식"))
@@ -115,7 +115,7 @@ public class AuthControllerTest {
 
         resultActions
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.statusCode").value("401"))
+                .andExpect(jsonPath("$.statusCode").value("401-1"))
                 .andExpect(jsonPath("$.msg").value("아이디 또는 비밀번호가 올바르지 않습니다."))
                 .andExpect(cookie().doesNotExist("accessToken"))
                 .andExpect(cookie().doesNotExist("refreshToken"));
@@ -164,7 +164,7 @@ public class AuthControllerTest {
 
         resultActions
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.statusCode").value("401"))
+                .andExpect(jsonPath("$.statusCode").value("401-2"))
                 .andExpect(jsonPath("$.msg").value("아이디 또는 비밀번호가 올바르지 않습니다."))
                 .andExpect(cookie().doesNotExist("accessToken"))
                 .andExpect(cookie().doesNotExist("refreshToken"));
@@ -205,7 +205,7 @@ public class AuthControllerTest {
 
         resultActions
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value("200-3"))
+                .andExpect(jsonPath("$.statusCode").value("200-93"))
                 .andExpect(jsonPath("$.msg").value("로그아웃 되었습니다."))
                 .andExpect(result -> {
 

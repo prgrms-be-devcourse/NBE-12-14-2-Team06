@@ -141,7 +141,7 @@ public class AdminUserControllerTest {
                                     "accountNumber": "123-0000000-123"
                                 }
                                 """))
-                .andExpect(status().isOk());
+                .andExpect(status().isCreated());
     }
 
     // 일반 회원 가입 후 accessToken 쿠키 반환 (가입 시 토큰이 발급됨)
@@ -218,7 +218,7 @@ public class AdminUserControllerTest {
         // user1 탈퇴
         mvc.perform(delete("/api/v1/users/profile")
                         .cookie(user1Token))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
 
         Cookie adminToken = loginAsAdmin();
 
@@ -286,7 +286,7 @@ public class AdminUserControllerTest {
 
         resultActions
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.statusCode").value("404"))
+                .andExpect(jsonPath("$.statusCode").value("404-1"))
                 .andExpect(jsonPath("$.msg").value("회원 정보를 찾을 수 없습니다."));
     }
 
@@ -356,7 +356,7 @@ public class AdminUserControllerTest {
 
         resultActions
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.statusCode").value("400-1"))
+                .andExpect(jsonPath("$.statusCode").value("400-4"))
                 .andExpect(jsonPath("$.msg").value("페이지 번호는 음수일 수 없습니다."));
     }
 
@@ -470,7 +470,7 @@ public class AdminUserControllerTest {
                 delete("/api/v1/users/profile")
                         .cookie(userToken)
                 )
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
 
         // 회원 정보 수정
         ResultActions resultActions = mvc.perform(
@@ -603,7 +603,7 @@ public class AdminUserControllerTest {
 
         resultActions
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.statusCode").value("404"))
+                .andExpect(jsonPath("$.statusCode").value("404-1"))
                 .andExpect(jsonPath("$.msg").value("회원 정보를 찾을 수 없습니다."));
     }
 
@@ -659,7 +659,7 @@ public class AdminUserControllerTest {
 
         resultActions2
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.statusCode").value("400-4"))
+                .andExpect(jsonPath("$.statusCode").value("400-5"))
                 .andExpect(jsonPath("$.msg").value("이미 탈퇴한 회원입니다."));
     }
 
@@ -716,7 +716,7 @@ public class AdminUserControllerTest {
 
         resultActions
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.statusCode").value("404"))
+                .andExpect(jsonPath("$.statusCode").value("404-3"))
                 .andExpect(jsonPath("$.msg").value("동행 매니저 프로필이 존재하지 않습니다."));
     }
 }

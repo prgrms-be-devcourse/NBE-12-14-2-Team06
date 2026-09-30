@@ -106,7 +106,7 @@ public class EducationControllerTest {
                                     "accountNumber": "123-0000000-123"
                                 }
                                 """))
-                .andExpect(status().isOk());
+                .andExpect(status().isCreated());
     }
 
     // 영상 생성 → 동행 매니저 가입 → 프로필 생성까지 한 번에
@@ -138,7 +138,7 @@ public class EducationControllerTest {
     }
 
     @Test
-    @DisplayName("[EducationController] 시청 기록 - 정상 기록 시 200-1 반환")
+    @DisplayName("[EducationController] 시청 기록 - 정상 기록 시 200-101 반환")
     void t1() throws Exception {
         EducationVideo video = createVideo();
         Cookie escortToken = escortReady("escort1");
@@ -149,7 +149,7 @@ public class EducationControllerTest {
                 .andExpect(handler().handlerType(EducationController.class))
                 .andExpect(handler().methodName("createLog"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value("200-1"))
+                .andExpect(jsonPath("$.statusCode").value("200-101"))
                 .andExpect(jsonPath("$.msg").value("시청 기록이 저장되었습니다."))
                 .andExpect(jsonPath("$.data.maxWatchedSec").value(0.0))
                 .andExpect(jsonPath("$.data.completed").value(false))
@@ -177,7 +177,7 @@ public class EducationControllerTest {
 
         resultActions
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value("200-1"))
+                .andExpect(jsonPath("$.statusCode").value("200-101"))
                 .andExpect(jsonPath("$.data.maxWatchedSec").value(0.0))
                 .andExpect(jsonPath("$.data.completed").value(false));
 
@@ -211,7 +211,7 @@ public class EducationControllerTest {
 
         resultActions
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value("200-1"))
+                .andExpect(jsonPath("$.statusCode").value("200-101"))
                 .andExpect(jsonPath("$.data.maxWatchedSec").value(60.1))
                 .andExpect(jsonPath("$.data.completed").value(true))
                 .andExpect(jsonPath("$.data.verified").value(true));
@@ -237,7 +237,7 @@ public class EducationControllerTest {
 
         resultActions
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value("200-1"))
+                .andExpect(jsonPath("$.statusCode").value("200-101"))
                 .andExpect(jsonPath("$.data.verified").value(true));
 
         em.flush();
@@ -275,7 +275,7 @@ public class EducationControllerTest {
     }
 
     @Test
-    @DisplayName("[EducationController] 시청 기록 - 존재하지 않는 영상 요청 시 404 반환")
+    @DisplayName("[EducationController] 시청 기록 - 존재하지 않는 영상 요청 시 404-101 반환")
     void t7() throws Exception {
         createVideo();
         Cookie escortToken = escortReady("escort1");
@@ -286,7 +286,7 @@ public class EducationControllerTest {
                 .andExpect(handler().handlerType(EducationController.class))
                 .andExpect(handler().methodName("createLog"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.statusCode").value("404"))
+                .andExpect(jsonPath("$.statusCode").value("404-101"))
                 .andExpect(jsonPath("$.msg").value("존재하지않는 교육 영상입니다."));
     }
 
@@ -321,7 +321,7 @@ public class EducationControllerTest {
     }
 
     @Test
-    @DisplayName("[EducationController] 교육 영상 목록 조회 - 정상 조회 시 200-1 반환")
+    @DisplayName("[EducationController] 교육 영상 목록 조회 - 정상 조회 시 200-102 반환")
     void t10() throws Exception {
         EducationVideo video = createVideo();
         Cookie escortToken = escortReady("escort1");
@@ -337,7 +337,7 @@ public class EducationControllerTest {
                 .andExpect(handler().handlerType(EducationController.class))
                 .andExpect(handler().methodName("getVideos"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value("200-1"))
+                .andExpect(jsonPath("$.statusCode").value("200-102"))
                 .andExpect(jsonPath("$.msg").value("교육 영상 목록을 조회했습니다."))
                 .andExpect(jsonPath("$.data.length()").value(1))
                 .andExpect(jsonPath("$.data[0].videoId").value(video.getId()))
@@ -350,7 +350,7 @@ public class EducationControllerTest {
     }
 
     @Test
-    @DisplayName("[EducationController] 교육 영상 목록 조회 - 프로필 없는 동행 매니저 조회 시 404 반환")
+    @DisplayName("[EducationController] 교육 영상 목록 조회 - 프로필 없는 동행 매니저 조회 시 404-3 반환")
     void t11() throws Exception {
         createVideo();
         Cookie escortToken = signUp("escort1", "ESCORT");   // 프로필 생성 안 함
@@ -363,12 +363,12 @@ public class EducationControllerTest {
                 .andExpect(handler().handlerType(EducationController.class))
                 .andExpect(handler().methodName("getVideos"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.statusCode").value("404"))
-                .andExpect(jsonPath("$.msg").value("동행인 프로필이 존재하지 않습니다."));
+                .andExpect(jsonPath("$.statusCode").value("404-3"))
+                .andExpect(jsonPath("$.msg").value("동행 매니저 프로필이 존재하지 않습니다."));
     }
 
     @Test
-    @DisplayName("[EducationController] 교육 영상 단건 조회 - 정상 조회 시 200-1 반환")
+    @DisplayName("[EducationController] 교육 영상 단건 조회 - 정상 조회 시 200-103 반환")
     void t12() throws Exception {
         EducationVideo video = createVideo();
         Cookie escortToken = escortReady("escort1");
@@ -384,7 +384,7 @@ public class EducationControllerTest {
                 .andExpect(handler().handlerType(EducationController.class))
                 .andExpect(handler().methodName("getVideo"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value("200-1"))
+                .andExpect(jsonPath("$.statusCode").value("200-103"))
                 .andExpect(jsonPath("$.msg").value("교육 영상을 조회했습니다."))
                 .andExpect(jsonPath("$.data.videoId").value(video.getId()))
                 .andExpect(jsonPath("$.data.maxWatchedSec").value(0.0))
@@ -392,7 +392,7 @@ public class EducationControllerTest {
     }
 
     @Test
-    @DisplayName("[EducationController] 교육 영상 단건 조회 - 존재하지 않는 영상 조회 시 404 반환")
+    @DisplayName("[EducationController] 교육 영상 단건 조회 - 존재하지 않는 영상 조회 시 404-103 반환")
     void t13() throws Exception {
         createVideo();
         Cookie escortToken = escortReady("escort1");
@@ -405,7 +405,7 @@ public class EducationControllerTest {
                 .andExpect(handler().handlerType(EducationController.class))
                 .andExpect(handler().methodName("getVideo"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.statusCode").value("404"))
+                .andExpect(jsonPath("$.statusCode").value("404-103"))
                 .andExpect(jsonPath("$.msg").value("존재하지않는 교육 영상입니다."));
     }
 }

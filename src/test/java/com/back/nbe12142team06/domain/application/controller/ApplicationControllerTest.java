@@ -190,7 +190,7 @@ public class ApplicationControllerTest {
                 .andExpect(handler().handlerType(ApplicationController.class))
                 .andExpect(handler().methodName("apply"))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.statusCode").value("201-1"))
+                .andExpect(jsonPath("$.statusCode").value("201-21"))
                 .andExpect(jsonPath("$.msg").value("지원이 완료되었습니다."))
                 .andExpect(jsonPath("$.data.id").exists())
                 .andExpect(jsonPath("$.data.postId").value(testPostId))
@@ -217,7 +217,7 @@ public class ApplicationControllerTest {
                 .andExpect(handler().handlerType(ApplicationController.class))
                 .andExpect(handler().methodName("apply"))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.statusCode").value("409"))
+                .andExpect(jsonPath("$.statusCode").value("409-21"))
                 .andExpect(jsonPath("$.msg").value("이미 지원한 공고입니다."));
     }
 
@@ -278,7 +278,7 @@ public class ApplicationControllerTest {
                 .andExpect(handler().handlerType(ApplicationController.class))
                 .andExpect(handler().methodName("apply"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.statusCode").value("400"))
+                .andExpect(jsonPath("$.statusCode").value("400-21"))
                 .andExpect(jsonPath("$.msg")
                         .value("모집 중인 공고에만 지원할 수 있습니다."));
     }
@@ -298,9 +298,9 @@ public class ApplicationControllerTest {
                 .andExpect(handler().handlerType(ApplicationController.class))
                 .andExpect(handler().methodName("apply"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.statusCode").value("404"))
+                .andExpect(jsonPath("$.statusCode").value("404-11"))
                 .andExpect(jsonPath("$.msg")
-                        .value("공고를 찾을 수 없습니다."));
+                        .value("%d번 공고가 없습니다.".formatted(notExistingPostId)));
     }
 
     @Test
@@ -323,7 +323,7 @@ public class ApplicationControllerTest {
                 .andExpect(handler().handlerType(ApplicationController.class))
                 .andExpect(handler().methodName("list"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value("200-1"))
+                .andExpect(jsonPath("$.statusCode").value("200-21"))
                 .andExpect(jsonPath("$.msg").value("지원 목록 조회가 완료되었습니다."))
                 .andExpect(jsonPath("$.data.content.length()").value(1))
                 .andExpect(jsonPath("$.data.content[0].applicationId").exists())
@@ -349,7 +349,7 @@ public class ApplicationControllerTest {
                 .andExpect(handler().handlerType(ApplicationController.class))
                 .andExpect(handler().methodName("list"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value("200-1"))
+                .andExpect(jsonPath("$.statusCode").value("200-21"))
                 .andExpect(jsonPath("$.msg").value("지원 목록 조회가 완료되었습니다."))
                 .andExpect(jsonPath("$.data.content").isArray())
                 .andExpect(jsonPath("$.data.content").isEmpty())
@@ -450,8 +450,8 @@ public class ApplicationControllerTest {
                 .andExpect(handler().handlerType(ApplicationController.class))
                 .andExpect(handler().methodName("list"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.statusCode").value("404"))
-                .andExpect(jsonPath("$.msg").value("공고를 찾을 수 없습니다."));
+                .andExpect(jsonPath("$.statusCode").value("404-11"))
+                .andExpect(jsonPath("$.msg").value("%d번 공고가 없습니다.".formatted(notExistingPostId)));
     }
 
     @Test
@@ -493,7 +493,7 @@ public class ApplicationControllerTest {
 
         resultActions
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.statusCode").value("403"))
+                .andExpect(jsonPath("$.statusCode").value("403-22"))
                 .andExpect(jsonPath("$.msg")
                         .value("본인 공고의 지원 목록만 조회할 수 있습니다."));
     }
@@ -523,7 +523,7 @@ public class ApplicationControllerTest {
                 .andExpect(handler().handlerType(ApplicationController.class))
                 .andExpect(handler().methodName("accept"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value("200-1"))
+                .andExpect(jsonPath("$.statusCode").value("200-22"))
                 .andExpect(jsonPath("$.msg").value("지원 승인이 완료되었습니다."))
                 .andExpect(jsonPath("$.data.applicationId").value(application.getId()))
                 .andExpect(jsonPath("$.data.postId").value(testPostId))
@@ -604,7 +604,7 @@ public class ApplicationControllerTest {
 
         resultActions
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.statusCode").value("403"))
+                .andExpect(jsonPath("$.statusCode").value("403-23"))
                 .andExpect(jsonPath("$.msg")
                         .value("본인 공고의 지원만 승인할 수 있습니다."));
     }
@@ -639,7 +639,7 @@ public class ApplicationControllerTest {
 
         resultActions
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.statusCode").value("400"))
+                .andExpect(jsonPath("$.statusCode").value("400-24"))
                 .andExpect(jsonPath("$.msg")
                         .value("대기 중인 지원만 승인할 수 있습니다."));
     }
@@ -763,7 +763,7 @@ public class ApplicationControllerTest {
 
         resultActions
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.statusCode").value("400"))
+                .andExpect(jsonPath("$.statusCode").value("400-24"))
                 .andExpect(jsonPath("$.msg")
                         .value("대기 중인 지원만 승인할 수 있습니다."));
     }
@@ -783,7 +783,7 @@ public class ApplicationControllerTest {
                 .andExpect(handler().handlerType(ApplicationController.class))
                 .andExpect(handler().methodName("accept"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.statusCode").value("404"))
+                .andExpect(jsonPath("$.statusCode").value("404-24"))
                 .andExpect(jsonPath("$.msg")
                         .value("지원을 찾을 수 없습니다."));
     }
@@ -1128,7 +1128,7 @@ public class ApplicationControllerTest {
                 .andExpect(handler().handlerType(ApplicationController.class))
                 .andExpect(handler().methodName("accept"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.statusCode").value("400"))
+                .andExpect(jsonPath("$.statusCode").value("400-26"))
                 .andExpect(jsonPath("$.msg")
                         .value("이미 매칭된 다른 공고와 동행 시간이 겹칩니다."));
 
@@ -1176,7 +1176,7 @@ public class ApplicationControllerTest {
                 .andExpect(handler().handlerType(ApplicationController.class))
                 .andExpect(handler().methodName("reject"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value("200-1"))
+                .andExpect(jsonPath("$.statusCode").value("200-23"))
                 .andExpect(jsonPath("$.msg").value("지원 거절이 완료되었습니다."));
 
         Application rejectedApplication = applicationRepository
@@ -1245,7 +1245,7 @@ public class ApplicationControllerTest {
                 .andExpect(handler().handlerType(ApplicationController.class))
                 .andExpect(handler().methodName("reject"))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.statusCode").value("403"))
+                .andExpect(jsonPath("$.statusCode").value("403-24"))
                 .andExpect(jsonPath("$.msg")
                         .value("본인 공고의 지원만 거절할 수 있습니다."));
 
@@ -1294,7 +1294,7 @@ public class ApplicationControllerTest {
                 .andExpect(handler().handlerType(ApplicationController.class))
                 .andExpect(handler().methodName("reject"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.statusCode").value("400"))
+                .andExpect(jsonPath("$.statusCode").value("400-27"))
                 .andExpect(jsonPath("$.msg")
                         .value("대기 중인 지원만 거절할 수 있습니다."));
 
@@ -1325,7 +1325,7 @@ public class ApplicationControllerTest {
                 .andExpect(handler().handlerType(ApplicationController.class))
                 .andExpect(handler().methodName("reject"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.statusCode").value("404"))
+                .andExpect(jsonPath("$.statusCode").value("404-24"))
                 .andExpect(jsonPath("$.msg")
                         .value("지원을 찾을 수 없습니다."));
     }
@@ -1356,7 +1356,7 @@ public class ApplicationControllerTest {
                 .andExpect(handler().handlerType(ApplicationController.class))
                 .andExpect(handler().methodName("cancel"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value("200-1"))
+                .andExpect(jsonPath("$.statusCode").value("200-24"))
                 .andExpect(jsonPath("$.msg")
                         .value("지원 취소가 완료되었습니다."));
 
@@ -1412,7 +1412,7 @@ public class ApplicationControllerTest {
                 .andExpect(handler().handlerType(ApplicationController.class))
                 .andExpect(handler().methodName("cancel"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value("200-1"))
+                .andExpect(jsonPath("$.statusCode").value("200-24"))
                 .andExpect(jsonPath("$.msg")
                         .value("지원 취소가 완료되었습니다."));
 
@@ -1520,7 +1520,7 @@ public class ApplicationControllerTest {
                 .andExpect(handler().handlerType(ApplicationController.class))
                 .andExpect(handler().methodName("cancel"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value("200-1"))
+                .andExpect(jsonPath("$.statusCode").value("200-24"))
                 .andExpect(jsonPath("$.msg")
                         .value("지원 취소가 완료되었습니다."));
 
@@ -1617,7 +1617,7 @@ public class ApplicationControllerTest {
                 .andExpect(handler().handlerType(ApplicationController.class))
                 .andExpect(handler().methodName("cancel"))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.statusCode").value("403"))
+                .andExpect(jsonPath("$.statusCode").value("403-25"))
                 .andExpect(jsonPath("$.msg")
                         .value("본인이 지원한 내역만 취소할 수 있습니다."));
 
@@ -1666,7 +1666,7 @@ public class ApplicationControllerTest {
                 .andExpect(handler().handlerType(ApplicationController.class))
                 .andExpect(handler().methodName("cancel"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.statusCode").value("400"))
+                .andExpect(jsonPath("$.statusCode").value("400-28"))
                 .andExpect(jsonPath("$.msg")
                         .value("취소할 수 없는 지원 상태입니다."));
 
@@ -1697,7 +1697,7 @@ public class ApplicationControllerTest {
                 .andExpect(handler().handlerType(ApplicationController.class))
                 .andExpect(handler().methodName("cancel"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.statusCode").value("404"))
+                .andExpect(jsonPath("$.statusCode").value("404-24"))
                 .andExpect(jsonPath("$.msg")
                         .value("지원을 찾을 수 없습니다."));
     }
@@ -1745,7 +1745,7 @@ public class ApplicationControllerTest {
                     )
                     .andDo(print())
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.statusCode").value("200-1"));
+                    .andExpect(jsonPath("$.statusCode").value("200-25"));
         }
 
         // 모든 진행 단계가 실제로 저장됐는지 확인
@@ -1826,7 +1826,7 @@ public class ApplicationControllerTest {
 
         resultActions
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.statusCode").value("400"))
+                .andExpect(jsonPath("$.statusCode").value("400-31"))
                 .andExpect(jsonPath("$.msg")
                         .value("동행 진행 상태를 순서대로 변경해야 합니다."));
     }
@@ -1894,7 +1894,7 @@ public class ApplicationControllerTest {
 
         resultActions
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.statusCode").value("403"))
+                .andExpect(jsonPath("$.statusCode").value("403-26"))
                 .andExpect(jsonPath("$.msg")
                         .value("본인의 동행 진행 상태만 변경할 수 있습니다."));
     }
@@ -1930,7 +1930,7 @@ public class ApplicationControllerTest {
 
         resultActions
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.statusCode").value("400"))
+                .andExpect(jsonPath("$.statusCode").value("400-29"))
                 .andExpect(jsonPath("$.msg")
                         .value("승인된 지원만 동행 진행 상태를 변경할 수 있습니다."));
     }
@@ -1994,7 +1994,7 @@ public class ApplicationControllerTest {
 
         resultActions
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.statusCode").value("400"))
+                .andExpect(jsonPath("$.statusCode").value("400-30"))
                 .andExpect(jsonPath("$.msg")
                         .value("이미 동행이 완료되었습니다."));
     }
@@ -2027,7 +2027,7 @@ public class ApplicationControllerTest {
                 .andExpect(handler().handlerType(ApplicationController.class))
                 .andExpect(handler().methodName("escortProfile"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value("200-2"))
+                .andExpect(jsonPath("$.statusCode").value("200-27"))
                 .andExpect(jsonPath("$.msg")
                         .value("지원자 프로필 조회가 완료되었습니다."))
                 .andExpect(jsonPath("$.data.escortId")
@@ -2095,7 +2095,7 @@ public class ApplicationControllerTest {
 
         resultActions
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.statusCode").value("403"))
+                .andExpect(jsonPath("$.statusCode").value("403-20"))
                 .andExpect(jsonPath("$.msg")
                         .value("본인 공고의 지원자 프로필만 조회할 수 있습니다."));
     }
@@ -2116,7 +2116,7 @@ public class ApplicationControllerTest {
                 .andExpect(handler().handlerType(ApplicationController.class))
                 .andExpect(handler().methodName("escortProfile"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.statusCode").value("404"))
+                .andExpect(jsonPath("$.statusCode").value("404-24"))
                 .andExpect(jsonPath("$.msg")
                         .value("지원을 찾을 수 없습니다."));
     }
@@ -2165,7 +2165,7 @@ public class ApplicationControllerTest {
                 .andExpect(handler().handlerType(ApplicationController.class))
                 .andExpect(handler().methodName("apply"))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.statusCode").value("403"))
+                .andExpect(jsonPath("$.statusCode").value("403-21"))
                 .andExpect(jsonPath("$.msg").value("교육 영상 시청을 완료한 후 지원할 수 있습니다."));
     }
 }
