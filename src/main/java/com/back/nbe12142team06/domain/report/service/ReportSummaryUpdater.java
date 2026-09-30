@@ -29,7 +29,7 @@ public class ReportSummaryUpdater {
     public String loadMaskedContent(Long reportId) {
 
         Report report = reportRepository.findById(reportId)
-                .orElseThrow(() -> new NotFoundException(3, "존재하지 않는 보고서입니다."));
+                .orElseThrow(() -> new NotFoundException(51, "존재하지 않는 보고서입니다."));
 
         // 항목별로 조립한 뒤 마스킹한다. 조립 전에 마스킹하면 항목마다 반복 호출하게 된다.
         return reportMasker.mask(

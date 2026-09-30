@@ -51,33 +51,33 @@ public class ApplicationService {
 
 
         Post post = postRepository.findByIdWithLock(postId).orElseThrow(
-                () -> new NotFoundException("공고를 찾을 수 없습니다."));
+                () -> new NotFoundException(11, "%s번 공고가 없습니다.".formatted(postId)));
 
         // 모집 중인 공고만 지원 가능
         if (post.getPostStatus() != PostStatus.OPEN) {
-            throw new InvalidException("모집 중인 공고에만 지원할 수 있습니다.");
+            throw new InvalidException(21, "모집 중인 공고에만 지원할 수 있습니다.");
         }
 
         User escort = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException(1, "회원 정보를 찾을 수 없습니다."));
 
         // 동행인만 지원 가능
         if (escort.getRole() != Role.ESCORT) {
-            throw new InvalidException("동행인만 공고에 지원할 수 있습니다.");
+            throw new InvalidException(22, "동행인만 공고에 지원할 수 있습니다.");
         }
 
         // 프로필이 존재하는 동행인만 지원 가능
         EscortProfile escortProfile = escortProfileRepository.findById(userId)
-                .orElseThrow(() -> new InvalidException("동행 매니저 프로필을 등록한 후 지원할 수 있습니다."));
+                .orElseThrow(() -> new InvalidException(23, "동행 매니저 프로필을 등록한 후 지원할 수 있습니다."));
 
         // 교육을 이수한 동행인만 지원 가능
         if (!escortProfile.getVerified()) {
-            throw new ForbiddenException("교육 영상 시청을 완료한 후 지원할 수 있습니다.");
+            throw new ForbiddenException(21, "교육 영상 시청을 완료한 후 지원할 수 있습니다.");
         }
 
         // 취소되지 않은 동일 공고 지원이 있으면 중복 지원 방지
         if (applicationRepository.existsByPostAndEscortAndStatusNot(post, escort, ApplicationStatus.CANCELED)) {
-            throw new DuplicatedException("이미 지원한 공고입니다.");
+            throw new DuplicatedException(21, "이미 지원한 공고입니다.");
         }
 
         Application application = Application.builder()
@@ -94,10 +94,10 @@ public class ApplicationService {
     public Page<ApplicationListResponse> list(Long postId, Long userId, Pageable pageable) {
 
         Post post = postRepository.findById(postId).orElseThrow(
-                () -> new NotFoundException("공고를 찾을 수 없습니다."));
+                () -> new NotFoundException(11, "%s번 공고가 없습니다.".formatted(postId)));
 
         if (!post.getClient().getId().equals(userId)) {
-            throw new ForbiddenException("본인 공고의 지원 목록만 조회할 수 있습니다.");
+            throw new ForbiddenException(22, "본인 공고의 지원 목록만 조회할 수 있습니다.");
         }
 
         return applicationRepository
@@ -109,28 +109,28 @@ public class ApplicationService {
     public ApplicationAcceptResponse accept(Long applicationId, Long userId) {
 
         Application application = applicationRepository.findById(applicationId).orElseThrow(
-                () -> new NotFoundException("지원을 찾을 수 없습니다."));
+                () -> new NotFoundException(24, "지원을 찾을 수 없습니다."));
 
         Long postId = application.getPost().getId();
 
         Post post = postRepository.findByIdWithLock(postId).orElseThrow(
-                () -> new NotFoundException("공고를 찾을 수 없습니다."));
+                () -> new NotFoundException(11, "%s번 공고가 없습니다.".formatted(postId)));
 
         User escort = application.getEscort();
 
         // 본인 공고에 들어온 지원만 승인 가능
         if (!post.getClient().getId().equals(userId)) {
-            throw new ForbiddenException("본인 공고의 지원만 승인할 수 있습니다.");
+            throw new ForbiddenException(23, "본인 공고의 지원만 승인할 수 있습니다.");
         }
 
         // 대기 중인 지원만 승인 가능
         if (application.getStatus() != ApplicationStatus.PENDING) {
-            throw new InvalidException("대기 중인 지원만 승인할 수 있습니다.");
+            throw new InvalidException(24, "대기 중인 지원만 승인할 수 있습니다.");
         }
 
         // 모집 중인 공고만 매칭 가능
         if (post.getPostStatus() != PostStatus.OPEN) {
-            throw new InvalidException("모집 중인 공고만 매칭할 수 있습니다.");
+            throw new InvalidException(25, "모집 중인 공고만 지원할 수 있습니다.");
         }
 
         // 이미 ACCEPTED된 다른 공고와 동행 시간이 겹치는지 확인
@@ -146,7 +146,7 @@ public class ApplicationService {
                 );
 
         if (hasTimeConflict) {
-            throw new InvalidException("이미 매칭된 다른 공고와 동행 시간이 겹칩니다.");
+            throw new InvalidException(26, "이미 매칭된 다른 공고와 동행 시간이 겹칩니다.");
         }
 
         // 현재 공고의 다른 PENDING 지원자 조회
@@ -190,18 +190,18 @@ public class ApplicationService {
     public void reject(Long applicationId, Long userId) {
 
         Application application = applicationRepository.findById(applicationId)
-                .orElseThrow(() -> new NotFoundException("지원을 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException(24, "지원을 찾을 수 없습니다."));
 
         Post post = application.getPost();
 
         // 본인 공고에 들어온 지원만 거절 가능
         if (!post.getClient().getId().equals(userId)) {
-            throw new ForbiddenException("본인 공고의 지원만 거절할 수 있습니다.");
+            throw new ForbiddenException(24, "본인 공고의 지원만 거절할 수 있습니다.");
         }
 
         // 대기 중인 지원만 거절 가능
         if (application.getStatus() != ApplicationStatus.PENDING) {
-            throw new InvalidException("대기 중인 지원만 거절할 수 있습니다.");
+            throw new InvalidException(27, "대기 중인 지원만 거절할 수 있습니다.");
         }
 
         application.reject();
@@ -217,11 +217,11 @@ public class ApplicationService {
     public void cancel(Long applicationId, Long userId) {
 
         Application application = applicationRepository.findById(applicationId)
-                .orElseThrow(() -> new NotFoundException("지원을 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException(24, "지원을 찾을 수 없습니다."));
 
         // 본인이 지원한 내역만 취소 가능
         if (!application.getEscort().getId().equals(userId)) {
-            throw new ForbiddenException("본인이 지원한 내역만 취소할 수 있습니다.");
+            throw new ForbiddenException(25, "본인이 지원한 내역만 취소할 수 있습니다.");
         }
 
         // 대기 상태에서 지원 취소
@@ -236,10 +236,10 @@ public class ApplicationService {
 
            // Post post = application.getPost();
             Post post = postRepository.findByIdWithLock(application.getPost().getId())
-                    .orElseThrow(() -> new NotFoundException("공고를 찾을 수 없습니다."));
+                    .orElseThrow(() -> new NotFoundException(11, "%d번 공고가 없습니다.".formatted(application.getPost().getId())));
 
             EscortProfile escortProfile = escortProfileRepository.findById(userId)
-                    .orElseThrow(() -> new NotFoundException("동행인 프로필을 찾을 수 없습니다."));
+                    .orElseThrow(() -> new NotFoundException(3, "동행 매니저 프로필이 존재하지 않습니다."));
 
             application.noShow();
             escortProfile.increaseNoShowCount();
@@ -259,23 +259,23 @@ public class ApplicationService {
             return;
         }
 
-        throw new InvalidException("취소할 수 없는 지원 상태입니다.");
+        throw new InvalidException(28, "취소할 수 없는 지원 상태입니다.");
     }
 
     @Transactional
     public void updateProgress(Long applicationId, Long userId, EscortProgress progress) {
 
         Application application = applicationRepository.findByIdWithLock(applicationId)
-                .orElseThrow(() -> new NotFoundException("지원을 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException(24, "지원을 찾을 수 없습니다."));
 
         // 본인의 동행 진행 상태만 변경 가능
         if (!application.getEscort().getId().equals(userId)) {
-            throw new ForbiddenException("본인의 동행 진행 상태만 변경할 수 있습니다.");
+            throw new ForbiddenException(26, "본인의 동행 진행 상태만 변경할 수 있습니다.");
         }
 
         // 승인된 지원만 동행 진행 상태 변경 가능
         if (application.getStatus() != ApplicationStatus.ACCEPTED) {
-            throw new InvalidException("승인된 지원만 동행 진행 상태를 변경할 수 있습니다.");
+            throw new InvalidException(29, "승인된 지원만 동행 진행 상태를 변경할 수 있습니다.");
         }
 
         EscortProgress currentProgress = escortProgressLogRepository
@@ -293,11 +293,11 @@ public class ApplicationService {
         };
 
         if (nextProgress == null) {
-            throw new InvalidException("이미 동행이 완료되었습니다.");
+            throw new InvalidException(30, "이미 동행이 완료되었습니다.");
         }
 
         if (progress != nextProgress) {
-            throw new InvalidException("동행 진행 상태를 순서대로 변경해야 합니다.");
+            throw new InvalidException(31, "동행 진행 상태를 순서대로 변경해야 합니다.");
         }
 
         LocalDateTime occurredAt = LocalDateTime.now();
@@ -321,12 +321,12 @@ public class ApplicationService {
     public ApplicationProgressResponse getProgress(Long applicationId, Long userId) {
 
         Application application = applicationRepository.findById(applicationId)
-                .orElseThrow(() -> new NotFoundException("지원을 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException(24, "지원을 찾을 수 없습니다."));
 
         boolean isEscort = application.getEscort().getId().equals(userId);
         boolean isClient = application.getPost().getClient().getId().equals(userId);
         if (!isEscort && !isClient) {
-            throw new ForbiddenException("본인의 동행 건만 진행 상태를 조회할 수 있습니다.");
+            throw new ForbiddenException(27, "본인의 동행 건만 진행 상태를 조회할 수 있습니다.");
         }
 
         EscortProgress current = escortProgressLogRepository
@@ -341,19 +341,19 @@ public class ApplicationService {
     public ApplicationEscortProfileResponse getEscortProfile(Long applicationId, Long userId) {
 
         Application application = applicationRepository.findById(applicationId)
-                .orElseThrow(() -> new NotFoundException("지원을 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException(24, "지원을 찾을 수 없습니다."));
 
         Post post = application.getPost();
 
         // 본인 공고에 지원한 동행인 프로필만 조회 가능
         if (!post.getClient().getId().equals(userId)) {
-            throw new ForbiddenException("본인 공고의 지원자 프로필만 조회할 수 있습니다.");
+            throw new ForbiddenException(20, "본인 공고의 지원자 프로필만 조회할 수 있습니다.");
         }
 
         User escort = application.getEscort();
 
         EscortProfile escortProfile = escortProfileRepository.findById(escort.getId())
-                .orElseThrow(() -> new NotFoundException("동행인 프로필을 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException(3, "동행 매니저 프로필이 존재하지 않습니다."));
 
         double rating = escortProfile.getRatingCount() == 0
                 ? 0.0
@@ -381,17 +381,17 @@ public class ApplicationService {
     public ApplicationClientProfileResponse getClientProfile(Long applicationId, Long userId) {
 
         Application application = applicationRepository.findById(applicationId)
-                .orElseThrow(() -> new NotFoundException("지원을 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException(24, "지원을 찾을 수 없습니다."));
 
         // 본인이 승인받은 지원 건의 의뢰인 정보만 조회 가능
         if (!application.getEscort().getId().equals(userId)) {
-            throw new ForbiddenException("매칭된 의뢰인의 프로필만 조회할 수 있습니다.");
+            throw new ForbiddenException(28, "매칭된 의뢰인의 프로필만 조회할 수 있습니다.");
         }
 
         User client = application.getPost().getClient();
 
         ClientProfile clientProfile = clientProfileRepository.findById(client.getId())
-                .orElseThrow(() -> new NotFoundException("의뢰인 프로필을 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException(2, "의뢰인 프로필이 존재하지 않습니다."));
 
         return new ApplicationClientProfileResponse(
                 client.getId(),
@@ -406,10 +406,10 @@ public class ApplicationService {
     public List<MyApplicationResponse> getMyApplications(Long userId) {
 
         User escort = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("사용자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException(1, "회원 정보를 찾을 수 없습니다."));
 
         if (escort.getRole() != Role.ESCORT) {
-            throw new InvalidException("동행 매니저만 지원 내역을 조회할 수 있습니다.");
+            throw new InvalidException(32, "동행 매니저만 지원 내역을 조회할 수 있습니다.");
         }
 
         return applicationRepository

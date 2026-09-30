@@ -211,7 +211,7 @@ class SettlementControllerTest {
 
         resultActions.andExpect(handler().handlerType(SettlementController.class));
         resultActions.andExpect(handler().methodName("settlementRequest"));
-        resultActions.andExpect(jsonPath("$.statusCode").value("200-30"));
+        resultActions.andExpect(jsonPath("$.statusCode").value("200-71"));
         resultActions.andExpect(jsonPath("$.msg").value("정산에 성공했습니다."));
 
         Settlement settlement = settlementRepository.findById(savedSettlement1Id).get();
@@ -229,8 +229,8 @@ class SettlementControllerTest {
 
         resultActions.andExpect(handler().handlerType(SettlementController.class));
         resultActions.andExpect(handler().methodName("settlementRequest"));
-        resultActions.andExpect(jsonPath("$.statusCode").value("404-30"));
-        resultActions.andExpect(jsonPath("$.msg").value("찾으시는 정산 데이터가 없습니다."));
+        resultActions.andExpect(jsonPath("$.statusCode").value("404-71"));
+        resultActions.andExpect(jsonPath("$.msg").value("정산 데이터를 찾을 수 없습니다."));
     }
 
     @Test
@@ -243,7 +243,7 @@ class SettlementControllerTest {
 
         resultActions.andExpect(handler().handlerType(SettlementController.class));
         resultActions.andExpect(handler().methodName("settlementList"));
-        resultActions.andExpect(jsonPath("$.statusCode").value("200-31"));
+        resultActions.andExpect(jsonPath("$.statusCode").value("200-72"));
         resultActions.andExpect(jsonPath("$.msg").value("정산 목록을 가져왔습니다."));
         resultActions.andExpect(jsonPath("$.data[0]").doesNotExist());
     }
@@ -258,7 +258,7 @@ class SettlementControllerTest {
 
         resultActions.andExpect(handler().handlerType(SettlementController.class));
         resultActions.andExpect(handler().methodName("settlementDetail"));
-        resultActions.andExpect(jsonPath("$.statusCode").value("200-32"));
+        resultActions.andExpect(jsonPath("$.statusCode").value("200-73"));
         resultActions.andExpect(jsonPath("$.msg").value("정산 상세 데이터를 조회했습니다."));
         resultActions.andExpect(jsonPath("$.data").exists());
     }
@@ -274,8 +274,8 @@ class SettlementControllerTest {
 
         resultActions.andExpect(handler().handlerType(SettlementController.class));
         resultActions.andExpect(handler().methodName("settlementDetail"));
-        resultActions.andExpect(jsonPath("$.statusCode").value("404-30"));
-        resultActions.andExpect(jsonPath("$.msg").value("찾으시는 정산 데이터가 없습니다."));
+        resultActions.andExpect(jsonPath("$.statusCode").value("404-71"));
+        resultActions.andExpect(jsonPath("$.msg").value("정산 데이터를 찾을 수 없습니다."));
     }
 
     @Test
@@ -288,7 +288,7 @@ class SettlementControllerTest {
 
         resultActions.andExpect(handler().handlerType(SettlementController.class));
         resultActions.andExpect(handler().methodName("settlementDetail"));
-        resultActions.andExpect(jsonPath("$.statusCode").value("403-30"));
+        resultActions.andExpect(jsonPath("$.statusCode").value("403-71"));
         resultActions.andExpect(jsonPath("$.msg").value("정산 요청할 권한이 없습니다."));
     }
 

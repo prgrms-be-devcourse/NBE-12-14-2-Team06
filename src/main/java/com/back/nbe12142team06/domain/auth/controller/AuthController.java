@@ -32,7 +32,7 @@ public class AuthController {
         this.rq.setAccessTokenCookie(newAccessToken);
 
         return new RsData<>(
-                "200-1",
+                "200-91",
                 "토큰 재발급되었습니다."
                 );
     }
@@ -49,7 +49,7 @@ public class AuthController {
         this.rq.setRefreshTokenCookie(refreshToken);
 
         return new RsData<>(
-                "200-1",
+                "200-92",
                 "%s님 반갑습니다.".formatted(user.getName()),
                 new UserLoginResponse(user)
         );
@@ -64,7 +64,7 @@ public class AuthController {
         this.rq.clearTokenCookies();
 
         return new RsData<>(
-                "200-3",
+                "200-93",
                 "로그아웃 되었습니다."
         );
     }

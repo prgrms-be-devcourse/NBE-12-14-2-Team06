@@ -9,10 +9,11 @@
 1. [📄프로젝트 설명](#-프로젝트-설명)
 2. [📚기술 스택📚](#-기술-스택-)
 3. [👥팀원](#-팀원)
-4. [🏗️ERD](#erd)
-5. [🔧아키텍처](#아키텍처)
-    - [⚙시스템 아키텍처](#시스템-아키텍처)
-    - [📂패키지 구조](#패키지-구조)
+4. [🏗️ERD](#-erd)
+5. [🔧아키텍처](#-아키텍처)
+    - [⚙시스템 아키텍처](#-시스템-아키텍처)
+    - [🌊상태 플로우](#-상태-플로우)
+    - [📂패키지 구조](#-패키지-구조)
 6. [🚀트러블 슈팅](#-트러블-슈팅)
 
 </div>
@@ -84,10 +85,10 @@
 ### Front End
 
 ![nextjs](https://img.shields.io/badge/Nextjs-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)
+![react](https://img.shields.io/badge/react-61DAFB?style=for-the-badge&logo=react&logoColor=white)
 ![html](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=HTML5&logoColor=white)
 ![css](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=CSS3&logoColor=white)
 ![typescript](https://img.shields.io/badge/typescript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
-![react](https://img.shields.io/badge/react-61DAFB?style=for-the-badge&logo=react&logoColor=white)
 
 ### Back End
 
@@ -98,18 +99,19 @@
 ![jwt](https://img.shields.io/badge/JSON_Web_Tokens-85EA2D?style=for-the-badge&logo=JSON-Web-Tokens&logoColor=white)
 ![swagger](https://img.shields.io/badge/swagger-34E27A?style=for-the-badge&logo=swagger&logoColor=white)
 ![mysql](https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=MySQL&logoColor=white)
-![docker](https://img.shields.io/badge/docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 ![gradle](https://img.shields.io/badge/gradle-02303A?style=for-the-badge&logo=gradle&logoColor=white)
 
 ### Third-Party
 
 ![claude](https://img.shields.io/badge/claude-D97757?style=for-the-badge&logo=claude&logoColor=white)
 ![tosspayment](https://img.shields.io/badge/tosspayment-007acc?style=for-the-badge&logo=tosspayment&logoColor=white)
+![kakao-map](https://img.shields.io/badge/kakao_map-FFCD00?style=for-the-badge&logo=kakao&logoColor=white)
 
 ### Infra
 
 ![railway](https://img.shields.io/badge/railway-0B0D0E?style=for-the-badge&logo=railway&logoColor=white)
 ![vercel](https://img.shields.io/badge/vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)
+![docker](https://img.shields.io/badge/docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 
 ### Tools
 
@@ -129,17 +131,21 @@
 | <img src='https://avatars.githubusercontent.com/u/67158609?v=4' width='100'/> | <img src='https://avatars.githubusercontent.com/u/276445634?v=4' width='100'/> | <img src='https://avatars.githubusercontent.com/u/82699095?v=4' width='100'/> | <img src='https://avatars.githubusercontent.com/u/301536526?v=4' width='100'/> | <img src='https://avatars.githubusercontent.com/u/193578436?v=4' width='100'/> |
 |    <p align="left">- 회원 도메인<br/>- 인증·인가<br/>- 교육 영상 시청 검증<br/>- ERD 설계</p>    |  <p align="left">- 진료 보고서 도메인<br>- 리뷰 도메인<br/>- AI 요약 연동<br/>- 전체 통합 테스트</p>   |      <p align="left">- 공고 도메인<br/>- 카카오맵 연동<br/>- 스케줄러<br/>- 로깅·모니터링</p>      |         <p align="left">- 지원 도메인<br>- 동행 진행 상태<br/>- UI·UX·와이어프레임</p>          |     <p align="left">- 결제, 정산 도메인<br/>- 이동수단 도메인<br/>- 정산 스케줄러<br/>- 서기</p>     |
 
-# ERD
+# 🏗 ERD
 
 ![erd](/readme-images/erd.png)
 
-# 아키텍처
+# 🔧 아키텍처
 
-## 시스템 아키텍처
+## ⚙ 시스템 아키텍처
 
 ![system-architecture](/readme-images/system_architecture.png)
 
-## 패키지 구조
+## 🌊 상태 플로우
+
+![status-flow](/readme-images/status_flow.png)
+
+## 📂 패키지 구조
 
 <div align=left>
 

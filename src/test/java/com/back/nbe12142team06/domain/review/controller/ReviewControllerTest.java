@@ -201,7 +201,7 @@ public class ReviewControllerTest {
 
         resultActions
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.statusCode").value("201-1"))
+                .andExpect(jsonPath("$.statusCode").value("201-61"))
                 .andExpect(jsonPath("$.data.rating").value(5))
                 .andExpect(jsonPath("$.data.tags", hasSize(2)))
                 .andExpect(jsonPath("$.data.applicationId").value(acceptedApplicationId));
@@ -238,7 +238,7 @@ public class ReviewControllerTest {
     }
 
     @Test
-    @DisplayName("[ReviewController] 리뷰 작성 - 존재하지 않는 동행 건일 때 404-1 반환")
+    @DisplayName("[ReviewController] 리뷰 작성 - 존재하지 않는 동행 건일 때 404-24 반환")
     void 리뷰_작성_동행건_없음() throws Exception {
 
         ResultActions resultActions = mvc.perform(
@@ -254,11 +254,11 @@ public class ReviewControllerTest {
 
         resultActions
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.statusCode").value("404-1"));
+                .andExpect(jsonPath("$.statusCode").value("404-24"));
     }
 
     @Test
-    @DisplayName("[ReviewController] 리뷰 작성 - 본인이 의뢰한 동행 건이 아닐 때 403-1 반환")
+    @DisplayName("[ReviewController] 리뷰 작성 - 본인이 의뢰한 동행 건이 아닐 때 403-61 반환")
     void 리뷰_작성_권한_없음() throws Exception {
 
         ResultActions resultActions = mvc.perform(
@@ -274,11 +274,11 @@ public class ReviewControllerTest {
 
         resultActions
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.statusCode").value("403-1"));
+                .andExpect(jsonPath("$.statusCode").value("403-61"));
     }
 
     @Test
-    @DisplayName("[ReviewController] 리뷰 작성 - 매칭 확정되지 않은 동행 건일 때 400-1 반환")
+    @DisplayName("[ReviewController] 리뷰 작성 - 매칭 확정되지 않은 동행 건일 때 400-61 반환")
     void 리뷰_작성_미확정() throws Exception {
 
         ResultActions resultActions = mvc.perform(
@@ -294,11 +294,11 @@ public class ReviewControllerTest {
 
         resultActions
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.statusCode").value("400-1"));
+                .andExpect(jsonPath("$.statusCode").value("400-61"));
     }
 
     @Test
-    @DisplayName("[ReviewController] 리뷰 작성 - 이미 리뷰가 존재할 때 409-1 반환")
+    @DisplayName("[ReviewController] 리뷰 작성 - 이미 리뷰가 존재할 때 409-61 반환")
     void 리뷰_작성_중복() throws Exception {
 
         reviewRepository.save(
@@ -323,7 +323,7 @@ public class ReviewControllerTest {
 
         resultActions
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.statusCode").value("409-1"));
+                .andExpect(jsonPath("$.statusCode").value("409-61"));
     }
 
     @Test
@@ -386,7 +386,7 @@ public class ReviewControllerTest {
 
         resultActions
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value("200-1"))
+                .andExpect(jsonPath("$.statusCode").value("200-61"))
                 .andExpect(jsonPath("$.data", hasSize(1)))
                 .andExpect(jsonPath("$.data[0].rating").value(5))
                 .andExpect(jsonPath("$.data[0].tags", hasSize(2)));
@@ -403,12 +403,12 @@ public class ReviewControllerTest {
 
         resultActions
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value("200-1"))
+                .andExpect(jsonPath("$.statusCode").value("200-61"))
                 .andExpect(jsonPath("$.data", hasSize(0)));
     }
 
     @Test
-    @DisplayName("[ReviewController] 리뷰 목록 조회 - 존재하지 않는 회원일 때 404-2 반환")
+    @DisplayName("[ReviewController] 리뷰 목록 조회 - 존재하지 않는 회원일 때 404-1 반환")
     void 리뷰_목록_조회_회원_없음() throws Exception {
 
         ResultActions resultActions = mvc.perform(
@@ -418,7 +418,7 @@ public class ReviewControllerTest {
 
         resultActions
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.statusCode").value("404-2"));
+                .andExpect(jsonPath("$.statusCode").value("404-1"));
     }
 
     @Test

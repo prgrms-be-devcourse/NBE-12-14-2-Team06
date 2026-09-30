@@ -15,6 +15,7 @@ import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.settlement.service.SettlementService;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.service.UserService;
+import com.back.nbe12142team06.global.exception.ForbiddenException;
 import com.back.nbe12142team06.global.exception.InternalServerErrorException;
 import com.back.nbe12142team06.global.exception.InvalidException;
 import com.back.nbe12142team06.global.exception.NotFoundException;
@@ -43,7 +44,7 @@ public class PaymentService {
         Payment payment = this.findById(userId, paymentId);
 
         if (payment.getPaymentStatus().equals(PaymentStatus.DONE)) {
-            throw new InvalidException(10, "이미 결제를 완료하셨습니다.");
+            throw new InvalidException(41, "이미 결제를 완료하셨습니다.");
         }
 
         String tossPaymentKey = request.paymentKey();
@@ -65,7 +66,7 @@ public class PaymentService {
         } catch (RuntimeException ex) {
             cancel(userId, paymentId, new PaymentCancelRequest("서버 에러 발생"));
             log.error("결제 승인 실패", ex);
-            throw new InternalServerErrorException(10, "결제 승인 도중 서버 에러가 발생했습니다.");
+            throw new InternalServerErrorException(41, "결제 승인 도중 서버 에러가 발생했습니다.");
         }
 
         log.info("결제 승인 성공 - paymentId: {}, userId: {}", paymentId, userId);
@@ -80,10 +81,10 @@ public class PaymentService {
     @Transactional(readOnly = true)
     public Payment findById(Long userId, Long paymentId) {
         Payment payment = paymentRepository.findByIdFetchJoin(paymentId)
-                .orElseThrow(() -> new NotFoundException(10, "결제 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException(41, "결제 정보를 찾을 수 없습니다."));
 
         if (!payment.getPost().getClient().getId().equals(userId)) {
-            throw new InvalidException(10, "사용자의 결제 정보가 아닙니다.");
+            throw new ForbiddenException(41, "사용자의 결제 정보가 아닙니다.");
         }
 
         return payment;
@@ -109,7 +110,7 @@ public class PaymentService {
             throw e;
         } catch (RuntimeException ex) {
             log.error("결제 취소 실패", ex);
-            throw new InternalServerErrorException(11, "결제 취소 도중 서버 에러가 발생했습니다.");
+            throw new InternalServerErrorException(42, "결제 취소 도중 서버 에러가 발생했습니다.");
         }
 
         // [로그 정리] 토스 응답 객체 전체(결제·카드 정보 포함 가능)가 로그에 남아서 주석 처리하고, 아래에 ID 만 남기도록 대체
@@ -127,7 +128,7 @@ public class PaymentService {
 
     public void verifyAmount(String amount, SaveAmountRequest request) {
         if (amount == null || !amount.equals(request.amount())) {
-            throw new InvalidException(10, "결제 금액 정보가 유효하지 않습니다.");
+            throw new InvalidException(42, "결제 금액 정보가 유효하지 않습니다.");
         }
     }
 

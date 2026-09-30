@@ -26,13 +26,13 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
 
         if (JwtAuthenticationFilter.ERROR_EXPIRED.equals(error)) {  // 만료인 경우
-            resultCode = "401-2";
+            resultCode = "401-111";
             msg = "만료된 토큰입니다.";
         } else if (JwtAuthenticationFilter.ERROR_INVALID.equals(error)) {   // 서명 불일치, 형식 오류
-            resultCode = "401-3";
+            resultCode = "401-112";
             msg = "유효하지 않은 토큰입니다.";
         } else {    // 토큰이 없는 경우
-            resultCode = "401-1";
+            resultCode = "401-113";
             msg = "로그인 후 이용해주세요.";
         }
 

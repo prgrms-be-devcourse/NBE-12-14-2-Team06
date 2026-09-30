@@ -53,7 +53,7 @@ public class SettlementService {
 
         // 변경 된 행이 0개라면 정산 중이거나 정산이 완료 된 경우
         if (row == 0) {
-            throw new InvalidException(30, "이미 정산 중이거나 정산이 완료되었습니다.");
+            throw new InvalidException(71, "이미 정산 중이거나 정산이 완료되었습니다.");
         }
 
         try {
@@ -63,13 +63,14 @@ public class SettlementService {
                 settlementPersistenceService.updateSettlement(settlementId, SettlementStatus.COMPLETED);
                 log.info("정산 성공 - settlementId: {}", accountDto.id());
             } else {
-                throw new RuntimeException();
+                log.error("정산 DB 변경 실패, 정산은 성공 - settlementId: {}", accountDto.id());
+                throw new InternalServerErrorException(72, "정산 도중 서버 에러가 발생했습니다.");
             }
         } catch (RuntimeException e) {
             // 금융 결제원 API 요청 에러
             settlementPersistenceService.updateSettlement(settlementId, SettlementStatus.FAILED);
             log.error("정산 실패 - 금융 결제원 API 요청 실패, settlementId: {}", settlementId, e);
-            throw new InternalServerErrorException(30, "정산에 실패했습니다.");
+            throw new InternalServerErrorException(72, "정산에 실패했습니다.");
         }
     }
 
@@ -82,10 +83,10 @@ public class SettlementService {
     @Transactional(readOnly = true)
     public SettlementResponse findSettlement(Long userId, Long settlementId) {
         Settlement settlement = settlementRepository.findById(settlementId)
-                .orElseThrow(() -> new NotFoundException(30, "찾으시는 정산 데이터가 없습니다."));
+                .orElseThrow(() -> new NotFoundException(71, "정산 데이터를 찾을 수 없습니다."));
 
         if (!settlement.getEscort().getId().equals(userId)) {
-            throw new ForbiddenException(30, "정산 요청할 권한이 없습니다.");
+            throw new ForbiddenException(71, "정산 요청할 권한이 없습니다.");
         }
 
         return new SettlementResponse(settlement);

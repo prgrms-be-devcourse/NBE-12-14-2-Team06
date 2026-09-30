@@ -34,15 +34,15 @@ public class ReportService {
     public Report write(Long applicationId, Long actorId, ReportWriteRequest request) {
 
         Application application = applicationRepository.findById(applicationId)
-                .orElseThrow(() -> new NotFoundException(1, "존재하지 않는 동행 건입니다."));
+                .orElseThrow(() -> new NotFoundException(24, "지원을 찾을 수 없습니다."));
 
         // 보고서는 해당 동행 건을 수행한 동행인만 작성 가능
         if (!application.getEscort().getId().equals(actorId)) {
-            throw new ForbiddenException(1, "본인이 수행한 동행 건에만 보고서를 작성할 수 있습니다.");
+            throw new ForbiddenException(51, "본인이 수행한 동행 건에만 보고서를 작성할 수 있습니다.");
         }
 
         if (reportRepository.existsByApplicationId(applicationId)) {
-            throw new DuplicatedException(1, "이미 보고서가 작성된 동행 건입니다.");
+            throw new DuplicatedException(51, "이미 보고서가 작성된 동행 건입니다.");
         }
 
         // existsByApplicationId() 체크와 save() 사이는 여전히 check-then-act 라
@@ -64,7 +64,7 @@ public class ReportService {
             log.info("[보고서 작성] reportId={}, applicationId={}, escortId={}", savedReport.getId(), applicationId, actorId);
             return savedReport;
         } catch (DataIntegrityViolationException e) {
-            throw new DuplicatedException(1, "이미 보고서가 작성된 동행 건입니다.", e);
+            throw new DuplicatedException(51, "이미 보고서가 작성된 동행 건입니다.", e);
         }
     }
 
@@ -83,18 +83,18 @@ public class ReportService {
     public ReportDto findByApplicationId(Long applicationId, Long actorId) {
 
         Application application = applicationRepository.findById(applicationId)
-                .orElseThrow(() -> new NotFoundException(1, "존재하지 않는 동행 건입니다."));
+                .orElseThrow(() -> new NotFoundException(24, "지원을 찾을 수 없습니다."));
 
         // 진료 내용은 민감정보이므로 해당 동행 건의 의뢰인과 동행인만 조회 가능
         Long clientId = application.getPost().getClient().getId();
         Long escortId = application.getEscort().getId();
 
         if (!actorId.equals(clientId) && !actorId.equals(escortId)) {
-            throw new ForbiddenException(2, "본인의 동행 건만 조회할 수 있습니다.");
+            throw new ForbiddenException(52, "본인의 동행 건만 조회할 수 있습니다.");
         }
 
         Report report = reportRepository.findByApplicationId(applicationId)
-                .orElseThrow(() -> new NotFoundException(2, "작성된 보고서가 없습니다."));
+                .orElseThrow(() -> new NotFoundException(52, "작성된 보고서가 없습니다."));
 
         return new ReportDto(report);
     }

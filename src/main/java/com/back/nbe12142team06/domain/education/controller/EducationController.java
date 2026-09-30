@@ -36,7 +36,7 @@ public class EducationController {
         EducationProgress progress = this.educationService.recordProgress(me.getId(), videoId, request.positionSec());
 
         return new RsData<>(
-                "200-1",
+                "200-101",
                 "시청 기록이 저장되었습니다.",
                 new WatchProgressLogCreateResponse(progress)
         );
@@ -53,7 +53,7 @@ public class EducationController {
                 .toList();
 
         return new RsData<>(
-                "200-1",
+                "200-102",
                 "교육 영상 목록을 조회했습니다.",
                 responses
         );
@@ -69,7 +69,7 @@ public class EducationController {
         EducationProgress progress = this.educationService.getProgress(me.getId(), videoId);
 
         return new RsData<>(
-                "200-1",
+                "200-103",
                 "교육 영상을 조회했습니다.",
                 new EducationVideoResponse(progress)
         );

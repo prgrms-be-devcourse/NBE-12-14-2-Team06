@@ -18,6 +18,7 @@ import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Gender;
 import com.back.nbe12142team06.domain.user.enums.Role;
 import com.back.nbe12142team06.domain.user.service.UserService;
+import com.back.nbe12142team06.global.exception.ForbiddenException;
 import com.back.nbe12142team06.global.exception.InvalidException;
 import com.back.nbe12142team06.global.exception.NotFoundException;
 import jakarta.servlet.http.Cookie;
@@ -222,8 +223,8 @@ class PaymentControllerTest {
 
         PaymentService paymentService = new PaymentService(paymentRepository, null, null, null);
 
-        // 예외 발생 400번
-        assertThrows(InvalidException.class, () -> {
+        // 예외 발생 403번
+        assertThrows(ForbiddenException.class, () -> {
             paymentService.confirm(new PaymentConfirmRequest(paymentKey, orderId, amount), savedPayment1Id, savedUser2Id, amount);
         });
     }
@@ -288,7 +289,7 @@ class PaymentControllerTest {
                 .andExpect(handler().handlerType(PaymentController.class))
                 .andExpect(handler().methodName("tempSave"))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.statusCode").value("201-n"))
+                .andExpect(jsonPath("$.statusCode").value("201-41"))
                 .andExpect(jsonPath("$.msg").value("결제 정보 임시 저장에 성공했습니다."));
     }
 
@@ -319,7 +320,7 @@ class PaymentControllerTest {
                 .andExpect(handler().handlerType(PaymentController.class))
                 .andExpect(handler().methodName("verifyAmount"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value("200-n"))
+                .andExpect(jsonPath("$.statusCode").value("200-42"))
                 .andExpect(jsonPath("$.msg").value("결제 정보가 유효합니다."));
     }
 
@@ -351,7 +352,7 @@ class PaymentControllerTest {
                 .andExpect(handler().handlerType(PaymentController.class))
                 .andExpect(handler().methodName("verifyAmount"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.statusCode").value("400-10"))
+                .andExpect(jsonPath("$.statusCode").value("400-42"))
                 .andExpect(jsonPath("$.msg").value("결제 금액 정보가 유효하지 않습니다."));
     }
 
@@ -368,7 +369,7 @@ class PaymentControllerTest {
                 .andExpect(handler().handlerType(PaymentController.class))
                 .andExpect(handler().methodName("paymentList"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value("200-n"))
+                .andExpect(jsonPath("$.statusCode").value("200-43"))
                 .andExpect(jsonPath("$.msg").value("결제 정보를 불러왔습니다."))
                 .andExpect(jsonPath("$.data[0]").exists())
                 .andExpect(jsonPath("$.data[1]").exists());
@@ -387,7 +388,7 @@ class PaymentControllerTest {
                 .andExpect(handler().handlerType(PaymentController.class))
                 .andExpect(handler().methodName("getPayment"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusCode").value("200-n"))
+                .andExpect(jsonPath("$.statusCode").value("200-44"))
                 .andExpect(jsonPath("$.msg").value("결제 정보를 불러왔습니다."))
                 .andExpect(jsonPath("$.data.id").value(savedPayment1Id))
                 .andExpect(jsonPath("$.data.amount").value(60_000))
@@ -411,7 +412,7 @@ class PaymentControllerTest {
                 .andExpect(handler().handlerType(PaymentController.class))
                 .andExpect(handler().methodName("getPayment"))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.statusCode").value("404-10"))
+                .andExpect(jsonPath("$.statusCode").value("404-41"))
                 .andExpect(jsonPath("$.msg").value("결제 정보를 찾을 수 없습니다."));
     }
 
@@ -428,8 +429,8 @@ class PaymentControllerTest {
         resultActions
                 .andExpect(handler().handlerType(PaymentController.class))
                 .andExpect(handler().methodName("getPayment"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.statusCode").value("400-10"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.statusCode").value("403-41"))
                 .andExpect(jsonPath("$.msg").value("사용자의 결제 정보가 아닙니다."));
     }
 
