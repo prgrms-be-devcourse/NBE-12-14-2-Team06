@@ -50,7 +50,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * [통합] 가입부터 정산까지 실제 HTTP 요청으로 전 과정을 검증한다..
+ * [통합] 가입부터 정산까지 실제 HTTP 요청으로 전 과정을 검증한다.
  *
  * 지금까지의 테스트는 대부분 @Transactional 이 붙은 단위/컨트롤러 테스트라서
  * "테스트는 통과하는데 실제 요청은 터지는" 버그를 놓쳐왔다 (LazyInitializationException,
