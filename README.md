@@ -13,6 +13,7 @@
 5. [🔧아키텍처](#아키텍처)
     - [⚙시스템 아키텍처](#시스템-아키텍처)
     - [📂패키지 구조](#패키지-구조)
+    - [🌊상태 플로우](#상태-플로우)
 6. [🚀트러블 슈팅](#-트러블-슈팅)
 
 </div>
@@ -138,6 +139,10 @@
 ## 시스템 아키텍처
 
 ![system-architecture](/readme-images/system_architecture.png)
+
+## 상태 플로우
+
+![status-flow](/readme-images/status_flow.png)
 
 ## 패키지 구조
 
