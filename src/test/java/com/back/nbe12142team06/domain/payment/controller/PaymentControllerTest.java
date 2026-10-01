@@ -30,7 +30,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
@@ -172,14 +171,14 @@ class PaymentControllerTest {
 
         String paymentKey = "temp";
         String orderId = "temp";
-        String amount = "10000";
+        String amount = "60000";
 
         TossPaymentClient mockTossPaymentClient = mock(TossPaymentClient.class);
         when(mockTossPaymentClient.callApiConfirm(any(), any(), any())).thenReturn(ResponseEntity.ok(new TossConfirmResponse("계좌이체", amount)));
 
         PaymentService paymentService = new PaymentService(paymentRepository, paymentPersistenceService, mockTossPaymentClient, null);
 
-        Payment payment = paymentService.confirm(new PaymentConfirmRequest(paymentKey, orderId, amount), savedPayment1Id, savedUser1Id, amount);
+        Payment payment = paymentService.confirm(new PaymentConfirmRequest(paymentKey, orderId, amount), savedPayment1Id, savedUser1Id);
 
         assertEquals(PaymentStatus.DONE, payment.getPaymentStatus());
         assertEquals(LocalDateTime.now().getHour(), payment.getApprovedAt().getHour());
@@ -225,7 +224,7 @@ class PaymentControllerTest {
 
         // 예외 발생 403번
         assertThrows(ForbiddenException.class, () -> {
-            paymentService.confirm(new PaymentConfirmRequest(paymentKey, orderId, amount), savedPayment1Id, savedUser2Id, amount);
+            paymentService.confirm(new PaymentConfirmRequest(paymentKey, orderId, amount), savedPayment1Id, savedUser2Id);
         });
     }
 
@@ -242,7 +241,7 @@ class PaymentControllerTest {
 
         // 예외 발생 404
         assertThrows(NotFoundException.class, () -> {
-            paymentService.confirm(new PaymentConfirmRequest(paymentKey, orderId, amount), paymentId, savedUser1Id, amount);
+            paymentService.confirm(new PaymentConfirmRequest(paymentKey, orderId, amount), paymentId, savedUser1Id);
         });
     }
 
@@ -261,7 +260,7 @@ class PaymentControllerTest {
 
         // 예외 발생 400번
         assertThrows(InvalidException.class, () -> {
-            paymentService.confirm(new PaymentConfirmRequest(paymentKey, orderId, amount), savedPayment1Id, savedUser1Id, amount);
+            paymentService.confirm(new PaymentConfirmRequest(paymentKey, orderId, amount), savedPayment1Id, savedUser1Id);
         });
     }
 
@@ -276,13 +275,13 @@ class PaymentControllerTest {
                 post("/api/v1/payments/save-amount")
                         .contentType(MediaType.APPLICATION_JSON)
                         .cookie(accessTokenCookie1)
-                        .session(new MockHttpSession())
                         .content("""
                                 {
+                                    "paymentId": %d,
                                     "orderId": "%s",
                                     "amount": "%s"
                                 }
-                                """.formatted(orderId, amount))
+                                """.formatted(savedPayment1Id, orderId, amount))
         ).andDo(print());
 
         resultActions
@@ -291,6 +290,10 @@ class PaymentControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.statusCode").value("201-41"))
                 .andExpect(jsonPath("$.msg").value("결제 정보 임시 저장에 성공했습니다."));
+
+        // 세션이 아니라 DB(Payment.amount)에 반영되는지 확인
+        Payment saved = paymentRepository.findById(savedPayment1Id).orElseThrow();
+        assertEquals(10_000, saved.getAmount());
     }
 
     @Test
@@ -298,22 +301,20 @@ class PaymentControllerTest {
     void verifyAmount() throws Exception {
 
         String orderId = UUID.randomUUID().toString();
-        String amount = "10000";
-        MockHttpSession session = new MockHttpSession();
-        session.setAttribute("orderId", orderId);
-        session.setAttribute("amount", amount);
+        // 공고 등록 때 서버가 계산해 DB 에 저장한 금액 (시간당 15,000원 * 4시간)
+        String amount = "60000";
 
         ResultActions resultActions = mvc.perform(
                 post("/api/v1/payments/verify-amount")
                         .contentType(MediaType.APPLICATION_JSON)
                         .cookie(accessTokenCookie1)
-                        .session(session)
                         .content("""
                                 {
+                                    "paymentId": %d,
                                     "orderId": "%s",
                                     "amount": "%s"
                                 }
-                                """.formatted(orderId, amount))
+                                """.formatted(savedPayment1Id, orderId, amount))
         ).andDo(print());
 
         resultActions
@@ -329,23 +330,20 @@ class PaymentControllerTest {
     void verifyAmountFail() throws Exception {
 
         String orderId = UUID.randomUUID().toString();
-        // 서버에 저장된 금액과 다른 금액을 입력
+        // DB 에 저장된 금액(60,000원)과 다른 금액을 입력
         String amount = "5000";
-        MockHttpSession session = new MockHttpSession();
-        session.setAttribute("orderId", orderId);
-        session.setAttribute("amount", "10000");
 
         ResultActions resultActions = mvc.perform(
                 post("/api/v1/payments/verify-amount")
                         .contentType(MediaType.APPLICATION_JSON)
                         .cookie(accessTokenCookie1)
-                        .session(session)
                         .content("""
                                 {
+                                    "paymentId": %d,
                                     "orderId": "%s",
                                     "amount": "%s"
                                 }
-                                """.formatted(orderId, amount))
+                                """.formatted(savedPayment1Id, orderId, amount))
         ).andDo(print());
 
         resultActions
@@ -354,6 +352,35 @@ class PaymentControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.statusCode").value("400-42"))
                 .andExpect(jsonPath("$.msg").value("결제 금액 정보가 유효하지 않습니다."));
+    }
+
+    @Test
+    @DisplayName("[PaymentController] 결제 정보 임시 저장 검증 - 남의 결제")
+    void verifyAmountForbidden() throws Exception {
+
+        String orderId = UUID.randomUUID().toString();
+        String amount = "60000";
+
+        // user1 의 결제를 user2 가 검증 요청
+        ResultActions resultActions = mvc.perform(
+                post("/api/v1/payments/verify-amount")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .cookie(accessTokenCookie2)
+                        .content("""
+                                {
+                                    "paymentId": %d,
+                                    "orderId": "%s",
+                                    "amount": "%s"
+                                }
+                                """.formatted(savedPayment1Id, orderId, amount))
+        ).andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(PaymentController.class))
+                .andExpect(handler().methodName("verifyAmount"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.statusCode").value("403-41"))
+                .andExpect(jsonPath("$.msg").value("사용자의 결제 정보가 아닙니다."));
     }
 
     @Test

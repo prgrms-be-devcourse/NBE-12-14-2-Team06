@@ -56,4 +56,12 @@ public class PaymentPersistenceService {
     public List<Payment> findByPostId(Long postId) {
         return paymentRepository.findByPostId(postId);
     }
+
+    @Transactional
+    public Payment updateAmount(Long paymentId, String amount) {
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new NotFoundException(41, "결제 정보를 찾을 수 없습니다."));
+        payment.updateAmount(Integer.parseInt(amount));
+        return payment;
+    }
 }
