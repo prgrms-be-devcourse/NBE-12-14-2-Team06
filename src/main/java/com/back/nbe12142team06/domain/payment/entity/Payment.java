@@ -129,4 +129,8 @@ public class Payment extends BaseSoftDeleteTimeEntity {
     public void updateSettlement(Settlement settlement) {
         this.settlement = settlement;
     }
+
+    public void updateAmount(int amount) {
+        this.amount = amount;
+    }
 }

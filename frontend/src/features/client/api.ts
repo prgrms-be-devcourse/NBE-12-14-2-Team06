@@ -34,17 +34,17 @@ export async function fetchClientEscortCase(postId: number, applicationId: numbe
 }
 
 /**
- * 결제를 요청하기 전에 orderId·금액을 서버 세션에 저장합니다.
+ * 결제를 요청하기 전에 orderId·금액을 서버(Payment 레코드)에 저장합니다.
  * 결제 과정에서 악의적으로 결제 금액이 바뀌는 것을 승인 단계에서 검증하기 위한 용도입니다.
  *
- * ⚠️ 백엔드 SaveAmountRequest(String orderId, String amount) 가 둘 다 String 이고
- *    승인 때 session.getAttribute("amount") 를 String 으로 캐스팅하므로 금액도 문자열로 보냅니다.
+ * ⚠️ 백엔드 SaveAmountRequest(Long paymentId, String orderId, String amount) 의 amount 가 String 이라
+ *    금액은 문자열로 보냅니다. paymentId 가 없으면 서버가 저장할 결제를 찾지 못합니다.
  */
-export async function fetchSaveAmount(orderId: string, amount: number) {
+export async function fetchSaveAmount(paymentId: number, orderId: string, amount: number) {
     await api<void>('/api/v1/payments/save-amount', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orderId, amount: String(amount) }),
+        body: JSON.stringify({ paymentId, orderId, amount: String(amount) }),
     });
 }
 
@@ -57,7 +57,7 @@ export type PaymentConfirm = {
 
 /**
  * 토스에서 successUrl 로 돌아온 뒤 서버에 결제 승인을 요청합니다.
- * 서버가 세션에 저장해 둔 금액과 대조한 다음 토스 승인 API 를 호출합니다.
+ * 서버가 Payment 레코드에 저장된 금액과 대조한 다음 토스 승인 API 를 호출합니다.
  */
 export async function fetchConfirmPayment(paymentId: number, request: PaymentConfirm) {
     return api<PaymentConfirm>(`/api/v1/payments/${paymentId}/confirm`, {

@@ -29,7 +29,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -296,17 +295,14 @@ class EscortFlowIntegrationTest {
         // (계획/실제 동행 시간이 같아도 소용없다). 그래서 실제 결제 승인 플로우
         // (금액 임시 저장 -> 승인)를 그대로 호출해 결제를 DONE 으로 만든다.
         String plannedAmount = String.valueOf(hourlyPay * 2);
-        MockHttpSession paymentSession = new MockHttpSession();
         mvc.perform(post("/api/v1/payments/save-amount")
-                        .session(paymentSession)
                         .cookie(clientCookie)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"orderId": "order-%s", "amount": "%s"}
-                                """.formatted(tag, plannedAmount)))
+                                {"paymentId": %d, "orderId": "order-%s", "amount": "%s"}
+                                """.formatted(paymentId, tag, plannedAmount)))
                 .andExpect(status().isCreated());
         mvc.perform(post("/api/v1/payments/{paymentId}/confirm", paymentId)
-                        .session(paymentSession)
                         .cookie(clientCookie)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
