@@ -194,14 +194,21 @@ export default function PaymentPage() {
               return;
             }
 
+            // 결제 금액 저장은 paymentId 로 Payment 레코드를 찾으므로, 없으면 결제를 시작할 수 없습니다.
+            const paymentIdNum = Number(paymentId);
+            if (!Number.isInteger(paymentIdNum) || paymentIdNum <= 0) {
+              console.error('결제 정보(paymentId)가 없어 결제를 진행할 수 없습니다.');
+              return;
+            }
+
             try {
               const orderId = generateRandomString();
 
-              // 결제를 요청하기 전에 orderId, amount를 서버 세션에 저장
+              // 결제를 요청하기 전에 orderId, amount를 서버(Payment 레코드)에 저장
               // 결제 과정에서 악의적으로 결제 금액이 바뀌는 것을 확인하는 용도입니다.
               // 실제 프로덕트에선 제거액세스 토큰 추가
               // document.cookie = "accessToken=eyJhbGciOiJIUzUxMiJ9.eyJpZCI6MSwicm9sZSI6IkNMSUVOVCIsInVzZXJuYW1lIjoidGVzdFVzZXJuYW1lIiwiaWF0IjoxNzg5ODkwMjY4LCJleHAiOjE3ODk4OTA4Njh9.S6Ky5v23U8zg3dyou8C-s5kNEB0F7G_JIPGG0HsTr3hoMiYQ1xGJ23_M7TnSOWOadI2_9W9dmikUnRX4jy09cA; Path=/;"
-              await fetchSaveAmount(orderId, amount.value);
+              await fetchSaveAmount(paymentIdNum, orderId, amount.value);
 
               // 토스는 successUrl/failUrl 의 쿼리스트링을 그대로 보존해서 리다이렉트합니다.
               // 리다이렉트 이후 승인(paymentId)과 완료 화면(postId·pay)에 필요한 값을 여기 실어 보냅니다.
