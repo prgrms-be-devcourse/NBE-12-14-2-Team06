@@ -6,7 +6,7 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
-      ddl-auto: create
+      ddl-auto: update
 
 custom:
   jwt:
@@ -15,7 +15,7 @@ custom:
     refresh-expire-seconds: ${REFRESH_TOKEN_EXPIRATION}
   cookie:
     secure: true
-    same-site: Lax
+    same-site: none
   claude:
     api-key: ${CLAUDE_API_KEY}
     model: claude-sonnet-5
