@@ -38,6 +38,9 @@ public class PaymentController {
 
         paymentService.confirm(request, paymentId, userId, amount);
 
+        session.removeAttribute("amount");
+        session.removeAttribute("orderId");
+
         return new RsData<>("200-41", "결제 승인에 성공했습니다.",
                 new PaymentConfirmResponse(request));
     }
