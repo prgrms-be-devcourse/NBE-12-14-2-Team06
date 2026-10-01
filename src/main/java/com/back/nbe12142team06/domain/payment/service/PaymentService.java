@@ -128,6 +128,7 @@ public class PaymentService {
 
     public void verifyAmount(String amount, SaveAmountRequest request) {
         if (amount == null || !amount.equals(request.amount())) {
+            log.warn("결제 금액 정보 불일치 - amount: {}, session.amount: {}", request.amount(), amount);
             throw new InvalidException(42, "결제 금액 정보가 유효하지 않습니다.");
         }
     }
