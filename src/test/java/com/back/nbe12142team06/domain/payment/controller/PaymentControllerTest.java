@@ -132,8 +132,8 @@ class PaymentControllerTest {
 
         PostWriteResponse post2 = postService.write(user1.getId(), postWriteRequest2);
 
-        savedPayment1Id = paymentRepository.findByPostIdAndUserId(post1.id(), savedUser1Id).get().getId();
-        savedPayment2Id = paymentRepository.findByPostIdAndUserId(post2.id(), savedUser1Id).get().getId();
+        savedPayment1Id = paymentRepository.findByPostIdAndUserIdAndReady(post1.id(), savedUser1Id).get().getId();
+        savedPayment2Id = paymentRepository.findByPostIdAndUserIdAndReady(post2.id(), savedUser1Id).get().getId();
 
         // user1로 로그인해 인증 쿠키 확보
         accessTokenCookie1 = mvc.perform(

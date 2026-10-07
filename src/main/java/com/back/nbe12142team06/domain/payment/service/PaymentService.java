@@ -9,12 +9,8 @@ import com.back.nbe12142team06.domain.payment.dto.TossConfirmResponse;
 import com.back.nbe12142team06.domain.payment.entity.Payment;
 import com.back.nbe12142team06.domain.payment.entity.PaymentStatus;
 import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
-import com.back.nbe12142team06.domain.penalty.entity.NoShowPenalty;
-import com.back.nbe12142team06.domain.penalty.service.NoShowPenaltyService;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.settlement.service.SettlementService;
-import com.back.nbe12142team06.domain.user.entity.User;
-import com.back.nbe12142team06.domain.user.service.UserService;
 import com.back.nbe12142team06.global.exception.ForbiddenException;
 import com.back.nbe12142team06.global.exception.InternalServerErrorException;
 import com.back.nbe12142team06.global.exception.InvalidException;
@@ -27,7 +23,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 @Slf4j
 @Service
@@ -113,8 +108,6 @@ public class PaymentService {
             throw new InternalServerErrorException(42, "결제 취소 도중 서버 에러가 발생했습니다.");
         }
 
-        // [로그 정리] 토스 응답 객체 전체(결제·카드 정보 포함 가능)가 로그에 남아서 주석 처리하고, 아래에 ID 만 남기도록 대체
-        // log.info("결제 취소 성공, %s".formatted(response));
         log.info("결제 취소 성공 - paymentId: {}, cancelAmount: {}", payment.getId(), cancelAmount);
 
         return payment;
@@ -192,10 +185,15 @@ public class PaymentService {
     }
 
     public Payment findByPostIdAndReady(Long postId, Long userId) {
-        return paymentRepository.findByPostIdAndUserId(postId, userId).orElse(null);
+        return paymentRepository.findByPostIdAndUserIdAndReady(postId, userId).orElse(null);
     }
 
     public void updateAmount(Long paymentId, String amount) {
         paymentPersistenceService.updateAmount(paymentId, amount);
+    }
+
+    // 결제 - 공고 삭제 상태 변경
+    public void cancelPostAndPayment(Long postId) {
+        paymentPersistenceService.updateDeleteStatus(postId);
     }
 }

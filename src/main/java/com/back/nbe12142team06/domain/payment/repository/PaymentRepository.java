@@ -16,8 +16,10 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
             "join Post post on pay.post=post " +
             "join User u on post.client=u " +
             "where post.id=:postId and u.id=:userId and pay.paymentStatus=PaymentStatus.READY")
-    Optional<Payment> findByPostIdAndUserId(@Param("postId") Long postId,
-                                            @Param("userId") Long userId);
+    Optional<Payment> findByPostIdAndUserIdAndReady(@Param("postId") Long postId,
+                                                    @Param("userId") Long userId);
+
+
 
     @Query("select pay " +
             "from Payment pay " +
@@ -31,7 +33,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
             "join Post post on pay.post=post " +
             "where post.id=:postId and pay.paymentStatus in ('DONE', 'PARTIAL_CANCELED') " +
             "order by pay.balanceAmount desc")
-    List<Payment> findByPostId(@Param("postId") Long postId);
+    List<Payment> findSuccessPayByPostId(@Param("postId") Long postId);
 
     @Query("select pay " +
             "from Payment pay " +
@@ -43,4 +45,6 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     @Modifying
     @Query("update Payment p set p.paymentStatus='DONE' where p.post.id=:postId")
     void testStatusDone(@Param("postId") Long postId);
+
+    Optional<Payment> findByPostId(Long postId);
 }
