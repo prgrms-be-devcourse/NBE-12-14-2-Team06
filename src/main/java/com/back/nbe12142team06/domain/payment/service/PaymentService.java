@@ -241,4 +241,10 @@ public class PaymentService {
 
         return new int[]{succeedCount + failedCount, succeedCount, failedCount};
     }
+
+    public boolean validNotPaid(Long userId) {
+        List<Payment> payments = paymentPersistenceService.getNotPaid(userId);
+
+        return payments.isEmpty();
+    }
 }

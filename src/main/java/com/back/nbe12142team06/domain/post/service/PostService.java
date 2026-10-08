@@ -91,6 +91,12 @@ public class PostService {
         validateTime(request.recruitStartAt(), request.recruitEndAt(),
                 request.escortStartAt(), request.escortEndAt());
 
+        // 미결제 검증
+        boolean isNotPaid = paymentService.validNotPaid(userId);
+        if (!isNotPaid) {
+            throw new InvalidException(20, "미결제 공고가 있습니다.");
+        }
+
         Post post = Post.builder()
                 .client(user)
                 .title(request.title())

@@ -1,5 +1,6 @@
 package com.back.nbe12142team06.domain.ride.controller;
 
+import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
 import com.back.nbe12142team06.domain.post.dto.PostWriteRequest;
 import com.back.nbe12142team06.domain.post.dto.PostWriteResponse;
 import com.back.nbe12142team06.domain.post.service.PostService;
@@ -47,6 +48,8 @@ class RideControllerTest {
     private PostService postService;
     @Autowired
     private RideService rideService;
+    @Autowired
+    private PaymentRepository paymentRepository;
 
     private Long savedUser1Id;
     private Long savedUser2Id;
@@ -103,6 +106,7 @@ class RideControllerTest {
         );
 
         PostWriteResponse post1 = postService.write(user1.getId(), postWriteRequest1);
+        paymentRepository.testStatusDone(post1.id());
 
         PostWriteRequest postWriteRequest2 = new PostWriteRequest(
                 title + "2", content + "2", postRegion + "2", hospitalName + "2", hospitalAddress + "2",
@@ -111,6 +115,7 @@ class RideControllerTest {
         );
 
         PostWriteResponse post2 = postService.write(user1.getId(), postWriteRequest2);
+        paymentRepository.testStatusDone(post2.id());
 
         savedUser1Id = user1.getId();
         savedUser2Id = user2.getId();
