@@ -193,7 +193,7 @@ public class PaymentService {
     }
 
     // 결제 - 공고 삭제 상태 변경
-    public void cancelPostAndPayment(Long postId) {
-        paymentPersistenceService.updateDeleteStatus(postId);
+    public Payment cancelPostAndPayment(Long postId) {
+        return paymentPersistenceService.updateDeleteStatus(postId);
     }
 }

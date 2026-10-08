@@ -69,9 +69,10 @@ public class PaymentPersistenceService {
 
     // 공고 삭제 트랜잭션이랑 다른 트랜잭션으로 진행
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void updateDeleteStatus(Long postId) {
+    public Payment updateDeleteStatus(Long postId) {
         Payment payment = paymentRepository.findByPostId(postId)
                 .orElseThrow(() -> new NotFoundException("결제 정보를 찾을 수 없습니다."));
         payment.statusUpdate(PaymentStatus.DELETED);
+        return payment;
     }
 }
