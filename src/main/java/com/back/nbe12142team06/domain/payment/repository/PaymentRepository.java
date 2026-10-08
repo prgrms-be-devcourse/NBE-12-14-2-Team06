@@ -47,4 +47,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     void testStatusDone(@Param("postId") Long postId);
 
     Optional<Payment> findByPostId(Long postId);
+
+    @Query("select p from Payment p where p.paymentStatus=PaymentStatus.DELETED")
+    List<Payment> findDeletedAll();
 }

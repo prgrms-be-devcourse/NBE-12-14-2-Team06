@@ -196,4 +196,42 @@ public class PaymentService {
     public Payment cancelPostAndPayment(Long postId) {
         return paymentPersistenceService.updateDeleteStatus(postId);
     }
+
+    public int[] cancelPostAndPaymentCallApi() {
+        List<Payment> payments = paymentPersistenceService.findDeletedAll();
+        int succeedCount = 0;
+        int failedCount = 0;
+
+        for (Payment payment : payments) {
+            String tossPaymentKey = payment.getPaymentKey();
+            String cancelReason = "공고 삭제로 인한 결제 취소";
+
+            // 외부 API 요청
+            try {
+                ResponseEntity<TossConfirmResponse> response =
+                        tossPaymentClient.callApiCancel(cancelReason, tossPaymentKey, String.valueOf(payment.getBalanceAmount()));
+            } catch (RuntimeException e) {
+                failedCount++;
+                continue;
+            }
+
+            // DB 반영
+            try {
+                paymentPersistenceService.paymentCancelDb(payment.getId(), cancelReason, true);
+            } catch (NotFoundException e) {
+                log.error("결제 취소 - DB 저장 실패", e);
+                failedCount++;
+                continue;
+            } catch (RuntimeException ex) {
+                log.error("결제 취소 - DB 저장 실패", ex);
+                failedCount++;
+                continue;
+            }
+
+            succeedCount++;
+            log.info("결제 취소 성공 - paymentId: {}, cancelAmount: {}", payment.getId(), payment.getBalanceAmount());
+        }
+
+        return new int[]{succeedCount + failedCount, succeedCount, failedCount};
+    }
 }

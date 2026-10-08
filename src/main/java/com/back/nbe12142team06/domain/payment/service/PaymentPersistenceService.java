@@ -36,10 +36,15 @@ public class PaymentPersistenceService {
 
     @Transactional
     public Payment paymentCancelDb(Long paymentId, String cancelReason) {
+        Payment newPayment = paymentCancelDb(paymentId, cancelReason, false);
+        return paymentRepository.save(newPayment);
+    }
+
+    @Transactional
+    public Payment paymentCancelDb(Long paymentId, String cancelReason, boolean postDeleted) {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new NotFoundException(41, "결제 정보를 찾을 수 없습니다."));
-        Payment newPayment = payment.cancelPayment(cancelReason);
-        return paymentRepository.save(newPayment);
+        return payment.cancelPayment(cancelReason);
     }
 
     @Transactional
@@ -73,6 +78,12 @@ public class PaymentPersistenceService {
         Payment payment = paymentRepository.findByPostId(postId)
                 .orElseThrow(() -> new NotFoundException("결제 정보를 찾을 수 없습니다."));
         payment.statusUpdate(PaymentStatus.DELETED);
+        payment.updateCanceledAt();
         return payment;
+    }
+
+    @Transactional(readOnly = true)
+    public List<Payment> findDeletedAll() {
+        return paymentRepository.findDeletedAll();
     }
 }
