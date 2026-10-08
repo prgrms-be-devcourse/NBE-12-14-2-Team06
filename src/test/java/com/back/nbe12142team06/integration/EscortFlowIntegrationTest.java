@@ -37,6 +37,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.any;
@@ -304,6 +305,7 @@ class EscortFlowIntegrationTest {
                 .andExpect(status().isCreated());
         mvc.perform(post("/api/v1/payments/{paymentId}/confirm", paymentId)
                         .cookie(clientCookie)
+                        .sessionAttrs(Map.of("amount", plannedAmount, "orderId", "order-%s".formatted(tag)))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"paymentKey": "test-payment-key-%s", "orderId": "order-%s", "amount": "%s"}
