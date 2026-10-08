@@ -34,7 +34,7 @@ public class PaymentService {
     private final TossPaymentClient tossPaymentClient;
     private final SettlementService settlementService;
 
-    public Payment confirm(PaymentConfirmRequest request, Long paymentId, Long userId) {
+    public Payment confirm(PaymentConfirmRequest request, Long paymentId, Long userId, String sessionAmount, String sessionOrderId) {
 
         Payment payment = this.findById(userId, paymentId);
 
@@ -47,7 +47,7 @@ public class PaymentService {
         String amount = request.amount();
 
         // 1. 검증 로직
-        verifyAmount(String.valueOf(payment.getAmount()), new SaveAmountRequest(null, null, amount));
+        verifyAmount(sessionAmount, sessionOrderId, new SaveAmountRequest(payment.getId(), tossOrderId, amount));
         payment.statusUpdate(PaymentStatus.IN_PROGRESS);
         // 2. 외부 API 호출
         ResponseEntity<TossConfirmResponse> response =
@@ -119,16 +119,23 @@ public class PaymentService {
         return this.cancel(payment, request, amount, null);
     }
 
-    /**
-     * DB 에 저장된 결제 금액과 요청 금액을 대조한다.
-     * 결제 정보가 없거나 본인 결제가 아니면 findById 가 404/403 으로 거른다.
-     */
+    /// deprecated
     public void verifyAmount(Long userId, SaveAmountRequest request) {
         Payment payment = findById(userId, request.paymentId());
 
         verifyAmount(String.valueOf(payment.getAmount()), request);
     }
 
+    public void verifyAmount(String amount, String orderId, SaveAmountRequest request) {
+        if (!amount.equals(request.amount())
+        || !orderId.equals(request.orderId())) {
+            log.warn("결제 금액 정보 불일치 - 요청 amount: {}, 요청 orderId: {}, 저장된 amount: {}, 저장된 orderId: {}",
+                    request.amount(), request.orderId(), amount, orderId);
+            throw new InvalidException(42, "결제 금액 정보가 유효하지 않습니다.");
+        }
+    }
+
+    /// deprecated
     public void verifyAmount(String amount, SaveAmountRequest request) {
         if (amount == null || !amount.equals(request.amount())) {
             log.warn("결제 금액 정보 불일치 - 요청 amount: {}, 저장된 amount: {}", request.amount(), amount);
