@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
@@ -40,7 +41,7 @@ class PaymentServiceTest {
     private PaymentRepository paymentRepository;
     @MockitoBean
     private TossPaymentClient tossPaymentClient;
-    @MockitoBean
+    @MockitoSpyBean
     private PaymentPersistenceService paymentPersistenceService;
 
     private Payment createPayment(Post post, PaymentStatus status) {
@@ -103,7 +104,7 @@ class PaymentServiceTest {
         return post;
     }
 
-    private User createClient(){
+    private User createClient() {
         User client = User.builder()
                 .username("client01")
                 .password("password1!")
@@ -119,12 +120,13 @@ class PaymentServiceTest {
             Field clientIdField = client.getClass().getDeclaredField("id");
             clientIdField.setAccessible(true);
             clientIdField.set(client, 1L);
-        } catch (Exception e) {}
+        } catch (Exception e) {
+        }
 
         return client;
     }
 
-    private User createEscort(){
+    private User createEscort() {
         User escort = User.builder()
                 .username("escort01")
                 .password("password1!")
@@ -140,13 +142,14 @@ class PaymentServiceTest {
             Field escortIdField = escort.getClass().getDeclaredField("id");
             escortIdField.setAccessible(true);
             escortIdField.set(escort, 2L);
-        } catch (Exception e) {}
+        } catch (Exception e) {
+        }
         return escort;
     }
 
     @Test
     @DisplayName("[PaymentService] 공고 삭제 시 결제는 취소 상태로 변경")
-    void cancelPostAndPayment(){
+    void cancelPostAndPayment() {
 
         User client = createClient();
         Post post = createPost(client);
@@ -162,14 +165,16 @@ class PaymentServiceTest {
 
     @Test
     @DisplayName("[PaymentService] 결제 상태 DELETED 결제 취소 스케줄러 성공")
-    void paymentStatusDeletedToCancelSuccess(){
+    void paymentStatusDeletedToCancelSuccess() {
 
         User client = createClient();
         Post post = createPost(client);
         Payment payment = createPayment(post, PaymentStatus.DELETED);
 
-        when(paymentPersistenceService.findDeletedAll())
-                .thenReturn(List.of(payment));
+        doReturn(List.of(payment))
+                .when(paymentPersistenceService).findDeletedAll();
+        doReturn(Optional.of(payment))
+                .when(paymentRepository).findById(any());
 
         int[] counts = paymentService.cancelPostAndPaymentCallApi();
 
@@ -180,7 +185,7 @@ class PaymentServiceTest {
 
     @Test
     @DisplayName("[PaymentService] 결제 상태 DELETED 결제 취소 스케줄러 실패 - 외부 API 호출")
-    void paymentStatusDeletedToCancelFailedThirdParty(){
+    void paymentStatusDeletedToCancelFailedThirdParty() {
 
         User client = createClient();
         Post post = createPost(client);
@@ -200,16 +205,16 @@ class PaymentServiceTest {
 
     @Test
     @DisplayName("[PaymentService] 결제 상태 DELETED 결제 취소 스케줄러 실패 - DB 저장")
-    void paymentStatusDeletedToCancelFailedDb(){
+    void paymentStatusDeletedToCancelFailedDb() {
 
         User client = createClient();
         Post post = createPost(client);
         Payment payment = createPayment(post, PaymentStatus.DELETED);
 
-        when(paymentPersistenceService.findDeletedAll())
-                .thenReturn(List.of(payment));
-        when(paymentPersistenceService.paymentCancelDb(any(), any(), any(boolean.class)))
-                .thenThrow(new RuntimeException("DB 저장 실패"));
+        doReturn(List.of(payment))
+                .when(paymentPersistenceService).findDeletedAll();
+        doThrow(new RuntimeException("DB 저장 실패"))
+                .when(paymentPersistenceService).paymentCancelDb(any(), any(), any(boolean.class));
 
         int[] counts = paymentService.cancelPostAndPaymentCallApi();
 
