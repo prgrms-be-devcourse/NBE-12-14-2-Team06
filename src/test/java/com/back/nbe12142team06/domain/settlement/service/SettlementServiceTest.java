@@ -9,6 +9,7 @@ import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.entity.PostStatus;
 import com.back.nbe12142team06.domain.post.repository.PostRepository;
 import com.back.nbe12142team06.domain.settlement.client.SettlementClient;
+import com.back.nbe12142team06.domain.settlement.client.SettlementClientResponse;
 import com.back.nbe12142team06.domain.settlement.dto.AccountDto;
 import com.back.nbe12142team06.domain.settlement.entity.Settlement;
 import com.back.nbe12142team06.domain.settlement.entity.SettlementStatus;
@@ -20,6 +21,7 @@ import com.back.nbe12142team06.domain.user.enums.Role;
 import com.back.nbe12142team06.domain.user.repository.EscortProfileRepository;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
 import com.back.nbe12142team06.global.exception.InternalServerErrorException;
+import jakarta.persistence.EntityManager;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -45,6 +47,8 @@ import static org.mockito.Mockito.*;
 @Transactional
 public class SettlementServiceTest {
 
+    @Autowired
+    private EntityManager em;
     @Autowired
     private SettlementService settlementService;
     @Autowired
@@ -244,6 +248,38 @@ public class SettlementServiceTest {
                 .isInstanceOf(InternalServerErrorException.class)
                 .hasMessage("정산에 실패했습니다.");
 
+        em.flush();
+        em.clear();
+
         assertThat(settlementRepository.findById(settlement.getId()).get().getSettlementStatus()).isEqualTo(SettlementStatus.FAILED);
+    }
+
+    @Test
+    @DisplayName("[SettlementService] FAILED → 재시도로 PROCESSING 가능")
+    void settlementRequestStatusFailed() {
+        User escort = createEscort(false);
+        EscortProfile escortProfile = createEscortProfile(escort);
+        User client = createClient(false);
+        Post post = createPost(client, null, PostStatus.COMPLETED);
+        Application application = createApplication(escort, post, null, ApplicationStatus.ACCEPTED);
+        Settlement settlement = createSettlement(application, escort, null, SettlementStatus.FAILED);
+
+        User savedEscort = userRepository.save(escort);
+        User savedClient = userRepository.save(client);
+        EscortProfile savedEscortProfile = escortProfileRepository.save(escortProfile);
+        Post savedPost = postRepository.save(post);
+        Application savedApplication = applicationRepository.save(application);
+        Settlement savedSettlement = settlementRepository.save(settlement);
+
+        doReturn(new SettlementClientResponse("123-000000-123", "동행매니저", 150_000))
+                .when(settlementClient).settlementRequest(any());
+
+        settlementService.request(escort.getId(), settlement.getId());
+
+        em.flush();
+        em.clear();
+
+        assertThat(settlementRepository.findById(settlement.getId()).get().getSettlementStatus())
+                .isEqualTo(SettlementStatus.COMPLETED);
     }
 }
