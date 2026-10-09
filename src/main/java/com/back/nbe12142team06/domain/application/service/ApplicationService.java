@@ -11,6 +11,7 @@ import com.back.nbe12142team06.domain.penalty.service.NoShowPenaltyService;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.entity.PostStatus;
 import com.back.nbe12142team06.domain.post.repository.PostRepository;
+import com.back.nbe12142team06.domain.ride.service.RideService;
 import com.back.nbe12142team06.domain.user.entity.ClientProfile;
 import com.back.nbe12142team06.domain.user.entity.EscortProfile;
 import com.back.nbe12142team06.domain.user.entity.User;
@@ -45,6 +46,7 @@ public class ApplicationService {
     private final EscortProgressLogRepository escortProgressLogRepository;
     private final NoShowPenaltyService noShowPenaltyService;
     private final ClientProfileRepository clientProfileRepository;
+    private final RideService rideService;
 
     @Transactional
     public ApplicationApplyResponse apply(Long postId, Long userId) {
@@ -309,6 +311,9 @@ public class ApplicationService {
                 .build();
 
         escortProgressLogRepository.save(progressLog);
+
+        // 이동 상태 변경
+        rideService.move(application.getActivePostId(), progress);
 
         if (progress == EscortProgress.DEPARTED) {
             application.getPost().startProgress(occurredAt);
