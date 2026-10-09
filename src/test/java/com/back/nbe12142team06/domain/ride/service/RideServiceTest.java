@@ -117,4 +117,20 @@ public class RideServiceTest {
 
         assertThat(updatedRide.getRideStatus()).isEqualTo(RideStatus.COMPLETED);
     }
+
+    @Test
+    @DisplayName("[RideService] COMPLETED에서 move")
+    void rideStatusCompletedMove() {
+        Ride rideToHospital = createRide(1L, RideDirection.TO_HOSPITAL, RideStatus.COMPLETED, null);
+        Ride rideToHome = createRide(2L, RideDirection.TO_HOME, RideStatus.COMPLETED, null);
+
+        doReturn(List.of(rideToHospital, rideToHome))
+                .when(rideRepository).findByPostId(any());
+
+        List<Ride> rides = rideService.move(1L, EscortProgress.ARRIVED_HOME);
+
+        assertThat(rides.get(0).getRideStatus()).isEqualTo(RideStatus.COMPLETED);
+        assertThat(rides.get(1).getRideStatus()).isEqualTo(RideStatus.COMPLETED);
+    }
+
 }
