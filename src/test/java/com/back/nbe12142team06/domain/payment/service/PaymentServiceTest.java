@@ -9,6 +9,7 @@ import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Gender;
 import com.back.nbe12142team06.domain.user.enums.Role;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
+import com.back.nbe12142team06.global.exception.InvalidException;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -221,5 +222,19 @@ class PaymentServiceTest {
         assertThat(counts[0]).isEqualTo(1);
         assertThat(counts[1]).isEqualTo(0);
         assertThat(counts[2]).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("[PaymentService] 결제 재승인 시 실패")
+    void paymentReConfirmFailed() {
+        User client = createClient();
+        Post post = createPost(client);
+        Payment payment = createPayment(post, PaymentStatus.DONE);
+
+        doReturn(payment)
+                .when(paymentPersistenceService).findById(any(Long.class), any(Long.class));
+
+        assertThatThrownBy(() -> paymentService.confirm(null, payment.getId(), client.getId(), null, null))
+                .isInstanceOf(InvalidException.class);
     }
 }
