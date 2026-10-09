@@ -24,6 +24,7 @@ import com.back.nbe12142team06.global.exception.InternalServerErrorException;
 import com.back.nbe12142team06.global.exception.InvalidException;
 import com.back.nbe12142team06.global.exception.NotFoundException;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceException;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -337,5 +338,30 @@ public class SettlementServiceTest {
 
         assertThatThrownBy(() -> settlementRepository.save(settlement2))
                 .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    @DisplayName("[SettlementService] DB 저장 실패, 실제로는 성공한 경우 PROCESSING으로 상태가 변경되며 재정산하지 못한다.")
+    void settlementDbFailedReRequest() {
+        User escort = createEscort(false);
+        EscortProfile escortProfile = createEscortProfile(escort);
+        Settlement settlement = createSettlement(null, escort, null, SettlementStatus.PENDING);
+
+        userRepository.save(escort);
+        escortProfileRepository.save(escortProfile);
+        settlementRepository.save(settlement);
+
+        doReturn(new SettlementClientResponse("123-000000-123", "동행매니저", 150_000))
+                .when(settlementClient).settlementRequest(any());
+        doThrow(new PersistenceException("스레드 고갈"))
+                .when(settlementPersistenceService).updateSettlement(any(), any());
+
+        assertThatThrownBy(() -> settlementService.request(escort.getId(), settlement.getId()))
+                .isInstanceOf(PersistenceException.class)
+                .hasMessage("스레드 고갈");
+
+        assertThatThrownBy(() -> settlementService.request(escort.getId(), settlement.getId()))
+                .isInstanceOf(InvalidException.class)
+                .hasMessage("이미 정산 중이거나 정산이 완료되었습니다.");
     }
 }
