@@ -231,16 +231,10 @@ public class SettlementServiceTest {
     void settlementThirdPartyApiFailed() {
         User escort = createEscort(false);
         EscortProfile escortProfile = createEscortProfile(escort);
-        User client = createClient(false);
-        Post post = createPost(client, null, PostStatus.COMPLETED);
-        Application application = createApplication(escort, post, null, ApplicationStatus.ACCEPTED);
-        Settlement settlement = createSettlement(application, escort, null, SettlementStatus.PENDING);
+        Settlement settlement = createSettlement(null, escort, null, SettlementStatus.PENDING);
 
         userRepository.save(escort);
-        userRepository.save(client);
         escortProfileRepository.save(escortProfile);
-        postRepository.save(post);
-        applicationRepository.save(application);
         settlementRepository.save(settlement);
 
         doThrow(new InternalServerErrorException("정산 외부 API 호출 중 에러 발생"))
@@ -261,16 +255,10 @@ public class SettlementServiceTest {
     void settlementRequestStatusFailed() {
         User escort = createEscort(false);
         EscortProfile escortProfile = createEscortProfile(escort);
-        User client = createClient(false);
-        Post post = createPost(client, null, PostStatus.COMPLETED);
-        Application application = createApplication(escort, post, null, ApplicationStatus.ACCEPTED);
-        Settlement settlement = createSettlement(application, escort, null, SettlementStatus.FAILED);
+        Settlement settlement = createSettlement(null, escort, null, SettlementStatus.FAILED);
 
         userRepository.save(escort);
-        userRepository.save(client);
         escortProfileRepository.save(escortProfile);
-        postRepository.save(post);
-        applicationRepository.save(application);
         settlementRepository.save(settlement);
 
         doReturn(new SettlementClientResponse("123-000000-123", "동행매니저", 150_000))
@@ -286,25 +274,15 @@ public class SettlementServiceTest {
     }
 
     @Test
-    @DisplayName("[SettlementService] PROCESSING/COMPLETED 재요청 → 거부(71)")
+    @DisplayName("[SettlementService] PROCESSING/COMPLETED 재요청 거부")
     void settlementRequestStatusProcessingAndCompleted() {
         User escort = createEscort(false);
         EscortProfile escortProfile = createEscortProfile(escort);
-        User client = createClient(false);
-        Post post1 = createPost(client, null, PostStatus.COMPLETED);
-        Post post2 = createPost(client, null, PostStatus.COMPLETED);
-        Application application1 = createApplication(escort, post1, null, ApplicationStatus.ACCEPTED);
-        Application application2 = createApplication(escort, post2, null, ApplicationStatus.ACCEPTED);
-        Settlement settlementProcessing = createSettlement(application1, escort, null, SettlementStatus.PROCESSING);
-        Settlement settlementCompleted = createSettlement(application2, escort, null, SettlementStatus.COMPLETED);
+        Settlement settlementProcessing = createSettlement(null, escort, null, SettlementStatus.PROCESSING);
+        Settlement settlementCompleted = createSettlement(null, escort, null, SettlementStatus.COMPLETED);
 
         userRepository.save(escort);
-        userRepository.save(client);
         escortProfileRepository.save(escortProfile);
-        postRepository.save(post1);
-        postRepository.save(post2);
-        applicationRepository.save(application1);
-        applicationRepository.save(application2);
         settlementRepository.save(settlementProcessing);
         settlementRepository.save(settlementCompleted);
 
@@ -314,5 +292,29 @@ public class SettlementServiceTest {
         assertThatThrownBy(() -> settlementService.request(escort.getId(), settlementCompleted.getId()))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("정산 데이터를 찾을 수 없습니다.");
+    }
+
+    @Test
+    @DisplayName("[SettlementService] 정산 예정일 전 요청 가능")
+    void settlementEarlyRequest() {
+        User escort = createEscort(false);
+        EscortProfile escortProfile = createEscortProfile(escort);
+        Settlement settlement = createSettlement(null, escort, null, SettlementStatus.PENDING);
+
+        userRepository.save(escort);
+        escortProfileRepository.save(escortProfile);
+        settlementRepository.save(settlement);
+
+        doReturn(new SettlementClientResponse("123-000000-123", "동행매니저", 150_000))
+                .when(settlementClient).settlementRequest(any());
+
+        settlementService.request(escort.getId(), settlement.getId());
+
+        em.flush();
+        em.clear();
+
+        Settlement completedSettlement = settlementRepository.findById(settlement.getId()).get();
+        assertThat(completedSettlement.getSettlementStatus()).isEqualTo(SettlementStatus.COMPLETED);
+        assertThat(completedSettlement.getSettledDate().getDayOfMonth()).isEqualTo(LocalDate.now().plusDays(1).getDayOfMonth());
     }
 }
