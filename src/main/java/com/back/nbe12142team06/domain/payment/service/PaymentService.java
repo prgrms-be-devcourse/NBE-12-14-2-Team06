@@ -42,6 +42,10 @@ public class PaymentService {
             throw new InvalidException(41, "이미 결제를 완료하셨습니다.");
         }
 
+        if (payment.getPaymentStatus().equals(PaymentStatus.CANCELED)) {
+            throw new InvalidException(43, "취소된 결제입니다.");
+        }
+
         String tossPaymentKey = request.paymentKey();
         String tossOrderId = request.orderId();
         String amount = request.amount();

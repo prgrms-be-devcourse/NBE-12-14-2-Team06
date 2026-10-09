@@ -235,6 +235,22 @@ class PaymentServiceTest {
                 .when(paymentPersistenceService).findById(any(Long.class), any(Long.class));
 
         assertThatThrownBy(() -> paymentService.confirm(null, payment.getId(), client.getId(), null, null))
-                .isInstanceOf(InvalidException.class);
+                .isInstanceOf(InvalidException.class)
+                .hasMessage("이미 결제를 완료하셨습니다.");
+    }
+
+    @Test
+    @DisplayName("[PaymentService] CANCELED 결제 재승인 → 거부")
+    void paymentReConfirmCanceledStatus() {
+        User client = createClient();
+        Post post = createPost(client);
+        Payment payment = createPayment(post, PaymentStatus.CANCELED);
+
+        doReturn(payment)
+                .when(paymentPersistenceService).findById(any(Long.class), any(Long.class));
+
+        assertThatThrownBy(() -> paymentService.confirm(null, payment.getId(), client.getId(), null, null))
+                .isInstanceOf(InvalidException.class)
+                .hasMessage("취소된 결제입니다.");
     }
 }
