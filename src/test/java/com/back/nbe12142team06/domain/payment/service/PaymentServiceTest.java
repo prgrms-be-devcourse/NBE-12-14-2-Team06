@@ -290,4 +290,16 @@ class PaymentServiceTest {
         assertThat(updatedCount).isEqualTo(1);
         assertThat(inProgressPayment.getPaymentStatus()).isEqualTo(PaymentStatus.IN_PROGRESS);
     }
+
+    @Test
+    @DisplayName("[PaymentService] 결제 상태 CANCELED에서 결제 취소 요청")
+    void paymentReCancelFailed() {
+        User client = createClient();
+        Post post = createPost(client);
+        Payment payment = createPayment(post, PaymentStatus.CANCELED);
+
+        assertThatThrownBy(() -> paymentService.cancel(payment, null, 0, null))
+                .isInstanceOf(InvalidException.class)
+                .hasMessage("이미 취소된 결제입니다.");
+    }
 }

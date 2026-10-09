@@ -85,6 +85,10 @@ public class PaymentService {
     }
 
     public Payment cancel(Payment payment, PaymentCancelRequest request, int cancelAmount, Boolean postCompleted) {
+        if (payment.getPaymentStatus().equals(PaymentStatus.CANCELED)) {
+            throw new InvalidException(44, "이미 취소된 결제입니다.");
+        }
+
         String tossPaymentKey = payment.getPaymentKey();
         String cancelReason = request.cancelReason();
 
