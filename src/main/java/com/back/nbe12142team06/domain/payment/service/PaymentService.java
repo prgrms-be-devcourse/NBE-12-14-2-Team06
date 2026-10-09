@@ -36,7 +36,7 @@ public class PaymentService {
 
     public Payment confirm(PaymentConfirmRequest request, Long paymentId, Long userId, String sessionAmount, String sessionOrderId) {
 
-        Payment payment = this.findById(userId, paymentId);
+        Payment payment = paymentPersistenceService.findById(userId, paymentId);
 
         if (payment.getPaymentStatus().equals(PaymentStatus.DONE)) {
             throw new InvalidException(41, "이미 결제를 완료하셨습니다.");
@@ -73,16 +73,8 @@ public class PaymentService {
         return paymentRepository.findAllByUserId(userId);
     }
 
-    @Transactional(readOnly = true)
     public Payment findById(Long userId, Long paymentId) {
-        Payment payment = paymentRepository.findByIdFetchJoin(paymentId)
-                .orElseThrow(() -> new NotFoundException(41, "결제 정보를 찾을 수 없습니다."));
-
-        if (!payment.getPost().getClient().getId().equals(userId)) {
-            throw new ForbiddenException(41, "사용자의 결제 정보가 아닙니다.");
-        }
-
-        return payment;
+        return paymentPersistenceService.findById(userId, paymentId);
     }
 
     public Payment cancel(Payment payment, PaymentCancelRequest request, int cancelAmount, Boolean postCompleted) {
@@ -114,14 +106,14 @@ public class PaymentService {
     }
 
     public Payment cancel(Long userId, Long paymentId, PaymentCancelRequest request) {
-        Payment payment = findById(userId, paymentId);
+        Payment payment = paymentPersistenceService.findById(userId, paymentId);
         int amount = payment.getAmount();
         return this.cancel(payment, request, amount, null);
     }
 
     /// deprecated
     public void verifyAmount(Long userId, SaveAmountRequest request) {
-        Payment payment = findById(userId, request.paymentId());
+        Payment payment = paymentPersistenceService.findById(userId, request.paymentId());
 
         verifyAmount(String.valueOf(payment.getAmount()), request);
     }

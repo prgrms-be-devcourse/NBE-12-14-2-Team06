@@ -4,6 +4,7 @@ import com.back.nbe12142team06.domain.payment.dto.TossConfirmResponse;
 import com.back.nbe12142team06.domain.payment.entity.Payment;
 import com.back.nbe12142team06.domain.payment.entity.PaymentStatus;
 import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
+import com.back.nbe12142team06.global.exception.ForbiddenException;
 import com.back.nbe12142team06.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -62,6 +63,18 @@ public class PaymentPersistenceService {
     @Transactional(readOnly = true)
     public List<Payment> findByPostId(Long postId) {
         return paymentRepository.findSuccessPayByPostId(postId);
+    }
+
+    @Transactional(readOnly = true)
+    public Payment findById(Long userId, Long paymentId) {
+        Payment payment = paymentRepository.findByIdFetchJoin(paymentId)
+                .orElseThrow(() -> new NotFoundException(41, "결제 정보를 찾을 수 없습니다."));
+
+        if (!payment.getPost().getClient().getId().equals(userId)) {
+            throw new ForbiddenException(41, "사용자의 결제 정보가 아닙니다.");
+        }
+
+        return payment;
     }
 
     @Transactional

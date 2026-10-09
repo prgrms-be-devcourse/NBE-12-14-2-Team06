@@ -222,7 +222,7 @@ class PaymentControllerTest {
         String orderId = "temp";
         String amount = "10000";
 
-        PaymentService paymentService = new PaymentService(paymentRepository, null, null, null);
+        PaymentService paymentService = new PaymentService(paymentRepository, paymentPersistenceService, null, null);
 
         // 예외 발생 403번
         assertThrows(ForbiddenException.class, () -> {
@@ -239,7 +239,7 @@ class PaymentControllerTest {
         String amount = "10000";
         Long paymentId = 10000L;
 
-        PaymentService paymentService = new PaymentService(paymentRepository, null, null, null);
+        PaymentService paymentService = new PaymentService(paymentRepository, paymentPersistenceService, null, null);
 
         // 예외 발생 404
         assertThrows(NotFoundException.class, () -> {
