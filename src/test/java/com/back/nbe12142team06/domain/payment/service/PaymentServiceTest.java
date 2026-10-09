@@ -14,6 +14,7 @@ import com.back.nbe12142team06.domain.user.enums.Gender;
 import com.back.nbe12142team06.domain.user.enums.Role;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
 import com.back.nbe12142team06.global.exception.InvalidException;
+import jakarta.persistence.EntityManager;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -41,6 +42,8 @@ import static org.mockito.Mockito.*;
 @Transactional
 class PaymentServiceTest {
 
+    @Autowired
+    private EntityManager em;
     @Autowired
     private PaymentService paymentService;
     @Autowired
@@ -295,6 +298,10 @@ class PaymentServiceTest {
         paymentRepository.save(payment);
 
         int updatedCount = paymentPersistenceService.confirmUpdateStatus(payment.getId());
+
+        em.flush();
+        em.clear();
+
         Payment inProgressPayment = paymentRepository.findById(payment.getId()).get();
 
         assertThat(updatedCount).isEqualTo(1);
@@ -334,10 +341,28 @@ class PaymentServiceTest {
 
         doReturn(List.of(payment))
                 .when(paymentPersistenceService).findByPostId(any());
-        doReturn(null).when(paymentPersistenceService).paymentPartialCancelDb(any(), any(), any(int.class));
+        doReturn(null)
+                .when(paymentPersistenceService).paymentPartialCancelDb(any(), any(), any(int.class));
 
         paymentService.validPayment(client.getId(), post, Application.builder().build(), LocalDate.now());
 
         verify(paymentPersistenceService, times(1)).paymentPartialCancelDb(any(), any(), any(int.class));
+    }
+
+    @Test
+    @DisplayName("[PaymentService] 동행 시간 초과 시 추가 결제(READY) 생성")
+    void paymentNewAddPayment() {
+        User client = createClient();
+        Post post = createPost(client, 1L, 12);
+        Payment payment = createPayment(post, PaymentStatus.DONE);
+
+        doReturn(List.of(payment))
+                .when(paymentPersistenceService).findByPostId(any());
+        doReturn(null)
+                .when(paymentPersistenceService).createPayment(any());
+
+        paymentService.validPayment(client.getId(), post, Application.builder().build(), LocalDate.now());
+
+        verify(paymentPersistenceService, times(1)).createPayment(any());
     }
 }

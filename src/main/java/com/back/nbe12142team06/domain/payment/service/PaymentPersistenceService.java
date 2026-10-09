@@ -88,7 +88,7 @@ public class PaymentPersistenceService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Payment updateDeleteStatus(Long postId) {
         Payment payment = paymentRepository.findByPostId(postId)
-                .orElseThrow(() -> new NotFoundException("결제 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException(41, "결제 정보를 찾을 수 없습니다."));
         payment.statusUpdate(PaymentStatus.DELETED);
         payment.updateCanceledAt();
         return payment;
@@ -105,5 +105,10 @@ public class PaymentPersistenceService {
     @Transactional
     public int confirmUpdateStatus(Long paymentId) {
         return paymentRepository.paymentInProgress(paymentId);
+    }
+
+    @Transactional
+    public void failedConfirm(Long paymentId) {
+        paymentRepository.deleteById(paymentId);
     }
 }

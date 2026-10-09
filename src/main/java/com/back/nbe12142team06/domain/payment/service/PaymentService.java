@@ -57,8 +57,14 @@ public class PaymentService {
         }
 
         // 2. 외부 API 호출
-        ResponseEntity<TossConfirmResponse> response =
-                tossPaymentClient.callApiConfirm(tossPaymentKey, tossOrderId, amount);
+        ResponseEntity<TossConfirmResponse> response;
+        try {
+            response = tossPaymentClient.callApiConfirm(tossPaymentKey, tossOrderId, amount);
+        } catch (InternalServerErrorException e) {
+            // 결제 실패 시 결제 데이터 하드 삭제
+            paymentPersistenceService.failedConfirm(paymentId);
+            throw e;
+        }
         // 3. DB 반영
         try {
             paymentPersistenceService.paymentSaveDb(response, paymentId, tossPaymentKey, tossOrderId);
