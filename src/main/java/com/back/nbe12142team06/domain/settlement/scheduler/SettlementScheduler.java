@@ -21,6 +21,6 @@ public class SettlementScheduler {
         int[] counts = settlementService.settlementProcess();
 
         // 로그
-        log.info("정산 스케줄링 총 %d건, 성공 %d건, 실패 %d건".formatted(counts[0], counts[1], counts[2]));
+        log.info("정산 스케줄링 총 {}건, 성공 {}건, 실패 {}건", counts[0], counts[1], counts[2]);
     }
 }

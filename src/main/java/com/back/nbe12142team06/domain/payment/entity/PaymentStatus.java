@@ -12,7 +12,8 @@ public enum PaymentStatus {
     CANCELED("결제 취소"),
     PARTIAL_CANCELED("결제 부분 취소"),
     ABORTED("결제 승인 실패"),
-    EXPIRED("결제 유효 시간 만료");
+    EXPIRED("결제 유효 시간 만료"),
+    DELETED("공고 삭제된 결제");
 
     private final String description;
 }

@@ -9,12 +9,8 @@ import com.back.nbe12142team06.domain.payment.dto.TossConfirmResponse;
 import com.back.nbe12142team06.domain.payment.entity.Payment;
 import com.back.nbe12142team06.domain.payment.entity.PaymentStatus;
 import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
-import com.back.nbe12142team06.domain.penalty.entity.NoShowPenalty;
-import com.back.nbe12142team06.domain.penalty.service.NoShowPenaltyService;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.settlement.service.SettlementService;
-import com.back.nbe12142team06.domain.user.entity.User;
-import com.back.nbe12142team06.domain.user.service.UserService;
 import com.back.nbe12142team06.global.exception.ForbiddenException;
 import com.back.nbe12142team06.global.exception.InternalServerErrorException;
 import com.back.nbe12142team06.global.exception.InvalidException;
@@ -27,7 +23,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 @Slf4j
 @Service
@@ -39,7 +34,7 @@ public class PaymentService {
     private final TossPaymentClient tossPaymentClient;
     private final SettlementService settlementService;
 
-    public Payment confirm(PaymentConfirmRequest request, Long paymentId, Long userId) {
+    public Payment confirm(PaymentConfirmRequest request, Long paymentId, Long userId, String sessionAmount, String sessionOrderId) {
 
         Payment payment = this.findById(userId, paymentId);
 
@@ -52,7 +47,7 @@ public class PaymentService {
         String amount = request.amount();
 
         // 1. 검증 로직
-        verifyAmount(String.valueOf(payment.getAmount()), new SaveAmountRequest(null, null, amount));
+        verifyAmount(sessionAmount, sessionOrderId, new SaveAmountRequest(payment.getId(), tossOrderId, amount));
         payment.statusUpdate(PaymentStatus.IN_PROGRESS);
         // 2. 외부 API 호출
         ResponseEntity<TossConfirmResponse> response =
@@ -113,8 +108,6 @@ public class PaymentService {
             throw new InternalServerErrorException(42, "결제 취소 도중 서버 에러가 발생했습니다.");
         }
 
-        // [로그 정리] 토스 응답 객체 전체(결제·카드 정보 포함 가능)가 로그에 남아서 주석 처리하고, 아래에 ID 만 남기도록 대체
-        // log.info("결제 취소 성공, %s".formatted(response));
         log.info("결제 취소 성공 - paymentId: {}, cancelAmount: {}", payment.getId(), cancelAmount);
 
         return payment;
@@ -126,16 +119,23 @@ public class PaymentService {
         return this.cancel(payment, request, amount, null);
     }
 
-    /**
-     * DB 에 저장된 결제 금액과 요청 금액을 대조한다.
-     * 결제 정보가 없거나 본인 결제가 아니면 findById 가 404/403 으로 거른다.
-     */
+    /// deprecated
     public void verifyAmount(Long userId, SaveAmountRequest request) {
         Payment payment = findById(userId, request.paymentId());
 
         verifyAmount(String.valueOf(payment.getAmount()), request);
     }
 
+    public void verifyAmount(String amount, String orderId, SaveAmountRequest request) {
+        if (!amount.equals(request.amount())
+        || !orderId.equals(request.orderId())) {
+            log.warn("결제 금액 정보 불일치 - 요청 amount: {}, 요청 orderId: {}, 저장된 amount: {}, 저장된 orderId: {}",
+                    request.amount(), request.orderId(), amount, orderId);
+            throw new InvalidException(42, "결제 금액 정보가 유효하지 않습니다.");
+        }
+    }
+
+    /// deprecated
     public void verifyAmount(String amount, SaveAmountRequest request) {
         if (amount == null || !amount.equals(request.amount())) {
             log.warn("결제 금액 정보 불일치 - 요청 amount: {}, 저장된 amount: {}", request.amount(), amount);
@@ -192,10 +192,59 @@ public class PaymentService {
     }
 
     public Payment findByPostIdAndReady(Long postId, Long userId) {
-        return paymentRepository.findByPostIdAndUserId(postId, userId).orElse(null);
+        return paymentRepository.findByPostIdAndUserIdAndReady(postId, userId).orElse(null);
     }
 
     public void updateAmount(Long paymentId, String amount) {
         paymentPersistenceService.updateAmount(paymentId, amount);
+    }
+
+    // 결제 - 공고 삭제 상태 변경
+    public Payment cancelPostAndPayment(Long postId) {
+        return paymentPersistenceService.updateDeleteStatus(postId);
+    }
+
+    public int[] cancelPostAndPaymentCallApi() {
+        List<Payment> payments = paymentPersistenceService.findDeletedAll();
+        int succeedCount = 0;
+        int failedCount = 0;
+
+        for (Payment payment : payments) {
+            String tossPaymentKey = payment.getPaymentKey();
+            String cancelReason = "공고 삭제로 인한 결제 취소";
+
+            // 외부 API 요청
+            try {
+                ResponseEntity<TossConfirmResponse> response =
+                        tossPaymentClient.callApiCancel(cancelReason, tossPaymentKey, String.valueOf(payment.getBalanceAmount()));
+            } catch (RuntimeException e) {
+                failedCount++;
+                continue;
+            }
+
+            // DB 반영
+            try {
+                paymentPersistenceService.paymentCancelDb(payment.getId(), cancelReason, true);
+            } catch (NotFoundException e) {
+                log.error("결제 취소 - DB 저장 실패", e);
+                failedCount++;
+                continue;
+            } catch (RuntimeException ex) {
+                log.error("결제 취소 - DB 저장 실패", ex);
+                failedCount++;
+                continue;
+            }
+
+            succeedCount++;
+            log.info("결제 취소 성공 - paymentId: {}, cancelAmount: {}", payment.getId(), payment.getBalanceAmount());
+        }
+
+        return new int[]{succeedCount + failedCount, succeedCount, failedCount};
+    }
+
+    public boolean validNotPaid(Long userId) {
+        List<Payment> payments = paymentPersistenceService.getNotPaid(userId);
+
+        return payments.isEmpty();
     }
 }

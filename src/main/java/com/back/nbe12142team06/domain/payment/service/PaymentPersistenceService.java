@@ -2,12 +2,14 @@ package com.back.nbe12142team06.domain.payment.service;
 
 import com.back.nbe12142team06.domain.payment.dto.TossConfirmResponse;
 import com.back.nbe12142team06.domain.payment.entity.Payment;
+import com.back.nbe12142team06.domain.payment.entity.PaymentStatus;
 import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
 import com.back.nbe12142team06.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -34,10 +36,15 @@ public class PaymentPersistenceService {
 
     @Transactional
     public Payment paymentCancelDb(Long paymentId, String cancelReason) {
+        Payment newPayment = paymentCancelDb(paymentId, cancelReason, false);
+        return paymentRepository.save(newPayment);
+    }
+
+    @Transactional
+    public Payment paymentCancelDb(Long paymentId, String cancelReason, boolean postDeleted) {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new NotFoundException(41, "결제 정보를 찾을 수 없습니다."));
-        Payment newPayment = payment.cancelPayment(cancelReason);
-        return paymentRepository.save(newPayment);
+        return payment.cancelPayment(cancelReason);
     }
 
     @Transactional
@@ -54,7 +61,7 @@ public class PaymentPersistenceService {
 
     @Transactional(readOnly = true)
     public List<Payment> findByPostId(Long postId) {
-        return paymentRepository.findByPostId(postId);
+        return paymentRepository.findSuccessPayByPostId(postId);
     }
 
     @Transactional
@@ -63,5 +70,25 @@ public class PaymentPersistenceService {
                 .orElseThrow(() -> new NotFoundException(41, "결제 정보를 찾을 수 없습니다."));
         payment.updateAmount(Integer.parseInt(amount));
         return payment;
+    }
+
+    // 공고 삭제 트랜잭션이랑 다른 트랜잭션으로 진행
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public Payment updateDeleteStatus(Long postId) {
+        Payment payment = paymentRepository.findByPostId(postId)
+                .orElseThrow(() -> new NotFoundException("결제 정보를 찾을 수 없습니다."));
+        payment.statusUpdate(PaymentStatus.DELETED);
+        payment.updateCanceledAt();
+        return payment;
+    }
+
+    @Transactional(readOnly = true)
+    public List<Payment> findDeletedAll() {
+        return paymentRepository.findDeletedAll();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Payment> getNotPaid(Long userId) {
+        return paymentRepository.findNotPaidByUserId(userId);
     }
 }

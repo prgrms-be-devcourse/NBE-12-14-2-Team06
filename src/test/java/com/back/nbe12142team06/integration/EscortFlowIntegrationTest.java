@@ -37,6 +37,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.any;
@@ -304,6 +305,7 @@ class EscortFlowIntegrationTest {
                 .andExpect(status().isCreated());
         mvc.perform(post("/api/v1/payments/{paymentId}/confirm", paymentId)
                         .cookie(clientCookie)
+                        .sessionAttrs(Map.of("amount", plannedAmount, "orderId", "order-%s".formatted(tag)))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"paymentKey": "test-payment-key-%s", "orderId": "order-%s", "amount": "%s"}
@@ -404,7 +406,7 @@ class EscortFlowIntegrationTest {
 
         // 계획한 동행 시간과 실제 동행 시간이 같으므로(옵션 B) 추가·부분 취소 플로우를 타지 않는다.
         // (결제 승인(confirm) 호출은 이미 있었으므로 취소(cancel)만 호출되지 않았는지 확인한다.)
-        List<Payment> payments = paymentRepository.findByPostId(postId);
+        List<Payment> payments = paymentRepository.findSuccessPayByPostId(postId);
         assertThat(payments).hasSize(1);
         verify(tossPaymentClient, never()).callApiCancel(any(), any(), any());
 
