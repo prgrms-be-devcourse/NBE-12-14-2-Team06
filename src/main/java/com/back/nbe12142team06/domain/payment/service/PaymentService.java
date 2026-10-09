@@ -52,7 +52,7 @@ public class PaymentService {
 
         // 1. 검증 로직
         verifyAmount(sessionAmount, sessionOrderId, new SaveAmountRequest(payment.getId(), tossOrderId, amount));
-        if (paymentPersistenceService.confirmUpdateStatus(payment.getId()) < 0) {
+        if (paymentPersistenceService.confirmUpdateStatus(payment.getId()) <= 0) {
             throw new InvalidException(44, "결제 대기 중인 데이터가 없습니다.");
         }
 
