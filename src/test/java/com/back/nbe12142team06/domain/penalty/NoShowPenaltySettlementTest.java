@@ -9,7 +9,9 @@ import com.back.nbe12142team06.domain.application.repository.ApplicationReposito
 import com.back.nbe12142team06.domain.application.repository.EscortProgressLogRepository;
 import com.back.nbe12142team06.domain.application.service.ApplicationService;
 import com.back.nbe12142team06.domain.payment.client.TossPaymentClient;
+import com.back.nbe12142team06.domain.payment.entity.Payment;
 import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
+import com.back.nbe12142team06.domain.payment.service.PaymentService;
 import com.back.nbe12142team06.domain.penalty.entity.NoShowPenalty;
 import com.back.nbe12142team06.domain.penalty.repository.NoShowPenaltyRepository;
 import com.back.nbe12142team06.domain.post.dto.PostWriteRequest;
@@ -29,6 +31,7 @@ import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -44,6 +47,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 @SpringBootTest
@@ -151,6 +155,10 @@ class NoShowPenaltySettlementTest {
                 pickupAddress, pickupLat, pickupLng, hourlyPay, recruitStartAt, recruitEndAt, escortStartAt, escortEndAt,
                 RideSelect.TAXI, RideSelect.TAXI, "", true
         );
+
+        // 미결제 항목은 없다고 가정
+//        when(paymentService.validNotPaid(any())).thenReturn(true);
+
         applicationCancel(tempPostWriteRequest);
 
         // 지원 후 승인
@@ -197,6 +205,7 @@ class NoShowPenaltySettlementTest {
 
     private void applicationCancel(PostWriteRequest tempPostWriteRequest) {
         Post tempPost = postService.findById(postService.write(client.getId(), tempPostWriteRequest).id());
+        paymentRepository.testStatusDone(tempPost.getId());
         ApplicationApplyResponse tempApplyResponse = applicationService.apply(tempPost.getId(), escort.getId());
         ApplicationAcceptResponse tempAcceptResponse = applicationService.accept(tempApplyResponse.id(), client.getId());
         Application tempApplication = applicationRepository.findAllByPostIdWithEscort(tempPost.getId()).stream().findFirst().orElse(null);

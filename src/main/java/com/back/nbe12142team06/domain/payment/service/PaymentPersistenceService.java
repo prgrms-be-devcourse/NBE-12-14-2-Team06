@@ -86,4 +86,9 @@ public class PaymentPersistenceService {
     public List<Payment> findDeletedAll() {
         return paymentRepository.findDeletedAll();
     }
+
+    @Transactional(readOnly = true)
+    public List<Payment> getNotPaid(Long userId) {
+        return paymentRepository.findNotPaidByUserId(userId);
+    }
 }

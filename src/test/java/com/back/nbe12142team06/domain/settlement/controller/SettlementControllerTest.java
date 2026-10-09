@@ -6,7 +6,9 @@ import com.back.nbe12142team06.domain.application.entity.Application;
 import com.back.nbe12142team06.domain.application.repository.ApplicationRepository;
 import com.back.nbe12142team06.domain.application.service.ApplicationService;
 import com.back.nbe12142team06.domain.payment.client.TossPaymentClient;
+import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
 import com.back.nbe12142team06.domain.post.dto.PostWriteRequest;
+import com.back.nbe12142team06.domain.post.dto.PostWriteResponse;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.service.PostService;
 import com.back.nbe12142team06.domain.ride.entity.RideSelect;
@@ -69,6 +71,8 @@ class SettlementControllerTest {
     private SettlementService settlementService;
     @Autowired
     private EscortProfileRepository escortProfileRepository;
+    @Autowired
+    private PaymentRepository paymentRepository;
 
     @MockitoBean
     private TossPaymentClient tossPaymentClient;
@@ -146,6 +150,7 @@ class SettlementControllerTest {
         );
 
         savedPost1 = postService.findById(postService.write(savedUser1.getId(), postWriteRequest1).id());
+        paymentRepository.testStatusDone(savedPost1.getId());
 
         PostWriteRequest postWriteRequest2 = new PostWriteRequest(
                 title + "2", content + "2", postRegion + "2", hospitalName + "2", hospitalAddress + "2",
@@ -153,7 +158,8 @@ class SettlementControllerTest {
                 RideSelect.TAXI, RideSelect.TAXI, "", true
         );
 
-        postService.write(savedUser1.getId(), postWriteRequest2);
+        PostWriteResponse post2 = postService.write(savedUser1.getId(), postWriteRequest2);
+        paymentRepository.testStatusDone(post2.id());
 
         ApplicationApplyResponse applyResponse1 = applicationService.apply(savedPost1.getId(), savedUser2.getId());
         ApplicationAcceptResponse acceptResponse1 = applicationService.accept(applyResponse1.id(), savedUser1.getId());
