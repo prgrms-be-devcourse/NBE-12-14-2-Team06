@@ -1,5 +1,6 @@
 package com.back.nbe12142team06.domain.payment.service;
 
+import com.back.nbe12142team06.domain.payment.client.TossPaymentClient;
 import com.back.nbe12142team06.domain.payment.entity.Payment;
 import com.back.nbe12142team06.domain.payment.entity.PaymentStatus;
 import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
@@ -21,6 +22,7 @@ import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -36,24 +38,12 @@ class PaymentServiceTest {
 
     @MockitoBean
     private PaymentRepository paymentRepository;
+    @MockitoBean
+    private TossPaymentClient tossPaymentClient;
+    @MockitoBean
+    private PaymentPersistenceService paymentPersistenceService;
 
-    @Test
-    @DisplayName("[PaymentService] 공고 삭제 시 결제는 취소 상태로 변경")
-    void cancelPostAndPayment() throws NoSuchFieldException, IllegalAccessException {
-
-        User client = createClient();
-        Post post = createPost(client);
-        Payment payment = createPayment(post);
-
-        when(paymentRepository.findByPostId(any(Long.class)))
-                .thenReturn(Optional.of(payment));
-
-        Payment deletedPayment = paymentService.cancelPostAndPayment(post.getId());
-
-        assertThat(deletedPayment.getPaymentStatus()).isEqualTo(PaymentStatus.DELETED);
-    }
-
-    private Payment createPayment(Post post) {
+    private Payment createPayment(Post post, PaymentStatus status) {
         int hourlyPaySnapshot = 15_000;
         BigDecimal hours = BigDecimal.TEN;
         int amount = hourlyPaySnapshot * hours.intValue();
@@ -66,7 +56,7 @@ class PaymentServiceTest {
                 .orderId(UUID.randomUUID().toString())
                 .paymentKey(UUID.randomUUID().toString())
                 .method("CARD")
-                .paymentStatus(PaymentStatus.DONE)
+                .paymentStatus(status)
                 .approvedAt(LocalDateTime.now().minusDays(2))
                 .balanceAmount(amount)
                 .build();
@@ -113,7 +103,7 @@ class PaymentServiceTest {
         return post;
     }
 
-    private User createClient() throws NoSuchFieldException, IllegalAccessException {
+    private User createClient(){
         User client = User.builder()
                 .username("client01")
                 .password("password1!")
@@ -125,13 +115,16 @@ class PaymentServiceTest {
                 .phoneNum("010-1234-1234")
                 .region("서울")
                 .build();
-        Field clientIdField = client.getClass().getDeclaredField("id");
-        clientIdField.setAccessible(true);
-        clientIdField.set(client, 1L);
+        try {
+            Field clientIdField = client.getClass().getDeclaredField("id");
+            clientIdField.setAccessible(true);
+            clientIdField.set(client, 1L);
+        } catch (Exception e) {}
+
         return client;
     }
 
-    private User createEscort() throws NoSuchFieldException, IllegalAccessException {
+    private User createEscort(){
         User escort = User.builder()
                 .username("escort01")
                 .password("password1!")
@@ -143,9 +136,85 @@ class PaymentServiceTest {
                 .phoneNum("010-5678-5678")
                 .region("서울")
                 .build();
-        Field escortIdField = escort.getClass().getDeclaredField("id");
-        escortIdField.setAccessible(true);
-        escortIdField.set(escort, 2L);
+        try {
+            Field escortIdField = escort.getClass().getDeclaredField("id");
+            escortIdField.setAccessible(true);
+            escortIdField.set(escort, 2L);
+        } catch (Exception e) {}
         return escort;
+    }
+
+    @Test
+    @DisplayName("[PaymentService] 공고 삭제 시 결제는 취소 상태로 변경")
+    void cancelPostAndPayment(){
+
+        User client = createClient();
+        Post post = createPost(client);
+        Payment payment = createPayment(post, PaymentStatus.DONE);
+
+        when(paymentRepository.findByPostId(any(Long.class)))
+                .thenReturn(Optional.of(payment));
+
+        Payment deletedPayment = paymentService.cancelPostAndPayment(post.getId());
+
+        assertThat(deletedPayment.getPaymentStatus()).isEqualTo(PaymentStatus.DELETED);
+    }
+
+    @Test
+    @DisplayName("[PaymentService] 결제 상태 DELETED 결제 취소 스케줄러 성공")
+    void paymentStatusDeletedToCancelSuccess(){
+
+        User client = createClient();
+        Post post = createPost(client);
+        Payment payment = createPayment(post, PaymentStatus.DELETED);
+
+        when(paymentPersistenceService.findDeletedAll())
+                .thenReturn(List.of(payment));
+
+        int[] counts = paymentService.cancelPostAndPaymentCallApi();
+
+        assertThat(counts[0]).isEqualTo(1);
+        assertThat(counts[1]).isEqualTo(1);
+        assertThat(counts[2]).isEqualTo(0);
+    }
+
+    @Test
+    @DisplayName("[PaymentService] 결제 상태 DELETED 결제 취소 스케줄러 실패 - 외부 API 호출")
+    void paymentStatusDeletedToCancelFailedThirdParty(){
+
+        User client = createClient();
+        Post post = createPost(client);
+        Payment payment = createPayment(post, PaymentStatus.DELETED);
+
+        when(paymentPersistenceService.findDeletedAll())
+                .thenReturn(List.of(payment));
+        when(tossPaymentClient.callApiCancel(any(), any(), any()))
+                .thenThrow(new RuntimeException("토스 페이먼츠 API 호출 실패"));
+
+        int[] counts = paymentService.cancelPostAndPaymentCallApi();
+
+        assertThat(counts[0]).isEqualTo(1);
+        assertThat(counts[1]).isEqualTo(0);
+        assertThat(counts[2]).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("[PaymentService] 결제 상태 DELETED 결제 취소 스케줄러 실패 - DB 저장")
+    void paymentStatusDeletedToCancelFailedDb(){
+
+        User client = createClient();
+        Post post = createPost(client);
+        Payment payment = createPayment(post, PaymentStatus.DELETED);
+
+        when(paymentPersistenceService.findDeletedAll())
+                .thenReturn(List.of(payment));
+        when(paymentPersistenceService.paymentCancelDb(any(), any(), any(boolean.class)))
+                .thenThrow(new RuntimeException("DB 저장 실패"));
+
+        int[] counts = paymentService.cancelPostAndPaymentCallApi();
+
+        assertThat(counts[0]).isEqualTo(1);
+        assertThat(counts[1]).isEqualTo(0);
+        assertThat(counts[2]).isEqualTo(1);
     }
 }
