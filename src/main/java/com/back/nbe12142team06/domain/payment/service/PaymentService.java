@@ -52,7 +52,10 @@ public class PaymentService {
 
         // 1. 검증 로직
         verifyAmount(sessionAmount, sessionOrderId, new SaveAmountRequest(payment.getId(), tossOrderId, amount));
-        payment.statusUpdate(PaymentStatus.IN_PROGRESS);
+        if (paymentPersistenceService.confirmUpdateStatus(payment.getId()) < 0) {
+            throw new InvalidException(44, "결제 대기 중인 데이터가 없습니다.");
+        }
+
         // 2. 외부 API 호출
         ResponseEntity<TossConfirmResponse> response =
                 tossPaymentClient.callApiConfirm(tossPaymentKey, tossOrderId, amount);

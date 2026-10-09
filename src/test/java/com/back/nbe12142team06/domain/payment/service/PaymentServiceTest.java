@@ -5,6 +5,7 @@ import com.back.nbe12142team06.domain.payment.entity.Payment;
 import com.back.nbe12142team06.domain.payment.entity.PaymentStatus;
 import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
 import com.back.nbe12142team06.domain.post.entity.Post;
+import com.back.nbe12142team06.domain.post.repository.PostRepository;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Gender;
 import com.back.nbe12142team06.domain.user.enums.Role;
@@ -37,20 +38,24 @@ class PaymentServiceTest {
 
     @Autowired
     private PaymentService paymentService;
+    @Autowired
+    private PostRepository postRepository;
+    @Autowired
+    private UserRepository userRepository;
 
-    @MockitoBean
+    @MockitoSpyBean
     private PaymentRepository paymentRepository;
     @MockitoBean
     private TossPaymentClient tossPaymentClient;
     @MockitoSpyBean
     private PaymentPersistenceService paymentPersistenceService;
 
-    private Payment createPayment(Post post, PaymentStatus status) {
+    private Payment createPayment(Post post, PaymentStatus status, Long id) {
         int hourlyPaySnapshot = 15_000;
         BigDecimal hours = BigDecimal.TEN;
         int amount = hourlyPaySnapshot * hours.intValue();
         Payment payment = Payment.builder()
-                .id(1L)
+                .id(id)
                 .post(post)
                 .amount(amount)
                 .hourlyPaySnapshot(hourlyPaySnapshot)
@@ -65,7 +70,11 @@ class PaymentServiceTest {
         return payment;
     }
 
-    private Post createPost(User client) {
+    private Payment createPayment(Post post, PaymentStatus status) {
+        return createPayment(post, status, 1L);
+    }
+
+    private Post createPost(User client, Long id) {
         String title = "정형외과 동행 구합니다";
         String content = "무릎 수술 후 검진 예약이 있어 동행인이 필요합니다.";
         String postRegion = "서울";
@@ -83,7 +92,7 @@ class PaymentServiceTest {
         LocalDateTime escortEndAt = LocalDateTime.now().plusDays(7).plusHours(4);
 
         Post post = Post.builder()
-                .id(1L)
+                .id(id)
                 .title(title)
                 .content(content)
                 .region(postRegion)
@@ -105,7 +114,11 @@ class PaymentServiceTest {
         return post;
     }
 
-    private User createClient() {
+    private Post createPost(User client) {
+        return createPost(client, 1L);
+    }
+
+    private User createClient(boolean addId) {
         User client = User.builder()
                 .username("client01")
                 .password("password1!")
@@ -117,15 +130,21 @@ class PaymentServiceTest {
                 .phoneNum("010-1234-1234")
                 .region("서울")
                 .build();
-        try {
-            Field clientIdField = client.getClass().getDeclaredField("id");
-            clientIdField.setAccessible(true);
-            clientIdField.set(client, 1L);
-        } catch (Exception e) {
+        if (addId) {
+            try {
+                Field clientIdField = client.getClass().getDeclaredField("id");
+                clientIdField.setAccessible(true);
+                clientIdField.set(client, 1L);
+            } catch (Exception e) {
+            }
         }
-
         return client;
     }
+
+    private User createClient() {
+        return createClient(true);
+    }
+
 
     private User createEscort() {
         User escort = User.builder()
@@ -252,5 +271,23 @@ class PaymentServiceTest {
         assertThatThrownBy(() -> paymentService.confirm(null, payment.getId(), client.getId(), null, null))
                 .isInstanceOf(InvalidException.class)
                 .hasMessage("취소된 결제입니다.");
+    }
+
+    @Test
+    @DisplayName("[PaymentService] 승인 도중 IN_PROGRESS가 DB에 저장되는지")
+    void paymentConfirmSavedDbInProgress() {
+        User client = createClient(false);
+        Post post = createPost(client, null);
+        Payment payment = createPayment(post, PaymentStatus.READY, null);
+
+        userRepository.save(client);
+        postRepository.save(post);
+        paymentRepository.save(payment);
+
+        int updatedCount = paymentPersistenceService.confirmUpdateStatus(payment.getId());
+        Payment inProgressPayment = paymentRepository.findById(payment.getId()).get();
+
+        assertThat(updatedCount).isEqualTo(1);
+        assertThat(inProgressPayment.getPaymentStatus()).isEqualTo(PaymentStatus.IN_PROGRESS);
     }
 }

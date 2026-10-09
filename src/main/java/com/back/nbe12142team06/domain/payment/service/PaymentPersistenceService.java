@@ -17,6 +17,7 @@ import java.util.List;
 
 @Slf4j
 @Service
+@Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class PaymentPersistenceService {
 
@@ -60,12 +61,10 @@ public class PaymentPersistenceService {
         return paymentRepository.save(payment);
     }
 
-    @Transactional(readOnly = true)
     public List<Payment> findByPostId(Long postId) {
         return paymentRepository.findSuccessPayByPostId(postId);
     }
 
-    @Transactional(readOnly = true)
     public Payment findById(Long userId, Long paymentId) {
         Payment payment = paymentRepository.findByIdFetchJoin(paymentId)
                 .orElseThrow(() -> new NotFoundException(41, "결제 정보를 찾을 수 없습니다."));
@@ -95,13 +94,16 @@ public class PaymentPersistenceService {
         return payment;
     }
 
-    @Transactional(readOnly = true)
     public List<Payment> findDeletedAll() {
         return paymentRepository.findDeletedAll();
     }
 
-    @Transactional(readOnly = true)
     public List<Payment> getNotPaid(Long userId) {
         return paymentRepository.findNotPaidByUserId(userId);
+    }
+
+    @Transactional
+    public int confirmUpdateStatus(Long paymentId) {
+        return paymentRepository.paymentInProgress(paymentId);
     }
 }

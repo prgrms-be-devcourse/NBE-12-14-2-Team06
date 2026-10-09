@@ -54,4 +54,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     @Query("select p from Payment p join p.post.client c on c.id=:userId where p.paymentStatus=PaymentStatus.READY")
     List<Payment> findNotPaidByUserId(@Param("userId") Long userId);
 
+    @Modifying
+    @Query("update Payment p set p.paymentStatus=PaymentStatus.IN_PROGRESS where p.id=:paymentId and p.paymentStatus=PaymentStatus.READY")
+    int paymentInProgress(@Param("paymentId") Long paymentId);
 }
