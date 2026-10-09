@@ -1,5 +1,6 @@
 package com.back.nbe12142team06.domain.ride.service;
 
+import com.back.nbe12142team06.domain.application.enums.EscortProgress;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.ride.dto.RideResponse;
 import com.back.nbe12142team06.domain.ride.dto.RideUpdateRequest;
@@ -80,14 +81,29 @@ public class RideService {
         return ride;
     }
 
-    // 이동 중 (관리자 전용으로 돌릴 수 있음)
     @Transactional
-    public Ride move(Long userId, Long rideId) {
-        Ride ride = findById(userId, rideId);
+    public List<Ride> move(Long postId, EscortProgress progress) {
+        List<Ride> rides = rideRepository.findByPostId(postId);
 
-        ride.updateStatus(RideStatus.IN_PROGRESS);
+        for (Ride ride : rides) {
+            if (ride.getRideStatus().equals(RideStatus.COMPLETED)) continue;
 
-        return ride;
+            if (ride.getDirection().equals(RideDirection.TO_HOSPITAL)) {
+                if (progress.equals(EscortProgress.TO_HOSPITAL)) {
+                    ride.updateStatus(RideStatus.IN_PROGRESS);
+                } else if(progress.equals(EscortProgress.AT_HOSPITAL)) {
+                    ride.updateStatus(RideStatus.COMPLETED);
+                }
+            } else if (ride.getDirection().equals(RideDirection.TO_HOME)) {
+                if (progress.equals(EscortProgress.TO_HOME)) {
+                    ride.updateStatus(RideStatus.IN_PROGRESS);
+                } else if (progress.equals(EscortProgress.ARRIVED_HOME)) {
+                    ride.updateStatus(RideStatus.COMPLETED);
+                }
+            }
+        }
+
+        return rides;
     }
 
     // 이동 완료 (관리자 전용으로 돌릴 수 있음)
