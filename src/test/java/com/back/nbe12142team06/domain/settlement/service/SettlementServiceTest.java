@@ -21,6 +21,8 @@ import com.back.nbe12142team06.domain.user.enums.Role;
 import com.back.nbe12142team06.domain.user.repository.EscortProfileRepository;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
 import com.back.nbe12142team06.global.exception.InternalServerErrorException;
+import com.back.nbe12142team06.global.exception.InvalidException;
+import com.back.nbe12142team06.global.exception.NotFoundException;
 import jakarta.persistence.EntityManager;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
@@ -198,7 +200,7 @@ public class SettlementServiceTest {
                 .platformFee(platformFee)
                 .penaltyAmount(0)
                 .settlementStatus(status)
-                .settledDate(LocalDate.now())
+                .settledDate(LocalDate.now().plusDays(1))
                 .application(application)
                 .escort(escort)
                 .build();
@@ -234,17 +236,17 @@ public class SettlementServiceTest {
         Application application = createApplication(escort, post, null, ApplicationStatus.ACCEPTED);
         Settlement settlement = createSettlement(application, escort, null, SettlementStatus.PENDING);
 
-        User savedEscort = userRepository.save(escort);
-        User savedClient = userRepository.save(client);
-        EscortProfile savedEscortProfile = escortProfileRepository.save(escortProfile);
-        Post savedPost = postRepository.save(post);
-        Application savedApplication = applicationRepository.save(application);
-        Settlement savedSettlement = settlementRepository.save(settlement);
+        userRepository.save(escort);
+        userRepository.save(client);
+        escortProfileRepository.save(escortProfile);
+        postRepository.save(post);
+        applicationRepository.save(application);
+        settlementRepository.save(settlement);
 
         doThrow(new InternalServerErrorException("정산 외부 API 호출 중 에러 발생"))
                 .when(settlementClient).settlementRequest(any());
 
-        assertThatThrownBy(() -> settlementService.request(savedEscort.getId(), savedSettlement.getId()))
+        assertThatThrownBy(() -> settlementService.request(escort.getId(), settlement.getId()))
                 .isInstanceOf(InternalServerErrorException.class)
                 .hasMessage("정산에 실패했습니다.");
 
@@ -264,12 +266,12 @@ public class SettlementServiceTest {
         Application application = createApplication(escort, post, null, ApplicationStatus.ACCEPTED);
         Settlement settlement = createSettlement(application, escort, null, SettlementStatus.FAILED);
 
-        User savedEscort = userRepository.save(escort);
-        User savedClient = userRepository.save(client);
-        EscortProfile savedEscortProfile = escortProfileRepository.save(escortProfile);
-        Post savedPost = postRepository.save(post);
-        Application savedApplication = applicationRepository.save(application);
-        Settlement savedSettlement = settlementRepository.save(settlement);
+        userRepository.save(escort);
+        userRepository.save(client);
+        escortProfileRepository.save(escortProfile);
+        postRepository.save(post);
+        applicationRepository.save(application);
+        settlementRepository.save(settlement);
 
         doReturn(new SettlementClientResponse("123-000000-123", "동행매니저", 150_000))
                 .when(settlementClient).settlementRequest(any());
@@ -281,5 +283,36 @@ public class SettlementServiceTest {
 
         assertThat(settlementRepository.findById(settlement.getId()).get().getSettlementStatus())
                 .isEqualTo(SettlementStatus.COMPLETED);
+    }
+
+    @Test
+    @DisplayName("[SettlementService] PROCESSING/COMPLETED 재요청 → 거부(71)")
+    void settlementRequestStatusProcessingAndCompleted() {
+        User escort = createEscort(false);
+        EscortProfile escortProfile = createEscortProfile(escort);
+        User client = createClient(false);
+        Post post1 = createPost(client, null, PostStatus.COMPLETED);
+        Post post2 = createPost(client, null, PostStatus.COMPLETED);
+        Application application1 = createApplication(escort, post1, null, ApplicationStatus.ACCEPTED);
+        Application application2 = createApplication(escort, post2, null, ApplicationStatus.ACCEPTED);
+        Settlement settlementProcessing = createSettlement(application1, escort, null, SettlementStatus.PROCESSING);
+        Settlement settlementCompleted = createSettlement(application2, escort, null, SettlementStatus.COMPLETED);
+
+        userRepository.save(escort);
+        userRepository.save(client);
+        escortProfileRepository.save(escortProfile);
+        postRepository.save(post1);
+        postRepository.save(post2);
+        applicationRepository.save(application1);
+        applicationRepository.save(application2);
+        settlementRepository.save(settlementProcessing);
+        settlementRepository.save(settlementCompleted);
+
+        assertThatThrownBy(() -> settlementService.request(escort.getId(), settlementProcessing.getId()))
+                .isInstanceOf(InvalidException.class)
+                .hasMessage("이미 정산 중이거나 정산이 완료되었습니다.");
+        assertThatThrownBy(() -> settlementService.request(escort.getId(), settlementCompleted.getId()))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("정산 데이터를 찾을 수 없습니다.");
     }
 }
