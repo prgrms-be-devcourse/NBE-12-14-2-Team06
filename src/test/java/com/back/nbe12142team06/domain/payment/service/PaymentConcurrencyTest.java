@@ -1,5 +1,6 @@
 package com.back.nbe12142team06.domain.payment.service;
 
+import com.back.nbe12142team06.DatabaseCleaner;
 import com.back.nbe12142team06.domain.payment.client.TossPaymentClient;
 import com.back.nbe12142team06.domain.payment.dto.PaymentConfirmRequest;
 import com.back.nbe12142team06.domain.payment.dto.TossConfirmResponse;
@@ -46,6 +47,14 @@ public class PaymentConcurrencyTest {
     private PostRepository postRepository;
     @MockitoSpyBean
     private TossPaymentClient tossPaymentClient;
+
+    @Autowired
+    private DatabaseCleaner databaseCleaner;
+
+    @AfterEach
+    void tearDown() {
+        databaseCleaner.clean();
+    }
 
     private Payment createPayment(Post post, PaymentStatus status, Long id) {
         int hourlyPaySnapshot = 15_000;

@@ -132,5 +132,4 @@ public class RideServiceTest {
         assertThat(rides.get(0).getRideStatus()).isEqualTo(RideStatus.COMPLETED);
         assertThat(rides.get(1).getRideStatus()).isEqualTo(RideStatus.COMPLETED);
     }
-
 }
