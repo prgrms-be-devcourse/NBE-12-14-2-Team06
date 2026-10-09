@@ -1,11 +1,14 @@
 package com.back.nbe12142team06.domain.payment.service;
 
+import com.back.nbe12142team06.domain.application.entity.Application;
 import com.back.nbe12142team06.domain.payment.client.TossPaymentClient;
 import com.back.nbe12142team06.domain.payment.entity.Payment;
 import com.back.nbe12142team06.domain.payment.entity.PaymentStatus;
 import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
 import com.back.nbe12142team06.domain.post.entity.Post;
+import com.back.nbe12142team06.domain.post.entity.PostStatus;
 import com.back.nbe12142team06.domain.post.repository.PostRepository;
+import com.back.nbe12142team06.domain.settlement.service.SettlementService;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Gender;
 import com.back.nbe12142team06.domain.user.enums.Role;
@@ -20,6 +23,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
@@ -34,6 +38,7 @@ import static org.mockito.Mockito.*;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@Transactional
 class PaymentServiceTest {
 
     @Autowired
@@ -49,6 +54,8 @@ class PaymentServiceTest {
     private TossPaymentClient tossPaymentClient;
     @MockitoSpyBean
     private PaymentPersistenceService paymentPersistenceService;
+    @MockitoBean
+    private SettlementService settlementService;
 
     private Payment createPayment(Post post, PaymentStatus status, Long id) {
         int hourlyPaySnapshot = 15_000;
@@ -74,7 +81,7 @@ class PaymentServiceTest {
         return createPayment(post, status, 1L);
     }
 
-    private Post createPost(User client, Long id) {
+    private Post createPost(User client, Long id, int hour) {
         String title = "정형외과 동행 구합니다";
         String content = "무릎 수술 후 검진 예약이 있어 동행인이 필요합니다.";
         String postRegion = "서울";
@@ -89,7 +96,7 @@ class PaymentServiceTest {
         LocalDateTime recruitStartAt = LocalDateTime.now().plusDays(1);
         LocalDateTime recruitEndAt = LocalDateTime.now().plusDays(6);
         LocalDateTime escortStartAt = LocalDateTime.now().plusDays(7);
-        LocalDateTime escortEndAt = LocalDateTime.now().plusDays(7).plusHours(4);
+        LocalDateTime escortEndAt = LocalDateTime.now().plusDays(7).plusHours(hour);
 
         Post post = Post.builder()
                 .id(id)
@@ -113,9 +120,12 @@ class PaymentServiceTest {
 
         return post;
     }
+    private Post createPost(User client, Long id) {
+        return createPost(client, id, 10);
+    }
 
     private Post createPost(User client) {
-        return createPost(client, 1L);
+        return createPost(client, 1L, 10);
     }
 
     private User createClient(boolean addId) {
@@ -313,5 +323,21 @@ class PaymentServiceTest {
         assertThatThrownBy(() -> paymentService.cancel(payment, null, 0, null))
                 .isInstanceOf(InvalidException.class)
                 .hasMessage("결제 완료 상태가 아닙니다.");
+    }
+
+    @Test
+    @DisplayName("[PaymentService] 동행 시간 단축 시 차액 부분 취소(PARTIAL_CANCELED)")
+    void paymentPartialCanceled() {
+        User client = createClient();
+        Post post = createPost(client, 1L, 4);
+        Payment payment = createPayment(post, PaymentStatus.DONE);
+
+        doReturn(List.of(payment))
+                .when(paymentPersistenceService).findByPostId(any());
+        doReturn(null).when(paymentPersistenceService).paymentPartialCancelDb(any(), any(), any(int.class));
+
+        paymentService.validPayment(client.getId(), post, Application.builder().build(), LocalDate.now());
+
+        verify(paymentPersistenceService, times(1)).paymentPartialCancelDb(any(), any(), any(int.class));
     }
 }
