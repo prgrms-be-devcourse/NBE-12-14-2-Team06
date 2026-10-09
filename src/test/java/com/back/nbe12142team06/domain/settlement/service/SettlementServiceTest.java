@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
@@ -316,5 +317,25 @@ public class SettlementServiceTest {
         Settlement completedSettlement = settlementRepository.findById(settlement.getId()).get();
         assertThat(completedSettlement.getSettlementStatus()).isEqualTo(SettlementStatus.COMPLETED);
         assertThat(completedSettlement.getSettledDate().getDayOfMonth()).isEqualTo(LocalDate.now().plusDays(1).getDayOfMonth());
+    }
+
+    @Test
+    @DisplayName("[SettlementService] 같은 지원에 정산 2번 생성 방지(unique)")
+    void settlementUniqueConstraint() {
+        User escort = createEscort(false);
+        User client = createClient(false);
+        Post post = createPost(client, null, PostStatus.COMPLETED);
+        Application application = createApplication(escort, post, null, ApplicationStatus.ACCEPTED);
+        Settlement settlement1 = createSettlement(application, escort, null, SettlementStatus.PENDING);
+        Settlement settlement2 = createSettlement(application, escort, null, SettlementStatus.PENDING);
+
+        userRepository.save(escort);
+        userRepository.save(client);
+        postRepository.save(post);
+        applicationRepository.save(application);
+        settlementRepository.save(settlement1);
+
+        assertThatThrownBy(() -> settlementRepository.save(settlement2))
+                .isInstanceOf(DataIntegrityViolationException.class);
     }
 }
