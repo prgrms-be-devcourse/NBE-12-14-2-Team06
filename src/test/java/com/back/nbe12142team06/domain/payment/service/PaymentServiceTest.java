@@ -2,6 +2,7 @@ package com.back.nbe12142team06.domain.payment.service;
 
 import com.back.nbe12142team06.domain.application.entity.Application;
 import com.back.nbe12142team06.domain.payment.client.TossPaymentClient;
+import com.back.nbe12142team06.domain.payment.dto.PaymentConfirmRequest;
 import com.back.nbe12142team06.domain.payment.entity.Payment;
 import com.back.nbe12142team06.domain.payment.entity.PaymentStatus;
 import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
@@ -13,9 +14,11 @@ import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Gender;
 import com.back.nbe12142team06.domain.user.enums.Role;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
+import com.back.nbe12142team06.global.exception.InternalServerErrorException;
 import com.back.nbe12142team06.global.exception.InvalidException;
 import jakarta.persistence.EntityManager;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -59,6 +62,11 @@ class PaymentServiceTest {
     private PaymentPersistenceService paymentPersistenceService;
     @MockitoBean
     private SettlementService settlementService;
+
+    @BeforeEach
+    void setUp() {
+        paymentRepository.deleteAll();
+    }
 
     private Payment createPayment(Post post, PaymentStatus status, Long id) {
         int hourlyPaySnapshot = 15_000;
@@ -123,6 +131,7 @@ class PaymentServiceTest {
 
         return post;
     }
+
     private Post createPost(User client, Long id) {
         return createPost(client, id, 10);
     }
@@ -364,5 +373,34 @@ class PaymentServiceTest {
         paymentService.validPayment(client.getId(), post, Application.builder().build(), LocalDate.now());
 
         verify(paymentPersistenceService, times(1)).createPayment(any());
+    }
+
+    @Test
+    @DisplayName("[PaymentService] 결제 승인 실패 시 결제 데이터 하드 삭제")
+    @Transactional
+    void paymentDeletePaymentWithConfirmFailed() {
+        User client = createClient(false);
+        Post post = createPost(client, null);
+        Payment payment = createPayment(post, PaymentStatus.READY, null);
+
+        userRepository.save(client);
+        postRepository.save(post);
+        paymentRepository.save(payment);
+
+        doReturn(payment)
+                .when(paymentPersistenceService).findById(any(), any());
+        doThrow(new InternalServerErrorException(43, "토스 결제 승인 API 호출 실패, 결제 승인에 실패했습니다."))
+                .when(tossPaymentClient).callApiConfirm(any(), any(), any());
+
+        assertThatThrownBy(() -> paymentService.confirm(
+                new PaymentConfirmRequest(payment.getPaymentKey(), payment.getOrderId(), String.valueOf(payment.getAmount())),
+                payment.getId(), client.getId(), String.valueOf(payment.getAmount()), payment.getOrderId()))
+                .isInstanceOf(InternalServerErrorException.class)
+                .hasMessage("토스 결제 승인 API 호출 실패, 결제 승인에 실패했습니다.");
+
+        em.flush();
+        em.clear();
+
+        assertThat(paymentRepository.findById(payment.getId()).isEmpty()).isTrue();
     }
 }
