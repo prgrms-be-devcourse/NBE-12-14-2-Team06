@@ -27,6 +27,7 @@ import com.back.nbe12142team06.domain.user.enums.Gender;
 import com.back.nbe12142team06.domain.user.enums.Role;
 import com.back.nbe12142team06.domain.user.repository.EscortProfileRepository;
 import com.back.nbe12142team06.domain.user.service.UserService;
+import jakarta.persistence.EntityManager;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -71,6 +72,8 @@ class NoShowPenaltySettlementTest {
 
     @Autowired
     private MockMvc mvc;
+    @Autowired
+    private EntityManager em;
     @Autowired
     private UserService userService;
     @Autowired
@@ -221,6 +224,10 @@ class NoShowPenaltySettlementTest {
 
         // 공고 결제 완료 처리
         paymentRepository.testStatusDone(post.getId());
+
+        // testStatusDone에서 1차 캐시를 비우므로 다시 1차 캐시에 넣어줌
+        application = applicationRepository.findById(application.getId()).get();
+        post = postService.findById(post.getId());
 
         // 동행 시작 -> 동행 완료까지
         for (EscortProgress progress : EscortProgress.values()) {

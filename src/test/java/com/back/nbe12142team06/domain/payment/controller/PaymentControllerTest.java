@@ -132,7 +132,6 @@ class PaymentControllerTest {
         );
 
         PostWriteResponse post2 = postService.write(user1.getId(), postWriteRequest2);
-        paymentRepository.testStatusDone(post2.id());
 
         savedPayment1Id = post1.paymentId();
         savedPayment2Id = post2.paymentId();
@@ -180,7 +179,7 @@ class PaymentControllerTest {
 
         PaymentService paymentService = new PaymentService(paymentRepository, paymentPersistenceService, mockTossPaymentClient, null);
 
-        Payment payment = paymentService.confirm(new PaymentConfirmRequest(paymentKey, orderId, amount), savedPayment1Id, savedUser1Id, amount, orderId);
+        Payment payment = paymentService.confirm(new PaymentConfirmRequest(paymentKey, orderId, amount), savedPayment2Id, savedUser1Id, amount, orderId);
 
         assertEquals(PaymentStatus.DONE, payment.getPaymentStatus());
         assertEquals(LocalDateTime.now().getHour(), payment.getApprovedAt().getHour());
@@ -410,7 +409,7 @@ class PaymentControllerTest {
     void getPayment() throws Exception {
 
         ResultActions resultActions = mvc.perform(
-                get("/api/v1/payments/" + savedPayment1Id)
+                get("/api/v1/payments/" + savedPayment2Id)
                         .cookie(accessTokenCookie1)
         ).andDo(print());
 
@@ -420,7 +419,7 @@ class PaymentControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statusCode").value("200-44"))
                 .andExpect(jsonPath("$.msg").value("결제 정보를 불러왔습니다."))
-                .andExpect(jsonPath("$.data.id").value(savedPayment1Id))
+                .andExpect(jsonPath("$.data.id").value(savedPayment2Id))
                 .andExpect(jsonPath("$.data.amount").value(60_000))
                 .andExpect(jsonPath("$.data.hourlyPaySnapshot").value(15_000))
                 .andExpect(jsonPath("$.data.hours").value(4.0))

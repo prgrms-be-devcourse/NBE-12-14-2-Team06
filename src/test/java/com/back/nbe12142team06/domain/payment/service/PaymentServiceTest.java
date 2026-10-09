@@ -302,4 +302,16 @@ class PaymentServiceTest {
                 .isInstanceOf(InvalidException.class)
                 .hasMessage("이미 취소된 결제입니다.");
     }
+
+    @Test
+    @DisplayName("[PaymentService] READY(미결제) 결제 취소")
+    void cancelStatusReady() {
+        User client = createClient();
+        Post post = createPost(client);
+        Payment payment = createPayment(post, PaymentStatus.READY);
+
+        assertThatThrownBy(() -> paymentService.cancel(payment, null, 0, null))
+                .isInstanceOf(InvalidException.class)
+                .hasMessage("결제 완료 상태가 아닙니다.");
+    }
 }

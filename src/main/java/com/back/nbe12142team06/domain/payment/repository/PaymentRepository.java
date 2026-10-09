@@ -42,7 +42,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
             "where pay.id=:paymentId")
     Optional<Payment> findByIdFetchJoin(@Param("paymentId") Long paymentId);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("update Payment p set p.paymentStatus='DONE' where p.post.id=:postId")
     void testStatusDone(@Param("postId") Long postId);
 

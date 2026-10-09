@@ -89,6 +89,10 @@ public class PaymentService {
             throw new InvalidException(44, "이미 취소된 결제입니다.");
         }
 
+        if (!payment.getPaymentStatus().equals(PaymentStatus.DONE)) {
+            throw new InvalidException(45, "결제 완료 상태가 아닙니다.");
+        }
+
         String tossPaymentKey = payment.getPaymentKey();
         String cancelReason = request.cancelReason();
 
