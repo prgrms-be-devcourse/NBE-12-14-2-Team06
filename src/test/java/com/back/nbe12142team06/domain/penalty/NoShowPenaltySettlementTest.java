@@ -199,6 +199,7 @@ class NoShowPenaltySettlementTest {
 
     private void application(PostWriteRequest postWriteRequest) {
         post = postService.findById(postService.write(client.getId(), postWriteRequest).id());
+        paymentRepository.testStatusDone(post.getId());
 
         ApplicationApplyResponse applyResponse = applicationService.apply(post.getId(), escort.getId());
         ApplicationAcceptResponse acceptResponse = applicationService.accept(applyResponse.id(), client.getId());
@@ -221,13 +222,6 @@ class NoShowPenaltySettlementTest {
         // 패널티 적용 되었는지 검증
         EscortProfile escortProfile = escortProfileRepository.findById(escort.getId()).get();
         assertEquals(1, escortProfile.getNoShowCount());
-
-        // 공고 결제 완료 처리
-        paymentRepository.testStatusDone(post.getId());
-
-        // testStatusDone에서 1차 캐시를 비우므로 다시 1차 캐시에 넣어줌
-        application = applicationRepository.findById(application.getId()).get();
-        post = postService.findById(post.getId());
 
         // 동행 시작 -> 동행 완료까지
         for (EscortProgress progress : EscortProgress.values()) {
