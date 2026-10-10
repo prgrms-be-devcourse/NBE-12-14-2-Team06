@@ -5,6 +5,9 @@ import com.back.nbe12142team06.domain.application.enums.ApplicationStatus;
 import com.back.nbe12142team06.domain.application.enums.EscortProgress;
 import com.back.nbe12142team06.domain.application.repository.ApplicationRepository;
 import com.back.nbe12142team06.domain.application.repository.EscortProgressLogRepository;
+import com.back.nbe12142team06.domain.payment.entity.Payment;
+import com.back.nbe12142team06.domain.payment.entity.PaymentStatus;
+import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.entity.PostStatus;
 import com.back.nbe12142team06.domain.post.repository.PostRepository;
@@ -58,6 +61,9 @@ class ApplicationConcurrencyTest {
 
     @Autowired
     private EscortProgressLogRepository escortProgressLogRepository;
+
+    @Autowired
+    private PaymentRepository paymentRepository;
 
     @Autowired
     private TransactionTemplate transactionTemplate;
@@ -129,6 +135,16 @@ class ApplicationConcurrencyTest {
                 .build();
 
         postId = postRepository.save(post).getId();
+
+        Payment payment = Payment.builder()
+                .amount(post.getTotalPay().intValue())
+                .hourlyPaySnapshot(post.getHourlyPay())
+                .hours(post.getEscortHours())
+                .post(post)
+                .paymentStatus(PaymentStatus.DONE)
+                .build();
+
+        paymentRepository.save(payment);
     }
 
     private void saveVerifiedProfile(User escort, String accountNumber) {

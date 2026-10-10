@@ -7,6 +7,7 @@ import com.back.nbe12142team06.domain.application.enums.ApplicationStatus;
 import com.back.nbe12142team06.domain.application.enums.EscortProgress;
 import com.back.nbe12142team06.domain.application.repository.ApplicationRepository;
 import com.back.nbe12142team06.domain.application.repository.EscortProgressLogRepository;
+import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
 import com.back.nbe12142team06.domain.penalty.service.NoShowPenaltyService;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.entity.PostStatus;
@@ -46,6 +47,7 @@ public class ApplicationService {
     private final EscortProgressLogRepository escortProgressLogRepository;
     private final NoShowPenaltyService noShowPenaltyService;
     private final ClientProfileRepository clientProfileRepository;
+    private final PaymentRepository paymentRepository;
     private final RideService rideService;
 
     @Transactional
@@ -132,7 +134,12 @@ public class ApplicationService {
 
         // 모집 중인 공고만 매칭 가능
         if (post.getPostStatus() != PostStatus.OPEN) {
-            throw new InvalidException(25, "모집 중인 공고만 지원할 수 있습니다.");
+            throw new InvalidException(25, "모집 중인 공고만 승인할 수 있습니다.");
+        }
+
+        // 결제 완료 공고만 승인 가능
+        if (paymentRepository.findSuccessPayByPostId(postId).isEmpty()) {
+            throw new InvalidException(33, "결제 완료 공고만 승인할 수 있습니다.");
         }
 
         // 이미 ACCEPTED된 다른 공고와 동행 시간이 겹치는지 확인

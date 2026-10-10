@@ -472,6 +472,7 @@ class EscortFlowIntegrationTest {
     void 승인되면_나머지_지원자는_자동_거절된다() throws Exception {
 
         String tag = tag();
+        int hourlyPay = 15000;
 
         String clientUsername = "flow2-client-" + tag;
         signUp(clientUsername, "testPassword", "flow2-client-" + tag + "@test.com", "의뢰인", "CLIENT", phone(tag, 1));
@@ -482,10 +483,30 @@ class EscortFlowIntegrationTest {
                         .cookie(clientCookie)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(postJson(now.plusDays(1), now.plusDays(1).plusHours(1),
-                                now.plusDays(1).plusHours(2), now.plusDays(1).plusHours(4), 15000)))
+                                now.plusDays(1).plusHours(2), now.plusDays(1).plusHours(4), hourlyPay)))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
-        Long postId = ((Number) JsonPath.parse(writeResponse).read("$.data.id")).longValue();
+        DocumentContext writeCtx = JsonPath.parse(writeResponse);
+        Long postId = ((Number) writeCtx.read("$.data.id")).longValue();
+        Long paymentId = ((Number) writeCtx.read("$.data.paymentId")).longValue();
+
+        String plannedAmount = String.valueOf(hourlyPay * 2);
+        mvc.perform(post("/api/v1/payments/save-amount")
+                        .cookie(clientCookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"paymentId": %d, "orderId": "order-%s", "amount": "%s"}
+                                """.formatted(paymentId, tag, plannedAmount)))
+                .andExpect(status().isCreated());
+        mvc.perform(post("/api/v1/payments/{paymentId}/confirm", paymentId)
+                        .cookie(clientCookie)
+                        .sessionAttrs(Map.of("amount", plannedAmount, "orderId", "order-%s".formatted(tag)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"paymentKey": "test-payment-key-%s", "orderId": "order-%s", "amount": "%s"}
+                                """.formatted(tag, tag, plannedAmount)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-41"));
 
         // 동행인 2명이 지원
         String escort1Username = "flow2-escort1-" + tag;

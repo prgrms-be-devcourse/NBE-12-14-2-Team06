@@ -6,6 +6,7 @@ import com.back.nbe12142team06.domain.application.enums.EscortProgress;
 import com.back.nbe12142team06.domain.application.repository.ApplicationRepository;
 import com.back.nbe12142team06.domain.application.repository.EscortProgressLogRepository;
 import com.back.nbe12142team06.domain.payment.entity.Payment;
+import com.back.nbe12142team06.domain.payment.entity.PaymentStatus;
 import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.entity.PostStatus;
@@ -142,6 +143,7 @@ public class ApplicationControllerTest {
                 .hourlyPaySnapshot(post.getHourlyPay())
                 .hours(post.getEscortHours())
                 .post(post)
+                .paymentStatus(PaymentStatus.DONE)
                 .build();
 
         paymentRepository.save(payment);
@@ -1103,6 +1105,15 @@ public class ApplicationControllerTest {
 
         Long overlappingPostId =
                 postRepository.save(overlappingPost).getId();
+
+        Payment payment = Payment.builder()
+                .amount(overlappingPost.getTotalPay().intValue())
+                .hourlyPaySnapshot(overlappingPost.getHourlyPay())
+                .hours(overlappingPost.getEscortHours())
+                .post(overlappingPost)
+                .paymentStatus(PaymentStatus.DONE)
+                .build();
+        paymentRepository.save(payment);
 
         // 이미 다른 공고에서 ACCEPTED된 동행인이
         // 시간이 겹치는 새 공고에 지원

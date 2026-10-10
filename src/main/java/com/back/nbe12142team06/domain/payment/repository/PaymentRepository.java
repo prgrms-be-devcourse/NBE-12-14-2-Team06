@@ -45,7 +45,7 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
     @Modifying(clearAutomatically = true)
     @Query("update Payment p set p.paymentStatus='DONE' where p.post.id=:postId")
-    void testStatusDone(@Param("postId") Long postId);
+    int testStatusDone(@Param("postId") Long postId);
 
     Optional<Payment> findByPostId(Long postId);
 
