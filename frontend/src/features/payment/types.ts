@@ -1,12 +1,20 @@
-/** 백엔드 결제 처리 상태 (PaymentStatus) */
+/**
+ * 백엔드 결제 처리 상태 (PaymentStatus) — 백엔드 enum 과 값·개수를 그대로 맞춥니다.
+ *
+ * READY            아직 내지 않은 결제 (공고 등록 직후·결제를 취소한 뒤 새로 생긴 건)
+ * IN_PROGRESS      결제 승인 중. PaymentPersistenceService.confirmUpdateStatus 가 쓰지만 호출되는 곳이 없어 실제로는 안 보입니다.
+ * DONE             결제 완료
+ * CANCELED         전액 취소
+ * PARTIAL_CANCELED 부분 취소 (실제 동행 시간이 짧아져 차액을 환불한 경우)
+ * DELETED          공고가 삭제돼 스케줄러가 취소할 예정인 결제
+ */
 export type PaymentStatus =
   | 'READY'
   | 'IN_PROGRESS'
   | 'DONE'
   | 'CANCELED'
   | 'PARTIAL_CANCELED'
-  | 'ABORTED'
-  | 'EXPIRED';
+  | 'DELETED';
 
 /** 백엔드 결제 응답 (PaymentResponse) — 결제 조회 API 가 돌려주는 모양 그대로 */
 export type PaymentDto = {

@@ -1,6 +1,7 @@
 package com.back.nbe12142team06.domain.payment.repository;
 
 import com.back.nbe12142team06.domain.payment.entity.Payment;
+import com.back.nbe12142team06.domain.payment.entity.PaymentStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -57,4 +58,6 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     @Modifying
     @Query("update Payment p set p.paymentStatus=PaymentStatus.IN_PROGRESS where p.id=:paymentId and p.paymentStatus=PaymentStatus.READY")
     int paymentInProgress(@Param("paymentId") Long paymentId);
+
+    List<Payment> findByPostIdAndPaymentStatus(Long postId, PaymentStatus paymentStatus);
 }

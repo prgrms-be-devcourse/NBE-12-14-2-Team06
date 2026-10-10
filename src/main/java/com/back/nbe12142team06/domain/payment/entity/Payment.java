@@ -108,6 +108,7 @@ public class Payment extends BaseSoftDeleteTimeEntity {
         this.statusUpdate(PaymentStatus.CANCELED);
         this.balanceAmount = 0;
         this.setDeletedAt(LocalDateTime.now());
+        updateCanceledAt();
         this.cancelReason = cancelReason;
         return Payment.builder()
                 .amount(this.amount)
@@ -136,5 +137,10 @@ public class Payment extends BaseSoftDeleteTimeEntity {
 
     public void updateCanceledAt() {
         this.canceledAt = LocalDateTime.now();
+    }
+
+    public void update(int amount, BigDecimal hours) {
+        updateAmount(amount);
+        this.hours = hours;
     }
 }
