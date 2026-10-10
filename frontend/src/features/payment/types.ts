@@ -11,6 +11,11 @@ export type PaymentStatus =
 /** 백엔드 결제 응답 (PaymentResponse) — 결제 조회 API 가 돌려주는 모양 그대로 */
 export type PaymentDto = {
   id: number;
+  /**
+   * 이 결제가 달린 공고 번호. 결제 목록(GET /api/v1/payments)을 공고별로 나눌 때 씁니다.
+   * 백엔드 Payment.post 에 nullable=false 가 없어 null 이 올 수 있습니다.
+   */
+  postId: number | null;
   /** 결제해야 하는(또는 결제한) 금액 */
   amount: number;
   /** 결제 시점의 시급 */

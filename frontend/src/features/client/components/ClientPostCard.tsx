@@ -11,13 +11,31 @@ const DIVIDER = 'h-px w-full max-w-[377px] self-center bg-[#e6e8ec] opacity-50';
 export default function ClientPostCard({ post }: { post: ClientPost }) {
   const label = POST_STATUS_LABEL[post.status];
 
+  // 동행이 끝난 공고의 미결제는 실제 동행 시간이 늘어 생긴 차액이라 "추가 결제"로 구분해 보여 줍니다.
+  const isExtra = post.status === 'completed';
+  // 결제 화면(토스 위젯)은 공고 등록 직후의 최초 결제와 같은 화면을 씁니다.
+  // flow=extra 는 결제 후 공고 등록 완료 화면이 아니라 공고 상세로 돌아오기 위한 표시입니다.
+  const paymentHref = post.unpaid
+    ? `/client/posts/new/payment?${new URLSearchParams({
+        postId: String(post.id),
+        paymentId: String(post.unpaid.paymentId),
+        amount: String(post.unpaid.amount),
+        pay: String(post.unpaid.hourlyPay),
+        ...(isExtra ? { flow: 'extra' } : {}),
+      })}`
+    : '';
+  // 결제가 남아 있으면 채운 버튼은 "결제하기" 하나만 둡니다. (지원자 확인·동행 현황과 같이 강조되면 뭘 먼저
+  // 눌러야 하는지가 흐려집니다)
+  const actionVariant = post.unpaid ? 'ghost' : 'solid';
+
   return (
     <article className="flex min-h-[315px] w-full min-w-0 flex-col justify-center gap-[5.5px] rounded-[30px] border-[0.68px] border-line bg-white p-5 shadow-[0_0.68px_2.7px_rgba(25,33,61,0.08)] lg:h-[315px] lg:w-[447px]">
       <div className="flex w-full max-w-[377px] items-center gap-5 self-center">
         <Image src="/images/post/eggplant.png" alt="" width={73} height={73} className="size-[72.5px] shrink-0 object-contain" />
         <div className="flex min-w-0 flex-1 flex-col gap-[13.7px]">
-          <div className="flex">
+          <div className="flex gap-[5px]">
             <StatusLabel tone={label.tone}>{label.text}</StatusLabel>
+            {post.unpaid && <StatusLabel tone="red">{isExtra ? '추가 결제' : '미결제'}</StatusLabel>}
           </div>
           <p className="truncate text-[16.4px] leading-4 font-semibold text-brand">{post.title}</p>
           <p className="truncate text-[11px] leading-[13.7px] font-semibold text-brand">{post.hospitalName}</p>
@@ -61,14 +79,21 @@ export default function ClientPostCard({ post }: { post: ClientPost }) {
       <div className="flex w-full max-w-[382px] items-center justify-center gap-[10.3px] self-center">
         <CardButton size="wide" href={`/client/posts/${post.id}`}>상세보기</CardButton>
         {post.applicationId === undefined ? (
-          <CardButton size="wide" variant="solid" href={`/client/posts/${post.id}/applicants`}>
+          <CardButton size="wide" variant={actionVariant} href={`/client/posts/${post.id}/applicants`}>
             지원자 확인
           </CardButton>
         ) : (
           // 동행 현황 화면(/client/escort/[applicationId])이 postId 를 알 방법이 없어(백엔드에 신청 상세 조회 API가
           // 없음) 쿼리로 함께 넘깁니다. 서버에 GET /api/v1/applications/{applicationId} 가 생기면 지울 수 있습니다.
-          <CardButton size="wide" variant="solid" href={`/client/escort/${post.applicationId}?postId=${post.id}`}>
+          <CardButton size="wide" variant={actionVariant} href={`/client/escort/${post.applicationId}?postId=${post.id}`}>
             동행 현황
+          </CardButton>
+        )}
+        {/* 미결제 공고는 결제해야 공개 목록에 올라가므로, 결제가 가장 급한 버튼입니다.
+            버튼이 셋이 되면 max-w 안에서 flex-1 로 나란히 줄어들어 카드 높이(315px)는 그대로입니다. */}
+        {post.unpaid && (
+          <CardButton size="wide" variant="solid" href={paymentHref}>
+            {isExtra ? '추가 결제' : '결제하기'}
           </CardButton>
         )}
       </div>

@@ -29,6 +29,15 @@ export type ClientPost = {
   managerName?: string;
   /** 동행 현황 화면으로 이동할 신청 번호 (매칭 이후에만 있음) */
   applicationId?: number;
+  /**
+   * 아직 내지 않은(READY) 결제. 없으면 결제할 게 남지 않은 공고입니다.
+   * 결제 화면이 paymentId 로 결제 레코드를 찾고 amount·hourlyPay 를 그대로 받아 쓰기 때문에
+   * "미결제" 여부만으로는 결제를 시작할 수 없어 세 값을 함께 들고 있습니다.
+   *
+   * ⚠️ status 가 completed 인 공고의 미결제는 실제 동행 시간이 길어져 생긴 "추가 결제"입니다.
+   *    (판정 근거는 features/payment/api.ts 의 fetchPendingPayment 주석)
+   */
+  unpaid?: { paymentId: number; amount: number; hourlyPay: number };
 };
 
 /**

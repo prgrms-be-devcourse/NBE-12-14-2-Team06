@@ -18,3 +18,36 @@ import type { PaymentDto } from './types';
 export function fetchPendingPayment(postId: number): Promise<PaymentDto | null> {
   return api<PaymentDto | null>(`/api/v1/payments/posts/${postId}`);
 }
+
+/**
+ * 내 결제 내역 전체 — GET /api/v1/payments (로그인 쿠키 필요)
+ *
+ * ⚠️ 상태를 가리지 않고 전부 내려옵니다. 취소(CANCELED)·삭제(DELETED)된 건도 섞여 있고,
+ *    한 공고에 결제가 여러 개일 수 있습니다(취소하면 새 결제가 생기는 구조 — Payment.cancelPayment).
+ *    "아직 안 낸 결제"만 필요하면 fetchUnpaidByPost 를 쓰세요.
+ */
+export function fetchMyPayments(): Promise<PaymentDto[]> {
+  return api<PaymentDto[]>('/api/v1/payments');
+}
+
+/**
+ * 공고 번호 → 아직 내지 않은(READY) 결제. 공고 목록에 "미결제" 표시를 붙일 때 씁니다.
+ * 공고마다 GET /api/v1/payments/posts/{postId} 를 부르지 않고 목록 한 번으로 끝내기 위한 함수입니다.
+ *
+ * 한 공고에 READY 가 여러 개면 가장 나중에 만들어진 것(id 가 큰 것) 하나만 남깁니다 — 결제를 취소하면
+ * 백엔드가 새 READY 결제를 만들기 때문에, 공고의 "지금 내야 하는 금액"은 항상 마지막 건입니다.
+ *
+ * ⚠️ READY 만 봅니다. 결제 중(IN_PROGRESS)으로 바꾸는 코드(PaymentPersistenceService.confirmUpdateStatus)가
+ *    아직 어디서도 호출되지 않아 실제로 그 상태가 되는 결제는 없습니다. 호출되기 시작하면 여기도 같이 넓혀야 합니다.
+ */
+export async function fetchUnpaidByPost(): Promise<Map<number, PaymentDto>> {
+  const payments = await fetchMyPayments();
+  const unpaid = new Map<number, PaymentDto>();
+
+  for (const payment of payments) {
+    if (payment.paymentStatus !== 'READY' || payment.postId == null) continue;
+    const previous = unpaid.get(payment.postId);
+    if (!previous || previous.id < payment.id) unpaid.set(payment.postId, payment);
+  }
+  return unpaid;
+}
