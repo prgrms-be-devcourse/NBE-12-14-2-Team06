@@ -12,8 +12,10 @@ type Props = {
   children: ReactNode;
 };
 
+// 버튼이 셋까지 나란히 서는 카드(의뢰인 "내가 작성한 공고" 미결제 공고)가 있어, 좁은 화면에서는
+// 좌우 여백을 줄이고 글자는 접지 않습니다. 접히면 버튼 높이(37.2px)가 틀어집니다.
 const BASE =
-  'flex h-[37.2px] w-full max-w-[148.9px] flex-1 items-center justify-center rounded-[17px] px-4 text-[10.83px] leading-3 font-semibold transition-colors';
+  'flex h-[37.2px] w-full max-w-[148.9px] flex-1 items-center justify-center rounded-[17px] px-2 text-[10.83px] leading-3 font-semibold whitespace-nowrap transition-colors sm:px-4';
 
 const SIZE = {
   default: '',

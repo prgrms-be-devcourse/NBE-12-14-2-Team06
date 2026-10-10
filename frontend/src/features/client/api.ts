@@ -1,4 +1,5 @@
 import { fetchApplicants, fetchEscortProfile, fetchProgress } from '@/features/application';
+import { fetchUnpaidByPost, type PaymentDto } from '@/features/payment';
 import { fetchMyPostsRaw, fetchPostRaw } from '@/features/post';
 import { fetchUserReviews } from '@/features/review';
 import { fetchRidesByPost, formatTransport } from '@/features/ride';
@@ -86,18 +87,31 @@ const MATCHED_OR_LATER = new Set(['매칭 완료', '동행 진행 중', '동행 
  * (공개 목록 GET /api/v1/posts 는 결제 완료된 공고만 내려줘서, 대기/부분취소 상태인 내 공고까지
  * 보여주려면 이 전용 API 를 써야 합니다).
  *
+ * 카드에 "미결제" 표시를 붙이려면 공고별 결제 상태가 필요한데, PostDto 에는 결제 정보가 없습니다.
+ * 그래서 결제 목록(GET /api/v1/payments)을 한 번 더 불러 공고 번호로 맞춥니다.
+ * (공고마다 GET /api/v1/payments/posts/{postId} 를 부르면 요청이 공고 수만큼 늘어납니다.)
+ *
  * ⚠️ page=0, size=100 으로만 불러오므로, 공고가 100건을 넘으면 뒤쪽이 누락될 수 있습니다.
  */
 export async function fetchMyPosts(): Promise<ClientPost[]> {
-  const { posts } = await fetchMyPostsRaw(0, 100);
+  const [{ posts }, unpaidByPost] = await Promise.all([
+    fetchMyPostsRaw(0, 100),
+    // 결제 목록 조회가 실패해도 공고 목록은 그대로 보여 줍니다. (미결제 표시와 결제 버튼만 빠집니다)
+    fetchUnpaidByPost().catch(() => new Map<number, PaymentDto>()),
+  ]);
 
   return Promise.all(
     posts.map(async (post) => {
-      if (!MATCHED_OR_LATER.has(post.postStatus)) return toClientPost(post);
+      const unpaid = unpaidByPost.get(post.id);
+      if (!MATCHED_OR_LATER.has(post.postStatus)) return toClientPost(post, undefined, unpaid);
 
       const applicants = await fetchApplicants(post.id, 0, 100).catch(() => []);
       const accepted = applicants.find((item) => item.status === 'ACCEPTED');
-      return toClientPost(post, accepted ? { applicationId: accepted.applicationId, escortName: accepted.escortName } : undefined);
+      return toClientPost(
+        post,
+        accepted ? { applicationId: accepted.applicationId, escortName: accepted.escortName } : undefined,
+        unpaid,
+      );
     }),
   );
 }

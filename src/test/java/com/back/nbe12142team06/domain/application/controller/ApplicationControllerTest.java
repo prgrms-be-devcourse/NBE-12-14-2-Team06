@@ -6,6 +6,7 @@ import com.back.nbe12142team06.domain.application.enums.EscortProgress;
 import com.back.nbe12142team06.domain.application.repository.ApplicationRepository;
 import com.back.nbe12142team06.domain.application.repository.EscortProgressLogRepository;
 import com.back.nbe12142team06.domain.payment.entity.Payment;
+import com.back.nbe12142team06.domain.payment.entity.PaymentStatus;
 import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.entity.PostStatus;
@@ -142,6 +143,7 @@ public class ApplicationControllerTest {
                 .hourlyPaySnapshot(post.getHourlyPay())
                 .hours(post.getEscortHours())
                 .post(post)
+                .paymentStatus(PaymentStatus.DONE)
                 .build();
 
         paymentRepository.save(payment);
@@ -1103,6 +1105,15 @@ public class ApplicationControllerTest {
 
         Long overlappingPostId =
                 postRepository.save(overlappingPost).getId();
+
+        Payment payment = Payment.builder()
+                .amount(overlappingPost.getTotalPay().intValue())
+                .hourlyPaySnapshot(overlappingPost.getHourlyPay())
+                .hours(overlappingPost.getEscortHours())
+                .post(overlappingPost)
+                .paymentStatus(PaymentStatus.DONE)
+                .build();
+        paymentRepository.save(payment);
 
         // 이미 다른 공고에서 ACCEPTED된 동행인이
         // 시간이 겹치는 새 공고에 지원
@@ -2167,5 +2178,328 @@ public class ApplicationControllerTest {
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.statusCode").value("403-21"))
                 .andExpect(jsonPath("$.msg").value("교육 영상 시청을 완료한 후 지원할 수 있습니다."));
+    }
+
+    /**
+     * 공고를 하나 더 만든다. 결제는 호출부에서 원하는 상태로 붙인다.
+     * (setUp 의 공고는 결제가 DONE 이라 "결제되지 않은 공고" 케이스를 만들 수 없다)
+     */
+    private Post savePost(String title) {
+
+        User client = userRepository.findByUsername("client1")
+                .orElseThrow();
+
+        Post post = Post.builder()
+                .client(client)
+                .title(title)
+                .content("결제 상태별 승인 테스트")
+                .region("수원")
+                .hospitalName("아주대학교병원")
+                .hospitalAddress("경기도 수원시")
+                .hospitalLat(BigDecimal.valueOf(37.2795))
+                .hospitalLng(BigDecimal.valueOf(127.0476))
+                .pickupAddress("경기도 수원시 팔달구")
+                .pickupLat(BigDecimal.valueOf(37.2636))
+                .pickupLng(BigDecimal.valueOf(127.0286))
+                .hourlyPay(15000)
+                .recruitStartAt(LocalDateTime.now().plusDays(1))
+                .recruitEndAt(LocalDateTime.now().plusDays(2))
+                .escortStartAt(LocalDateTime.now().plusDays(3))
+                .escortEndAt(LocalDateTime.now().plusDays(3).plusHours(3))
+                .patientNote("테스트 환자")
+                .reportRequired(false)
+                .build();
+
+        return postRepository.save(post);
+    }
+
+    private Payment savePayment(Post post, PaymentStatus paymentStatus) {
+
+        Payment payment = Payment.builder()
+                .amount(post.getTotalPay().intValue())
+                .hourlyPaySnapshot(post.getHourlyPay())
+                .hours(post.getEscortHours())
+                .post(post)
+                .paymentStatus(paymentStatus)
+                .build();
+
+        return paymentRepository.save(payment);
+    }
+
+    /** 교육까지 이수한 동행인을 추가로 만들고 로그인 쿠키를 돌려준다. */
+    private Cookie saveEscort(String username) throws Exception {
+
+        User escort = new User(
+                username,
+                passwordEncoder.encode("testPassword"),
+                username + "@test.com",
+                username,
+                Role.ESCORT,
+                Gender.MALE,
+                LocalDate.of(1996, 1, 1),
+                "010-5555-" + username.replaceAll("\\D", "0").substring(0, 4),
+                "수원"
+        );
+
+        userRepository.save(escort);
+
+        EscortProfile escortProfile = escortProfileRepository.save(new EscortProfile(
+                escort,
+                username + " 입니다.",
+                "오픈은행",
+                username,
+                "123-0000000-333"
+        ));
+
+        this.escortProfileRepository.verify(escortProfile.getUserId(), LocalDateTime.now());
+
+        return mvc.perform(
+                        post("/api/v1/auth/login")
+                                .contentType("application/json")
+                                .content("""
+                                        {
+                                          "username": "%s",
+                                          "password": "testPassword"
+                                        }
+                                        """.formatted(username))
+                )
+                .andReturn()
+                .getResponse()
+                .getCookie("accessToken");
+    }
+
+    @Test
+    @DisplayName("[ApplicationController] 지원 승인 - 결제 전(READY) 공고는 지원은 되지만 승인 시 400 반환")
+    void t37() throws Exception {
+
+        // 공고 등록 직후와 같은 상태 — 아직 내지 않은 결제 1건
+        Post unpaidPost = savePost("결제 전 공고");
+        savePayment(unpaidPost, PaymentStatus.READY);
+
+        // 지원은 허용된다. apply 는 결제 상태를 보지 않는다
+        // (미결제 공고는 공개 목록 GET /api/v1/posts 에서 빠지지만, 공고 번호를 알면 지원할 수 있다)
+        mvc.perform(post("/api/v1/applications/{postId}", unpaidPost.getId())
+                        .cookie(escortAccessTokenCookie))
+                .andDo(print())
+                .andExpect(status().isCreated());
+
+        Application application = applicationRepository
+                .findAllByPostIdWithEscort(unpaidPost.getId())
+                .get(0);
+
+        // 승인은 막힌다
+        ResultActions resultActions = mvc.perform(
+                patch("/api/v1/applications/{applicationId}/accept", application.getId())
+                        .cookie(clientAccessTokenCookie)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(ApplicationController.class))
+                .andExpect(handler().methodName("accept"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.statusCode").value("400-33"))
+                .andExpect(jsonPath("$.msg").value("결제 완료 공고만 승인할 수 있습니다."));
+
+        // 승인 직전 상태가 그대로 남아 있어야 한다 (지원은 대기, 공고는 모집 중)
+        assertEquals(
+                ApplicationStatus.PENDING,
+                applicationRepository.findById(application.getId()).orElseThrow().getStatus()
+        );
+
+        assertEquals(
+                PostStatus.OPEN,
+                postRepository.findById(unpaidPost.getId()).orElseThrow().getPostStatus()
+        );
+    }
+
+    @Test
+    @DisplayName("[ApplicationController] 지원 승인 - 결제가 취소된 공고는 승인 시 400 반환")
+    void t38() throws Exception {
+
+        // 결제를 취소하면 백엔드가 원래 결제를 CANCELED 로 바꾸고
+        // 같은 금액의 READY 결제를 새로 만들어 둔다(Payment.cancelPayment). 그 상태를 그대로 만든다.
+        Post canceledPaymentPost = savePost("결제 취소된 공고");
+        savePayment(canceledPaymentPost, PaymentStatus.CANCELED);
+        savePayment(canceledPaymentPost, PaymentStatus.READY);
+
+        // 승인 가드가 보는 "성공한 결제"가 없는 상태
+        assertEquals(
+                0,
+                paymentRepository.findSuccessPayByPostId(canceledPaymentPost.getId()).size()
+        );
+
+        mvc.perform(post("/api/v1/applications/{postId}", canceledPaymentPost.getId())
+                        .cookie(escortAccessTokenCookie))
+                .andExpect(status().isCreated());
+
+        Application application = applicationRepository
+                .findAllByPostIdWithEscort(canceledPaymentPost.getId())
+                .get(0);
+
+        ResultActions resultActions = mvc.perform(
+                patch("/api/v1/applications/{applicationId}/accept", application.getId())
+                        .cookie(clientAccessTokenCookie)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(ApplicationController.class))
+                .andExpect(handler().methodName("accept"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.statusCode").value("400-33"))
+                .andExpect(jsonPath("$.msg").value("결제 완료 공고만 승인할 수 있습니다."));
+
+        // 매칭이 되지 않으므로 동행 진행 → 동행 완료 → 정산까지 이어질 수 없다
+        assertEquals(
+                PostStatus.OPEN,
+                postRepository.findById(canceledPaymentPost.getId()).orElseThrow().getPostStatus()
+        );
+    }
+
+    @Test
+    @DisplayName("[ApplicationController] 지원 취소 - 노쇼 후 다른 동행인이 같은 공고에 재매칭된다")
+    void t39() throws Exception {
+
+        // 첫 번째 동행인 지원 → 승인
+        mvc.perform(post("/api/v1/applications/{postId}", testPostId)
+                        .cookie(escortAccessTokenCookie))
+                .andExpect(status().isCreated());
+
+        Application firstApplication = applicationRepository
+                .findAllByPostIdWithEscort(testPostId)
+                .get(0);
+
+        mvc.perform(patch("/api/v1/applications/{applicationId}/accept", firstApplication.getId())
+                        .cookie(clientAccessTokenCookie))
+                .andExpect(status().isOk());
+
+        // 승인된 동행인이 취소 → 노쇼 처리되고 모집 마감 전이라 공고는 다시 모집 중
+        mvc.perform(patch("/api/v1/applications/{applicationId}/cancel", firstApplication.getId())
+                        .cookie(escortAccessTokenCookie))
+                .andExpect(status().isOk());
+
+        assertEquals(
+                PostStatus.OPEN,
+                postRepository.findById(testPostId).orElseThrow().getPostStatus()
+        );
+
+        // 두 번째 동행인이 같은 공고에 지원
+        Cookie secondEscortCookie = saveEscort("escort7");
+
+        mvc.perform(post("/api/v1/applications/{postId}", testPostId)
+                        .cookie(secondEscortCookie))
+                .andDo(print())
+                .andExpect(status().isCreated());
+
+        Application secondApplication = applicationRepository
+                .findAllByPostIdWithEscort(testPostId)
+                .stream()
+                .filter(application -> application.getEscort().getUsername().equals("escort7"))
+                .findFirst()
+                .orElseThrow();
+
+        // 재매칭 — 승인까지 성공해야 한다
+        // (acceptedPostId 가 unique 라서, 노쇼 처리가 그 값을 비우지 않으면 여기서 제약 위반으로 막힌다)
+        ResultActions resultActions = mvc.perform(
+                patch("/api/v1/applications/{applicationId}/accept", secondApplication.getId())
+                        .cookie(clientAccessTokenCookie)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(ApplicationController.class))
+                .andExpect(handler().methodName("accept"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-22"))
+                .andExpect(jsonPath("$.msg").value("지원 승인이 완료되었습니다."));
+
+        Application rematched = applicationRepository
+                .findById(secondApplication.getId())
+                .orElseThrow();
+
+        assertEquals(ApplicationStatus.ACCEPTED, rematched.getStatus());
+        assertEquals(testPostId, rematched.getAcceptedPostId());
+
+        // 공고는 다시 매칭 완료
+        assertEquals(
+                PostStatus.MATCHED,
+                postRepository.findById(testPostId).orElseThrow().getPostStatus()
+        );
+
+        // 노쇼 처리된 첫 번째 지원은 그대로 남는다
+        Application noShowApplication = applicationRepository
+                .findById(firstApplication.getId())
+                .orElseThrow();
+
+        assertEquals(ApplicationStatus.NO_SHOW, noShowApplication.getStatus());
+        assertNull(noShowApplication.getAcceptedPostId());
+    }
+
+    @Test
+    @DisplayName("[ApplicationController] 지원 취소 - 모집 마감 후 노쇼면 공고가 취소되어 재매칭 불가")
+    void t40() throws Exception {
+
+        User client = userRepository.findByUsername("client1")
+                .orElseThrow();
+
+        User escort = userRepository.findByUsername("escort1")
+                .orElseThrow();
+
+        // 모집 마감 시간이 이미 지난 매칭 공고
+        Post expiredMatchedPost = Post.builder()
+                .client(client)
+                .title("모집 마감 지난 매칭 공고")
+                .content("모집 마감 후 노쇼 재매칭 테스트")
+                .region("수원")
+                .hospitalName("아주대학교병원")
+                .hospitalAddress("경기도 수원시")
+                .hospitalLat(BigDecimal.valueOf(37.2795))
+                .hospitalLng(BigDecimal.valueOf(127.0476))
+                .pickupAddress("경기도 수원시 팔달구")
+                .pickupLat(BigDecimal.valueOf(37.2636))
+                .pickupLng(BigDecimal.valueOf(127.0286))
+                .hourlyPay(15000)
+                .recruitStartAt(LocalDateTime.now().minusDays(2))
+                .recruitEndAt(LocalDateTime.now().minusMinutes(1))
+                .escortStartAt(LocalDateTime.now().plusDays(1))
+                .escortEndAt(LocalDateTime.now().plusDays(1).plusHours(3))
+                .patientNote("테스트 환자")
+                .reportRequired(false)
+                .postStatus(PostStatus.MATCHED)
+                .build();
+
+        postRepository.save(expiredMatchedPost);
+        savePayment(expiredMatchedPost, PaymentStatus.DONE);
+
+        Application application = Application.builder()
+                .post(expiredMatchedPost)
+                .escort(escort)
+                .build();
+
+        application.accept();
+        applicationRepository.save(application);
+
+        // 승인된 동행인이 취소 → 모집 마감 후라 공고 자체가 취소된다
+        mvc.perform(patch("/api/v1/applications/{applicationId}/cancel", application.getId())
+                        .cookie(escortAccessTokenCookie))
+                .andExpect(status().isOk());
+
+        assertEquals(
+                PostStatus.CANCELED,
+                postRepository.findById(expiredMatchedPost.getId()).orElseThrow().getPostStatus()
+        );
+
+        // 다른 동행인은 지원부터 막힌다 — 재매칭되지 않는다
+        Cookie secondEscortCookie = saveEscort("escort8");
+
+        ResultActions resultActions = mvc.perform(
+                post("/api/v1/applications/{postId}", expiredMatchedPost.getId())
+                        .cookie(secondEscortCookie)
+        ).andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(ApplicationController.class))
+                .andExpect(handler().methodName("apply"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.statusCode").value("400-21"))
+                .andExpect(jsonPath("$.msg").value("모집 중인 공고에만 지원할 수 있습니다."));
     }
 }

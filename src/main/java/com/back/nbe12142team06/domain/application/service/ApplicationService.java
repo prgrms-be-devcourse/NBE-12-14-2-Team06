@@ -7,10 +7,12 @@ import com.back.nbe12142team06.domain.application.enums.ApplicationStatus;
 import com.back.nbe12142team06.domain.application.enums.EscortProgress;
 import com.back.nbe12142team06.domain.application.repository.ApplicationRepository;
 import com.back.nbe12142team06.domain.application.repository.EscortProgressLogRepository;
+import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
 import com.back.nbe12142team06.domain.penalty.service.NoShowPenaltyService;
 import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.domain.post.entity.PostStatus;
 import com.back.nbe12142team06.domain.post.repository.PostRepository;
+import com.back.nbe12142team06.domain.ride.service.RideService;
 import com.back.nbe12142team06.domain.user.entity.ClientProfile;
 import com.back.nbe12142team06.domain.user.entity.EscortProfile;
 import com.back.nbe12142team06.domain.user.entity.User;
@@ -45,6 +47,8 @@ public class ApplicationService {
     private final EscortProgressLogRepository escortProgressLogRepository;
     private final NoShowPenaltyService noShowPenaltyService;
     private final ClientProfileRepository clientProfileRepository;
+    private final PaymentRepository paymentRepository;
+    private final RideService rideService;
 
     @Transactional
     public ApplicationApplyResponse apply(Long postId, Long userId) {
@@ -130,7 +134,12 @@ public class ApplicationService {
 
         // 모집 중인 공고만 매칭 가능
         if (post.getPostStatus() != PostStatus.OPEN) {
-            throw new InvalidException(25, "모집 중인 공고만 지원할 수 있습니다.");
+            throw new InvalidException(25, "모집 중인 공고만 승인할 수 있습니다.");
+        }
+
+        // 결제 완료 공고만 승인 가능
+        if (paymentRepository.findSuccessPayByPostId(postId).isEmpty()) {
+            throw new InvalidException(33, "결제 완료 공고만 승인할 수 있습니다.");
         }
 
         // 이미 ACCEPTED된 다른 공고와 동행 시간이 겹치는지 확인
@@ -310,6 +319,9 @@ public class ApplicationService {
 
         escortProgressLogRepository.save(progressLog);
 
+        // 이동 상태 변경
+        rideService.move(application.getActivePostId(), progress);
+
         if (progress == EscortProgress.DEPARTED) {
             application.getPost().startProgress(occurredAt);
         }
@@ -417,5 +429,12 @@ public class ApplicationService {
                 .stream()
                 .map(MyApplicationResponse::new)
                 .toList();
+    }
+
+    // 결제 서비스에서 사용합니다.
+    @Transactional
+    public void rejectAllByPost(Post post) {
+        applicationRepository.findAllByPostAndStatus(post, ApplicationStatus.PENDING)
+                .forEach(Application::reject);
     }
 }

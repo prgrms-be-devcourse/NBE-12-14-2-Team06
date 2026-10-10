@@ -60,11 +60,17 @@ public class SettlementService {
             SettlementClientResponse response = settlementApi(accountDto.payoutAmount(), name, account);
             // 정산 완료 상태 변경
             if (response.res_cnt() >= 1) {
-                settlementPersistenceService.updateSettlement(settlementId, SettlementStatus.COMPLETED);
-                log.info("정산 성공 - settlementId: {}", accountDto.id());
+                try {
+                    settlementPersistenceService.updateSettlement(settlementId, SettlementStatus.COMPLETED);
+                    log.info("정산 성공 - settlementId: {}", accountDto.id());
+                } catch (Exception e) {
+                    log.error("정산 DB 변경 실패, 정산은 성공 - settlementId: {}", accountDto.id());
+                    throw new InternalServerErrorException(71, "정산 데이터 저장 중 DB 에러가 발생했습니다.");
+                }
             } else {
-                log.error("정산 DB 변경 실패, 정산은 성공 - settlementId: {}", accountDto.id());
-                throw new InternalServerErrorException(72, "정산 도중 서버 에러가 발생했습니다.");
+                settlementPersistenceService.updateSettlement(settlementId, SettlementStatus.FAILED);
+                log.error("정산 실패 - 금융 결제원 API 요청 실패, settlementId: {}", settlementId);
+                throw new InternalServerErrorException(72, "정산에 실패했습니다.");
             }
         } catch (RuntimeException e) {
             // 금융 결제원 API 요청 에러
@@ -143,7 +149,6 @@ public class SettlementService {
         int platformFee = payoutAmount - settlementAmount;
 
         // 패널티 적용해야 하는지 확인
-
         Optional<NoShowPenalty> noShowPenalty = noShowPenaltyService.getNoShowPenalty(escort.getId());
 
         // 패널티 적용 시 정산 금액 차감
