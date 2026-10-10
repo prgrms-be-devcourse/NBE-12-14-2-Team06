@@ -1,23 +1,30 @@
 package com.back.nbe12142team06.domain.payment.service;
 
+import com.back.nbe12142team06.domain.application.entity.Application;
 import com.back.nbe12142team06.domain.payment.client.TossPaymentClient;
+import com.back.nbe12142team06.domain.payment.dto.PaymentConfirmRequest;
 import com.back.nbe12142team06.domain.payment.entity.Payment;
 import com.back.nbe12142team06.domain.payment.entity.PaymentStatus;
 import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
 import com.back.nbe12142team06.domain.post.entity.Post;
+import com.back.nbe12142team06.domain.post.repository.PostRepository;
+import com.back.nbe12142team06.domain.settlement.service.SettlementService;
 import com.back.nbe12142team06.domain.user.entity.User;
 import com.back.nbe12142team06.domain.user.enums.Gender;
 import com.back.nbe12142team06.domain.user.enums.Role;
 import com.back.nbe12142team06.domain.user.repository.UserRepository;
-import org.assertj.core.api.Assertions;
+import com.back.nbe12142team06.global.exception.InternalServerErrorException;
+import com.back.nbe12142team06.global.exception.InvalidException;
+import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
@@ -27,29 +34,39 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest
 @ActiveProfiles("test")
+@Transactional
 class PaymentServiceTest {
 
     @Autowired
+    private EntityManager em;
+    @Autowired
     private PaymentService paymentService;
+    @Autowired
+    private PostRepository postRepository;
+    @Autowired
+    private UserRepository userRepository;
 
-    @MockitoBean
+    @MockitoSpyBean
     private PaymentRepository paymentRepository;
     @MockitoBean
     private TossPaymentClient tossPaymentClient;
     @MockitoSpyBean
     private PaymentPersistenceService paymentPersistenceService;
+    @MockitoBean
+    private SettlementService settlementService;
 
-    private Payment createPayment(Post post, PaymentStatus status) {
+    private Payment createPayment(Post post, PaymentStatus status, Long id) {
         int hourlyPaySnapshot = 15_000;
         BigDecimal hours = BigDecimal.TEN;
         int amount = hourlyPaySnapshot * hours.intValue();
         Payment payment = Payment.builder()
-                .id(1L)
+                .id(id)
                 .post(post)
                 .amount(amount)
                 .hourlyPaySnapshot(hourlyPaySnapshot)
@@ -64,7 +81,11 @@ class PaymentServiceTest {
         return payment;
     }
 
-    private Post createPost(User client) {
+    private Payment createPayment(Post post, PaymentStatus status) {
+        return createPayment(post, status, 1L);
+    }
+
+    private Post createPost(User client, Long id, int hour) {
         String title = "정형외과 동행 구합니다";
         String content = "무릎 수술 후 검진 예약이 있어 동행인이 필요합니다.";
         String postRegion = "서울";
@@ -79,10 +100,10 @@ class PaymentServiceTest {
         LocalDateTime recruitStartAt = LocalDateTime.now().plusDays(1);
         LocalDateTime recruitEndAt = LocalDateTime.now().plusDays(6);
         LocalDateTime escortStartAt = LocalDateTime.now().plusDays(7);
-        LocalDateTime escortEndAt = LocalDateTime.now().plusDays(7).plusHours(4);
+        LocalDateTime escortEndAt = LocalDateTime.now().plusDays(7).plusHours(hour);
 
         Post post = Post.builder()
-                .id(1L)
+                .id(id)
                 .title(title)
                 .content(content)
                 .region(postRegion)
@@ -104,7 +125,15 @@ class PaymentServiceTest {
         return post;
     }
 
-    private User createClient() {
+    private Post createPost(User client, Long id) {
+        return createPost(client, id, 10);
+    }
+
+    private Post createPost(User client) {
+        return createPost(client, 1L, 10);
+    }
+
+    private User createClient(boolean addId) {
         User client = User.builder()
                 .username("client01")
                 .password("password1!")
@@ -116,14 +145,19 @@ class PaymentServiceTest {
                 .phoneNum("010-1234-1234")
                 .region("서울")
                 .build();
-        try {
-            Field clientIdField = client.getClass().getDeclaredField("id");
-            clientIdField.setAccessible(true);
-            clientIdField.set(client, 1L);
-        } catch (Exception e) {
+        if (addId) {
+            try {
+                Field clientIdField = client.getClass().getDeclaredField("id");
+                clientIdField.setAccessible(true);
+                clientIdField.set(client, 1L);
+            } catch (Exception e) {
+            }
         }
-
         return client;
+    }
+
+    private User createClient() {
+        return createClient(true);
     }
 
     private User createEscort() {
@@ -221,5 +255,144 @@ class PaymentServiceTest {
         assertThat(counts[0]).isEqualTo(1);
         assertThat(counts[1]).isEqualTo(0);
         assertThat(counts[2]).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("[PaymentService] 결제 재승인 시 실패")
+    void paymentReConfirmFailed() {
+        User client = createClient();
+        Post post = createPost(client);
+        Payment payment = createPayment(post, PaymentStatus.DONE);
+
+        doReturn(payment)
+                .when(paymentPersistenceService).findById(any(Long.class), any(Long.class));
+
+        assertThatThrownBy(() -> paymentService.confirm(null, payment.getId(), client.getId(), null, null))
+                .isInstanceOf(InvalidException.class)
+                .hasMessage("이미 결제를 완료하셨습니다.");
+    }
+
+    @Test
+    @DisplayName("[PaymentService] CANCELED 결제 재승인 → 거부")
+    void paymentReConfirmCanceledStatus() {
+        User client = createClient();
+        Post post = createPost(client);
+        Payment payment = createPayment(post, PaymentStatus.CANCELED);
+
+        doReturn(payment)
+                .when(paymentPersistenceService).findById(any(Long.class), any(Long.class));
+
+        assertThatThrownBy(() -> paymentService.confirm(null, payment.getId(), client.getId(), null, null))
+                .isInstanceOf(InvalidException.class)
+                .hasMessage("취소된 결제입니다.");
+    }
+
+    @Test
+    @DisplayName("[PaymentService] 승인 도중 IN_PROGRESS가 DB에 저장되는지")
+    void paymentConfirmSavedDbInProgress() {
+        User client = createClient(false);
+        Post post = createPost(client, null);
+        Payment payment = createPayment(post, PaymentStatus.READY, null);
+
+        userRepository.save(client);
+        postRepository.save(post);
+        paymentRepository.save(payment);
+
+        int updatedCount = paymentPersistenceService.confirmUpdateStatus(payment.getId());
+
+        em.flush();
+        em.clear();
+
+        Payment inProgressPayment = paymentRepository.findById(payment.getId()).get();
+
+        assertThat(updatedCount).isEqualTo(1);
+        assertThat(inProgressPayment.getPaymentStatus()).isEqualTo(PaymentStatus.IN_PROGRESS);
+    }
+
+    @Test
+    @DisplayName("[PaymentService] 결제 상태 CANCELED에서 결제 취소 요청")
+    void paymentReCancelFailed() {
+        User client = createClient();
+        Post post = createPost(client);
+        Payment payment = createPayment(post, PaymentStatus.CANCELED);
+
+        assertThatThrownBy(() -> paymentService.cancel(payment, null, 0, null))
+                .isInstanceOf(InvalidException.class)
+                .hasMessage("이미 취소된 결제입니다.");
+    }
+
+    @Test
+    @DisplayName("[PaymentService] READY(미결제) 결제 취소")
+    void cancelStatusReady() {
+        User client = createClient();
+        Post post = createPost(client);
+        Payment payment = createPayment(post, PaymentStatus.READY);
+
+        assertThatThrownBy(() -> paymentService.cancel(payment, null, 0, null))
+                .isInstanceOf(InvalidException.class)
+                .hasMessage("결제 완료 상태가 아닙니다.");
+    }
+
+    @Test
+    @DisplayName("[PaymentService] 동행 시간 단축 시 차액 부분 취소(PARTIAL_CANCELED)")
+    void paymentPartialCanceled() {
+        User client = createClient();
+        Post post = createPost(client, 1L, 4);
+        Payment payment = createPayment(post, PaymentStatus.DONE);
+
+        doReturn(List.of(payment))
+                .when(paymentPersistenceService).findByPostId(any());
+        doReturn(null)
+                .when(paymentPersistenceService).paymentPartialCancelDb(any(), any(), any(int.class));
+
+        paymentService.validPayment(post, Application.builder().build(), LocalDate.now());
+
+        verify(paymentPersistenceService, times(1)).paymentPartialCancelDb(any(), any(), any(int.class));
+    }
+
+    @Test
+    @DisplayName("[PaymentService] 동행 시간 초과 시 추가 결제(READY) 생성")
+    void paymentNewAddPayment() {
+        User client = createClient();
+        Post post = createPost(client, 1L, 12);
+        Payment payment = createPayment(post, PaymentStatus.DONE);
+
+        doReturn(List.of(payment))
+                .when(paymentPersistenceService).findByPostId(any());
+        doReturn(null)
+                .when(paymentPersistenceService).createPayment(any());
+
+        paymentService.validPayment(post, Application.builder().build(), LocalDate.now());
+
+        verify(paymentPersistenceService, times(1)).createPayment(any());
+    }
+
+    @Test
+    @DisplayName("[PaymentService] 결제 승인 실패 시 결제 데이터 하드 삭제")
+    @Transactional
+    void paymentDeletePaymentWithConfirmFailed() {
+        User client = createClient(false);
+        Post post = createPost(client, null);
+        Payment payment = createPayment(post, PaymentStatus.READY, null);
+
+        userRepository.save(client);
+        postRepository.save(post);
+        paymentRepository.save(payment);
+
+        doReturn(payment)
+                .when(paymentPersistenceService).findById(any(), any());
+        doThrow(new InternalServerErrorException(43, "토스 결제 승인 API 호출 실패, 결제 승인에 실패했습니다."))
+                .when(tossPaymentClient).callApiConfirm(any(), any(), any());
+
+        assertThatThrownBy(() -> paymentService.confirm(
+                new PaymentConfirmRequest(payment.getPaymentKey(), payment.getOrderId(), String.valueOf(payment.getAmount())),
+                payment.getId(), client.getId(), String.valueOf(payment.getAmount()), payment.getOrderId()))
+                .isInstanceOf(InternalServerErrorException.class)
+                .hasMessage("토스 결제 승인 API 호출 실패, 결제 승인에 실패했습니다.");
+
+        em.flush();
+        em.clear();
+
+        assertThat(paymentRepository.findById(payment.getId()).isEmpty()).isTrue();
     }
 }

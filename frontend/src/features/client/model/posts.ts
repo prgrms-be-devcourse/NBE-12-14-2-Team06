@@ -58,8 +58,13 @@ export const STATUS_TABS: { value: 'all' | ClientPostStatus; label: string }[] =
 /**
  * 백엔드 PostSummary(내 공고 목록에서 걸러낸 것) → 카드용 ClientPost.
  * accepted 는 매칭 완료 이후 상태에서만 넘어옵니다(모집 중인 공고는 지원자 조회를 하지 않으므로 undefined).
+ * unpaid 는 이 공고에 남은 READY 결제(PaymentDto)입니다. 결제할 게 없으면 undefined 입니다.
  */
-export function toClientPost(summary: PostSummary, accepted?: { applicationId: number; escortName: string }): ClientPost {
+export function toClientPost(
+  summary: PostSummary,
+  accepted?: { applicationId: number; escortName: string },
+  unpaid?: { id: number; amount: number },
+): ClientPost {
   return {
     id: summary.id,
     title: summary.title,
@@ -73,6 +78,8 @@ export function toClientPost(summary: PostSummary, accepted?: { applicationId: n
     status: toPostStatusKey(summary.postStatus),
     managerName: accepted?.escortName,
     applicationId: accepted?.applicationId,
+    // 시급은 결제 화면이 쓰는 pay 값입니다. 결제 건에는 없어서(hourlyPaySnapshot 은 결제 당시 값) 공고에서 가져옵니다.
+    unpaid: unpaid ? { paymentId: unpaid.id, amount: unpaid.amount, hourlyPay: summary.hourlyPay } : undefined,
   };
 }
 

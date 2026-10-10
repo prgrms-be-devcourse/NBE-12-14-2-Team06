@@ -10,11 +10,17 @@ import { applyToPost, fetchMyApplications } from '@/features/application';
 import { useCurrentUser, useRequireAuth, type CurrentUser } from '@/features/auth';
 // 배럴(@/features/education)로 가져오면 education 화면 → @/features/post → 이 파일로 순환 import 가 생겨서 api 모듈을 직접 가져옵니다.
 import { isEducationRequiredError } from '@/features/education/api';
-import { fetchPendingPayment, type PaymentDto } from '@/features/payment';
+import {
+  cancelPayment,
+  fetchPaymentsByPost,
+  isCancelablePayment,
+  type PaymentDto,
+  type PaymentStatus,
+} from '@/features/payment';
 import { fetchRidesByPost, type RideDto } from '@/features/ride';
 import { cn } from '@/lib/cn';
 import { deletePost, fetchPost } from '../api';
-import { daysFromNow, formatFullDate } from '../lib/date';
+import { daysFromNow, formatFullDate, formatTime, parseDateTime } from '../lib/date';
 import { canDeletePost, canEditPost, postStatusLabel, toPostStatusKey } from '../model/status';
 import type { LabelTone, PostBadge, PostDetail } from '../types';
 import StatusLabel from './StatusLabel';
@@ -30,6 +36,22 @@ const CARD = 'rounded-[30px] border border-line bg-white shadow-card';
 const CARD_TITLE = 'text-2xl leading-6 font-semibold text-brand';
 const BUTTON =
   'flex items-center justify-center rounded-[25px] px-6 font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50';
+
+/** 결제 취소 사유 길이 제한. 입력한 사유가 그대로 토스 취소 내역으로 넘어가서 넉넉하게만 잡아 둡니다. */
+const MAX_CANCEL_REASON_LENGTH = 200;
+
+/** 결제 상태 배지. 문구는 백엔드 PaymentStatus 의 description 을 그대로 씁니다. */
+const PAYMENT_LABEL: Record<PaymentStatus, { text: string; tone: LabelTone }> = {
+  READY: { text: '미결제', tone: 'red' },
+  IN_PROGRESS: { text: '결제 중', tone: 'blue' },
+  DONE: { text: '결제 완료', tone: 'green' },
+  CANCELED: { text: '결제 취소', tone: 'gray' },
+  PARTIAL_CANCELED: { text: '부분 취소', tone: 'purple' },
+  DELETED: { text: '공고 삭제', tone: 'gray' },
+};
+
+/** 결제가 아니라 취소 시점을 보여 줘야 하는 상태 (부분 취소는 결제 자체가 살아 있어 결제 일시를 그대로 둡니다) */
+const CANCELED_STATUS: PaymentStatus[] = ['CANCELED', 'DELETED'];
 
 type SectionProps = {
   title: string;
@@ -110,8 +132,15 @@ function PostDetailPageBody({ viewer }: Props) {
   /** 교육 미이수로 지원이 막혔는지 (에러 문구 옆에 교육 영상 링크를 보여줍니다) */
   const [educationRequired, setEducationRequired] = useState(false);
   const [rides, setRides] = useState<RideDto[]>([]);
-  // 동행이 끝난 뒤 남아 있는 미결제(추가 결제) 건. 공고 조회와 같은 방식으로 postId 를 같이 들고 있습니다.
-  const [paymentResult, setPaymentResult] = useState<{ postId: number; data: PaymentDto | null }>();
+  // 이 공고의 결제 전체(미결제·완료·취소 모두). 공고 조회와 같은 방식으로 postId 를 같이 들고 있습니다.
+  const [historyResult, setHistoryResult] = useState<{ postId: number; data: PaymentDto[] }>();
+  const [canceling, setCanceling] = useState(false);
+  const [cancelError, setCancelError] = useState<string>();
+  /** 취소 사유 입력칸을 펼친 결제 번호 (닫혀 있으면 undefined) */
+  const [cancelOpenId, setCancelOpenId] = useState<number>();
+  const [cancelReason, setCancelReason] = useState('');
+  /** 결제를 취소한 뒤 결제 상태를 다시 불러오기 위한 값 (바뀌면 조회 effect 가 다시 돕니다) */
+  const [paymentReload, setPaymentReload] = useState(0);
 
   useEffect(() => {
     let ignore = false;
@@ -186,25 +215,37 @@ function PostDetailPageBody({ viewer }: Props) {
         ? '/escort/posts'
         : '/posts';
 
-  // 동행이 끝난 내 공고일 때만 남은 결제를 확인합니다.
-  // 결제 조회는 로그인(의뢰인 본인)이 필요하고, 동행 완료 전에 남아 있는 READY 결제는
-  // "추가 결제"가 아니라 아직 안 낸 최초 결제라서 여기서 물어보면 안 됩니다.
-  const canHaveExtraPayment = isClient && !!post && toPostStatusKey(post.postStatus) === 'completed';
+  // 결제 이력은 내 공고에서만 보여 줍니다. (결제 조회는 의뢰인 본인 로그인이 필요합니다)
+  const showPayments = isClient && !!post;
 
   useEffect(() => {
-    if (!canHaveExtraPayment) return;
+    if (!showPayments) return;
     let ignore = false;
-    fetchPendingPayment(postId)
-      .then((payment) => !ignore && setPaymentResult({ postId, data: payment }))
-      // 조회에 실패해도 공고 상세 자체는 보여 줍니다. (추가 결제 안내만 뜨지 않습니다)
-      .catch(() => !ignore && setPaymentResult({ postId, data: null }));
+    fetchPaymentsByPost(postId)
+      .then((data) => !ignore && setHistoryResult({ postId, data }))
+      // 조회에 실패해도 공고 상세는 그대로 보여 줍니다. (결제 정보 카드만 뜨지 않습니다)
+      .catch(() => !ignore && setHistoryResult({ postId, data: [] }));
     return () => {
       ignore = true;
     };
-  }, [canHaveExtraPayment, postId]);
+  }, [showPayments, postId, paymentReload]);
 
-  // 다른 공고로 이동한 직후에는 이전 공고의 결제 정보를 쓰지 않습니다.
-  const pendingPayment = canHaveExtraPayment && paymentResult?.postId === postId ? paymentResult.data : null;
+  // 다른 공고로 이동한 직후에는 이전 공고의 결제 이력을 쓰지 않습니다.
+  const payments: PaymentDto[] = showPayments && historyResult?.postId === postId ? historyResult.data : [];
+
+  // 아직 내지 않은 결제. 목록은 최근 건이 앞이라 find 가 가장 나중에 만들어진 미결제 건입니다.
+  // (결제를 취소하면 백엔드가 같은 금액의 READY 건을 새로 만들어 둡니다)
+  // 공고별 조회(GET /api/v1/payments/posts/{postId})를 따로 부르지 않고 이미 받아 온 이력에서 뽑습니다.
+  const unpaidPayment = payments.find((payment) => payment.paymentStatus === 'READY');
+  // 동행이 끝난 뒤의 미결제는 실제 동행 시간이 늘어 생긴 차액이라 "추가 결제"로 구분해 보여 줍니다.
+  // (공고 목록 카드 ClientPostCard 와 같은 기준입니다)
+  const isExtraPayment = !!post && toPostStatusKey(post.postStatus) === 'completed';
+
+  // 결제 취소는 아직 아무도 매칭되지 않은 공고에서만 보여 줍니다.
+  // 백엔드(PaymentService.cancel)도 모집 중·마감 기한 초과만 허용합니다(InvalidException 46) —
+  // 매칭·진행 중인 공고의 결제를 취소하면 동행 매니저가 보수 없이 동행을 하게 되고,
+  // 동행이 끝난 건은 이미 정산 데이터가 만들어져 있기 때문입니다.
+  const postAllowsCancel = !!post && ['open', 'expired'].includes(toPostStatusKey(post.postStatus));
 
   const handleDelete = async () => {
     if (!window.confirm('이 공고를 삭제할까요? 되돌릴 수 없습니다.')) return;
@@ -217,6 +258,35 @@ function PostDetailPageBody({ viewer }: Props) {
     } catch (error) {
       setDeleteError(error instanceof Error ? error.message : '삭제에 실패했습니다.');
       setDeleting(false);
+    }
+  };
+
+  /** 사유 입력칸을 접습니다. 입력하던 사유와 실패 문구도 같이 버립니다. */
+  const closeCancelForm = () => {
+    setCancelOpenId(undefined);
+    setCancelReason('');
+    setCancelError(undefined);
+  };
+
+  const handleCancelPayment = async (paymentId: number) => {
+    // 취소 사유는 백엔드 PaymentCancelRequest 의 필수 본문이고, 토스 취소 내역에도 그대로 남습니다.
+    const reason = cancelReason.trim();
+    if (!reason) return;
+
+    setCanceling(true);
+    setCancelError(undefined);
+    try {
+      await cancelPayment(paymentId, reason);
+      // 취소하면 백엔드가 같은 금액의 READY 결제를 새로 만들어 둡니다(= 다시 결제할 수 있는 "미결제" 상태).
+      // 공고의 대기 중인 지원자도 서버가 모두 거절하므로 결제 이력을 다시 불러옵니다.
+      setHistoryResult(undefined);
+      setCancelOpenId(undefined);
+      setCancelReason('');
+      setPaymentReload((count) => count + 1);
+    } catch (error) {
+      setCancelError(error instanceof Error ? error.message : '결제 취소에 실패했습니다.');
+    } finally {
+      setCanceling(false);
     }
   };
 
@@ -317,17 +387,19 @@ function PostDetailPageBody({ viewer }: Props) {
 
   const editHref = `/client/posts/${post.id}/edit`;
 
-  // 추가 결제도 공고 등록 때와 같은 결제 화면(토스 위젯)을 씁니다.
+  // 결제 화면(토스 위젯)은 공고 등록 직후의 최초 결제와 같은 화면을 씁니다. 공고 목록 카드와 같은 주소입니다.
   // flow=extra 는 결제 후 공고 등록 완료 화면이 아니라 이 공고 상세로 돌아오기 위한 표시입니다.
-  const extraPaymentHref = pendingPayment
+  const unpaidHref = unpaidPayment
     ? `/client/posts/new/payment?${new URLSearchParams({
         postId: String(post.id),
-        paymentId: String(pendingPayment.id),
-        amount: String(pendingPayment.amount),
+        paymentId: String(unpaidPayment.id),
+        amount: String(unpaidPayment.amount),
         pay: String(post.hourlyPay),
-        flow: 'extra',
+        ...(isExtraPayment ? { flow: 'extra' } : {}),
       })}`
     : '';
+
+  const payLabel = isExtraPayment ? '추가 결제' : '결제하기';
 
   // 수정·삭제는 백엔드가 공고 상태로 막습니다. 눌러도 실패할 버튼은 아예 보여 주지 않습니다.
   // 수정은 "모집 중 + 모집 시작 전", 삭제는 "모집 중이거나 마감 기한 초과"일 때만 됩니다.
@@ -419,8 +491,103 @@ function PostDetailPageBody({ viewer }: Props) {
             {/* "지원 전 안내"(지원 시 개인정보 제공 동의) 섹션은 보는 사람(비로그인/의뢰인/동행인)에
                 따라 조건을 맞추기가 계속 어긋나서, 요청에 따라 전체 삭제했습니다. */}
 
+            {/* 결제 정보 — 이 공고의 결제 전부(미결제·완료·취소). 최근 건이 위에 옵니다. */}
+            {payments.length > 0 && (
+              <Section title="결제 정보">
+                <ul className="flex flex-col">
+                  {payments.map((payment, index) => {
+                    const paymentLabel = PAYMENT_LABEL[payment.paymentStatus];
+                    // 백엔드가 취소를 받아 주는 조건(결제 DONE + 공고 모집 중·마감 초과)일 때만 버튼을 답니다.
+                    const cancelable = postAllowsCancel && isCancelablePayment(payment);
+                    const formOpen = cancelOpenId === payment.id;
+                    // 취소된 건은 결제 시점이 아니라 취소 시점을 보여 줍니다.
+                    const canceled = CANCELED_STATUS.includes(payment.paymentStatus);
+                    const dateValue = canceled ? payment.canceledAt : payment.approvedAt;
+
+                    return (
+                      <li
+                        key={payment.id}
+                        className={cn('flex flex-col gap-[11px]', index > 0 && 'mt-5 border-t border-line-soft pt-5')}
+                      >
+                        {/* 배지는 내용만큼만 넓어야 해서 감싸 둡니다. (flex-col 안에서는 자식이 가로로 늘어납니다) */}
+                        <div>
+                          <StatusLabel tone={paymentLabel.tone}>{paymentLabel.text}</StatusLabel>
+                        </div>
+                        <dl className="flex flex-col gap-[3px]">
+                          <InfoRow label="결제 금액" labelWidth={140}>{`${payment.amount.toLocaleString()}원`}</InfoRow>
+                          {/* 아직 내지 않은(READY) 건은 승인 시각이 없습니다. */}
+                          <InfoRow label={canceled ? '취소 일시' : '결제 일시'} labelWidth={140}>
+                            {dateValue ? `${formatFullDate(parseDateTime(dateValue))} ${formatTime(dateValue)}` : '-'}
+                          </InfoRow>
+                        </dl>
+
+                        {/* 아직 내지 않은 건에는 공고 목록 카드와 같은 결제 버튼을 답니다.
+                            동행 완료 공고(추가 결제)는 바로 아래 "추가 결제 안내" 카드가 같은 버튼을 들고 있어 생략합니다. */}
+                        {payment.id === unpaidPayment?.id && !isExtraPayment && (
+                          <Link href={unpaidHref} className={cn(BUTTON, 'mx-auto h-14 w-full max-w-sm bg-brand text-xl text-white hover:bg-brand-hover')}>
+                            {`${payment.amount.toLocaleString()}원 결제하기`}
+                          </Link>
+                        )}
+
+                        {cancelable && !formOpen && (
+                          <button
+                            type="button"
+                            onClick={() => setCancelOpenId(payment.id)}
+                            className={cn(BUTTON, 'mx-auto h-14 w-full max-w-sm border border-line bg-white text-xl text-[#b91d1d] hover:bg-line-soft')}
+                          >
+                            결제 취소
+                          </button>
+                        )}
+                        {cancelable && formOpen && (
+                          <>
+                            <p className="text-base leading-6 font-medium text-brand-muted">
+                              결제를 취소하면 이 공고는 다시 미결제 상태가 되어 공개 목록에서 내려가고,
+                              대기 중인 지원자는 모두 거절됩니다. 같은 금액으로 다시 결제할 수 있습니다.
+                            </p>
+                            <label htmlFor="cancel-reason" className="px-0.5 text-base leading-5 font-semibold text-brand">
+                              결제 취소 사유
+                            </label>
+                            <textarea
+                              id="cancel-reason"
+                              value={cancelReason}
+                              onChange={(event) => setCancelReason(event.target.value)}
+                              maxLength={MAX_CANCEL_REASON_LENGTH}
+                              disabled={canceling}
+                              autoFocus
+                              placeholder="예) 병원 예약이 취소되어 동행이 필요하지 않습니다."
+                              className="h-[99px] w-full resize-none rounded-[30px] border border-line bg-white p-5 text-sm leading-5 text-brand placeholder:text-brand-muted"
+                            />
+                            {/* 접힌 상태의 "결제 취소" 버튼과 같은 폭으로 가운데에 둡니다. */}
+                            <div className="mx-auto flex w-full max-w-sm gap-[15px]">
+                              <button
+                                type="button"
+                                onClick={closeCancelForm}
+                                disabled={canceling}
+                                className={cn(BUTTON, 'h-14 flex-1 border border-line bg-white text-xl text-brand hover:bg-line-soft')}
+                              >
+                                닫기
+                              </button>
+                              {/* 사유를 적지 않으면 서버가 빈 사유를 그대로 토스 취소 내역에 남기게 되므로 버튼을 막아 둡니다. */}
+                              <button
+                                type="button"
+                                onClick={() => handleCancelPayment(payment.id)}
+                                disabled={canceling || !cancelReason.trim()}
+                                className={cn(BUTTON, 'h-14 flex-1 border border-line bg-white text-xl text-[#b91d1d] hover:bg-line-soft')}
+                              >
+                                {canceling ? '결제 취소 중…' : `${payment.amount.toLocaleString()}원 결제 취소`}
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </Section>
+            )}
+
             {/* 추가 결제 안내 — 실제 동행 시간이 예상보다 길어져 차액이 남았을 때만 */}
-            {pendingPayment && (
+            {isExtraPayment && unpaidPayment && (
               <section className={cn(CARD, 'border-brand px-6 pt-7 pb-6 lg:px-[35px]')}>
                 <h2 className={cn(CARD_TITLE, 'mb-5')}>추가 결제 안내</h2>
                 <p className="mb-5 text-base leading-6 font-medium text-brand">
@@ -428,19 +595,19 @@ function PostDetailPageBody({ viewer }: Props) {
                   아래 금액을 결제하시면 동행 건이 최종 정산됩니다.
                 </p>
                 <dl className="mb-5 flex flex-col gap-[3px]">
-                  <InfoRow label="추가 결제 금액" labelWidth={140}>{`${pendingPayment.amount.toLocaleString()}원`}</InfoRow>
-                  <InfoRow label="실제 동행 시간" labelWidth={140}>{`약 ${pendingPayment.hours}시간`}</InfoRow>
-                  <InfoRow label="적용 시급" labelWidth={140}>{`${pendingPayment.hourlyPaySnapshot.toLocaleString()}원`}</InfoRow>
+                  <InfoRow label="추가 결제 금액" labelWidth={140}>{`${unpaidPayment.amount.toLocaleString()}원`}</InfoRow>
+                  <InfoRow label="실제 동행 시간" labelWidth={140}>{`약 ${unpaidPayment.hours}시간`}</InfoRow>
+                  <InfoRow label="적용 시급" labelWidth={140}>{`${unpaidPayment.hourlyPaySnapshot.toLocaleString()}원`}</InfoRow>
                 </dl>
-                <Link href={extraPaymentHref} className={cn(BUTTON, 'h-14 w-full bg-brand text-xl text-white hover:bg-brand-hover')}>
-                  {`${pendingPayment.amount.toLocaleString()}원 추가 결제하기`}
+                <Link href={unpaidHref} className={cn(BUTTON, 'h-14 w-full bg-brand text-xl text-white hover:bg-brand-hover')}>
+                  {`${unpaidPayment.amount.toLocaleString()}원 추가 결제하기`}
                 </Link>
               </section>
             )}
 
-            {(deleteError || applyError) && (
+            {(deleteError || cancelError || applyError) && (
               <p role="alert" className="px-2 text-sm font-medium text-[#b91d1d]">
-                {deleteError || applyError}
+                {deleteError || cancelError || applyError}
               </p>
             )}
             {!deleteError && educationRequired && (
@@ -489,9 +656,10 @@ function PostDetailPageBody({ viewer }: Props) {
               <InfoRow label="지역" labelWidth={94}>{location}</InfoRow>
             </dl>
             <div className="mt-3.5 flex flex-col gap-[5px]">
-              {pendingPayment && (
-                <Link href={extraPaymentHref} className={cn(BUTTON, 'h-11 bg-brand text-base text-white hover:bg-brand-hover')}>
-                  {`${pendingPayment.amount.toLocaleString()}원 추가 결제`}
+              {/* 미결제 공고는 결제해야 공개 목록에 올라가므로, 결제가 가장 급한 버튼입니다. (공고 목록 카드와 같은 기준) */}
+              {unpaidPayment && (
+                <Link href={unpaidHref} className={cn(BUTTON, 'h-11 bg-brand text-base text-white hover:bg-brand-hover')}>
+                  {`${unpaidPayment.amount.toLocaleString()}원 ${payLabel}`}
                 </Link>
               )}
               {isClient ? (

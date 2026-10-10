@@ -30,7 +30,7 @@ public class NoShowPenalty extends BaseTimeEntity {
 
     // 노쇼 발생한 지원, 패널티 적용 된 원인
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "application_id", nullable = false)
+    @JoinColumn(name = "application_id", nullable = false, unique = true)
     private Application application;
 
     // 패널티 적용된 정산

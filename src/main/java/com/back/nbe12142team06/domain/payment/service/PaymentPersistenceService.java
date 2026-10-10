@@ -4,6 +4,8 @@ import com.back.nbe12142team06.domain.payment.dto.TossConfirmResponse;
 import com.back.nbe12142team06.domain.payment.entity.Payment;
 import com.back.nbe12142team06.domain.payment.entity.PaymentStatus;
 import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
+import com.back.nbe12142team06.domain.post.entity.Post;
+import com.back.nbe12142team06.global.exception.ForbiddenException;
 import com.back.nbe12142team06.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +18,7 @@ import java.util.List;
 
 @Slf4j
 @Service
+@Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class PaymentPersistenceService {
 
@@ -59,9 +62,19 @@ public class PaymentPersistenceService {
         return paymentRepository.save(payment);
     }
 
-    @Transactional(readOnly = true)
     public List<Payment> findByPostId(Long postId) {
         return paymentRepository.findSuccessPayByPostId(postId);
+    }
+
+    public Payment findById(Long userId, Long paymentId) {
+        Payment payment = paymentRepository.findByIdFetchJoin(paymentId)
+                .orElseThrow(() -> new NotFoundException(41, "결제 정보를 찾을 수 없습니다."));
+
+        if (!payment.getPost().getClient().getId().equals(userId)) {
+            throw new ForbiddenException(41, "사용자의 결제 정보가 아닙니다.");
+        }
+
+        return payment;
     }
 
     @Transactional
@@ -76,19 +89,33 @@ public class PaymentPersistenceService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Payment updateDeleteStatus(Long postId) {
         Payment payment = paymentRepository.findByPostId(postId)
-                .orElseThrow(() -> new NotFoundException("결제 정보를 찾을 수 없습니다."));
+                .orElseThrow(() -> new NotFoundException(41, "결제 정보를 찾을 수 없습니다."));
         payment.statusUpdate(PaymentStatus.DELETED);
         payment.updateCanceledAt();
         return payment;
     }
 
-    @Transactional(readOnly = true)
     public List<Payment> findDeletedAll() {
         return paymentRepository.findDeletedAll();
     }
 
-    @Transactional(readOnly = true)
     public List<Payment> getNotPaid(Long userId) {
         return paymentRepository.findNotPaidByUserId(userId);
+    }
+
+    @Transactional
+    public int confirmUpdateStatus(Long paymentId) {
+        return paymentRepository.paymentInProgress(paymentId);
+    }
+
+    @Transactional
+    public void failedConfirm(Long paymentId) {
+        paymentRepository.deleteById(paymentId);
+    }
+
+    @Transactional
+    public void updateAmountForModifyPost(Long postId, Post post) {
+        Payment payment = paymentRepository.findByPostIdAndPaymentStatus(postId, PaymentStatus.READY).getFirst();
+        payment.update(post.getTotalPay().intValue(), post.getEscortHours());
     }
 }

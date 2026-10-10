@@ -166,6 +166,10 @@ public class PostService {
 
         // 이동 수단 변경
         rideService.updateRide(postId, new RideUpdateRequest(request.rideSelectToHospital(), request.rideSelectToHome()));
+
+        // 수정된 금액과 결제 금액 검증
+        paymentService.validPayment(post);
+
         log.info("[공고 수정] postId={}, userId={}", postId, userId);
     }
     @Transactional
@@ -286,7 +290,7 @@ public class PostService {
         post.complete(arrivedAt);       // escortEndAt 실제값 반영 + 상태 COMPLETED
 
         // 재결제 로직
-        paymentService.validPayment(userId, post, application, post.getEscortEndAt().plusDays(1).toLocalDate());
+        paymentService.validPayment(post, application, post.getEscortEndAt().plusDays(1).toLocalDate());
 
         // 동행 완료 건수 증가 — clearAutomatically 때문에 반드시 마지막에 호출
         int updated = escortProfileRepository.increaseCompletedCount(escortId);

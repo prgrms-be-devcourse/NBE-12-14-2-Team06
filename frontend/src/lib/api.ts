@@ -114,9 +114,16 @@ export function apiPatch<T>(path: string, body?: unknown): Promise<T> {
     });
 }
 
-/** 로그인(쿠키)이 필요한 DELETE 요청. */
-export function apiDelete<T>(path: string): Promise<T> {
-    return api<T>(path, { method: 'DELETE' });
+/**
+ * 로그인(쿠키)이 필요한 DELETE 요청.
+ * 본문이 필요한 삭제(결제 취소의 취소 사유 등)는 body 를 넘기면 JSON 으로 실어 보냅니다.
+ */
+export function apiDelete<T>(path: string, body?: unknown): Promise<T> {
+    return api<T>(path, {
+        method: 'DELETE',
+        headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
+        body: body === undefined ? undefined : JSON.stringify(body),
+    });
 }
 
 /** 백엔드(Spring)가 목록에 붙여 주는 페이지 정보 */
