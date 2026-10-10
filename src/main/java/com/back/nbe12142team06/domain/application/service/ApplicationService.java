@@ -31,6 +31,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Period;
@@ -431,6 +432,71 @@ public class ApplicationService {
                 .toList();
     }
 
+    /**
+     * 동행 매니저의 현재 위치를 저장한다. 가장 최근 위치 1건만 남고, 보낼 때마다 덮어쓴다.
+     * 5초마다 호출되는 API 라서, 엔티티를 불러와 고치지 않고 위치 컬럼만 바꾸는 조건부 UPDATE 를 쓴다.
+     * (이유: ApplicationRepository.updateLocation 주석 참고)
+     */
+    @Transactional
+    public void saveLocation(Long applicationId, Long userId, ApplicationLocationRequest request) {
+
+        Application application = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new NotFoundException(24, "지원을 찾을 수 없습니다."));
+
+        // 본인의 동행에서만 위치를 보낼 수 있다
+        if (!application.getEscort().getId().equals(userId)) {
+            throw new ForbiddenException(29, "본인이 진행하는 동행에서만 실시간 위치를 보낼 수 있습니다.");
+        }
+
+        // 승인된 지원만. (노쇼 등으로 끝난 지원의 동행인이, 같은 공고를 이어받은 다른 동행인의 동행에 위치를 쓰지 못하게)
+        if (application.getStatus() != ApplicationStatus.ACCEPTED) {
+            throw new InvalidException(33, "승인된 동행에서만 실시간 위치를 보낼 수 있습니다.");
+        }
+
+        // 동행이 진행 중일 때만 (출발 기록 후 ~ 동행 완료 전)
+        if (application.getPost().getPostStatus() != PostStatus.IN_PROGRESS) {
+            throw new InvalidException(34, "동행이 진행 중일 때만 실시간 위치를 보낼 수 있습니다.");
+        }
+
+        int updated = applicationRepository.updateLocation(
+                applicationId, request.lat(), request.lng(), request.accuracy(), Instant.now());
+
+        // 위 확인 이후 저장하기 전에 동행이 끝나거나 취소된 경우 (조건부 UPDATE 가 0건)
+        if (updated == 0) {
+            throw new InvalidException(34, "동행이 진행 중일 때만 실시간 위치를 보낼 수 있습니다.");
+        }
+      //  log.info("[실시간 위치 저장] applicationId={}, escortId={}", applicationId, userId);
+    }
+    @Transactional(readOnly = true)
+    public ApplicationLocationResponse getLocation(Long applicationId, Long userId) {
+        // TODO: 위치 조회 구현
+        //  1. 지원 조회 (없으면 404)
+        Application application = applicationRepository.findById(applicationId)
+                .orElseThrow(() -> new NotFoundException(24, "지원을 찾을 수 없습니다."));
+
+
+        // 동행 매니저 본인 또는 그 공고를 작성한 의뢰인만 볼 수 있다 (getProgress 와 같은 기준)
+        boolean isEscort = application.getEscort().getId().equals(userId);
+        boolean isClient = application.getPost().getClient().getId().equals(userId);
+        if (!isEscort && !isClient) {
+            throw new ForbiddenException(30, "본인의 동행 건만 실시간 위치를 조회할 수 있습니다.");
+        }
+        // 동행이 진행 중이 아니면 위치를 돌려주지 않는다.
+        // TODO(위치 삭제): 개인정보 처리방침에 "동행 종료 후 지체 없이 삭제"를 명시했다. 아직 미구현이라 GET 에서만 막아 둠.
+        //  - ApplicationRepository 에 clearLocation(벌크 UPDATE) 추가
+        //  - 호출 지점: updateProgress(ARRIVED_HOME), PostService.escortComplete, 노쇼 취소, matchedCancel
+        if (application.getStatus() != ApplicationStatus.ACCEPTED
+                || application.getPost().getPostStatus() != PostStatus.IN_PROGRESS) {
+            throw new NotFoundException(31, "아직 공유된 실시간 위치가 없습니다.");
+        }
+        //  저장된 위치가 없으면(application.getLat() == null) NotFoundException → 프론트는 404 를 "아직 없음"으로 처리
+        if (application.getLat() == null || application.getLng() == null) {
+            throw new NotFoundException(31, "아직 공유된 실시간 위치가 없습니다.");
+        }
+      //  log.info("[실시간 위치 조회] applicationId={}, userId={}", applicationId, userId);
+        return new ApplicationLocationResponse(application);
+    }
+  
     // 결제 서비스에서 사용합니다.
     @Transactional
     public void rejectAllByPost(Post post) {

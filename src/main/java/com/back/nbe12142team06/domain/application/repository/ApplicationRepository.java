@@ -9,9 +9,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -77,4 +80,29 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT a FROM Application a WHERE a.id = :id")
     Optional<Application> findByIdWithLock(@Param("id") Long id);
+
+    // 동행 매니저의 최근 위치 저장. 위치 컬럼만 바꾸는 조건부 UPDATE 다.
+    // 엔티티를 불러와 고치면(더티체킹) 하이버네이트가 status 같은 안 바뀐 컬럼까지 함께 UPDATE 해서,
+    // 같은 순간에 처리된 노쇼 취소·승인 등의 상태를 이전 값으로 되돌릴 수 있다. 그래서 위치 컬럼만 직접 바꾼다.
+    // 지원이 ACCEPTED 이고 공고가 IN_PROGRESS 일 때만 바뀌며, 바뀐 행 수를 돌려준다 (0 이면 조건이 안 맞은 것).
+    @Modifying
+    @Query("""
+        update Application a
+           set a.lat = :lat,
+               a.lng = :lng,
+               a.accuracy = :accuracy,
+               a.locationUpdatedAt = :updatedAt
+         where a.id = :id
+           and a.status = com.back.nbe12142team06.domain.application.enums.ApplicationStatus.ACCEPTED
+           and exists (
+                select 1 from Post p
+                 where p = a.post
+                   and p.postStatus = com.back.nbe12142team06.domain.post.entity.PostStatus.IN_PROGRESS
+           )
+        """)
+    int updateLocation(@Param("id") Long id,
+                       @Param("lat") BigDecimal lat,
+                       @Param("lng") BigDecimal lng,
+                       @Param("accuracy") BigDecimal accuracy,
+                       @Param("updatedAt") Instant updatedAt);
 }

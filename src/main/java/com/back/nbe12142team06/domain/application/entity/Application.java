@@ -7,6 +7,9 @@ import com.back.nbe12142team06.global.entity.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
+import java.time.Instant;
+
 @Builder
 @Getter
 @Entity
@@ -39,6 +42,18 @@ public class Application extends BaseTimeEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ApplicationStatus status = ApplicationStatus.PENDING;
+
+    // 동행 중 동행 매니저의 가장 최근 위치 (첫 위치가 올라오기 전에는 모두 null)
+    @Column(precision = 10, scale = 7)
+    private BigDecimal lat;
+    @Column(precision = 10, scale = 7)
+    private BigDecimal lng;
+    @Column
+    private BigDecimal accuracy;
+    @Column(name = "location_updated_at")
+    private Instant locationUpdatedAt;
+
+
 
     // 최종 승인된 공고 ID. 상태가 ACCEPTED 일 때만 post 의 id, 아니면 null 이다.
     // (한 공고에 승인된 지원은 하나뿐이라는 것을 이 unique 제약으로 보장한다.)

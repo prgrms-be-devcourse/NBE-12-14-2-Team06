@@ -180,4 +180,33 @@ public class ApplicationController {
         );
     }
 
+    @Operation(summary = "동행 실시간 위치 전송", description = "동행 중인 동행 매니저가 현재 위치를 보냅니다. 가장 최근 위치 1건만 저장됩니다.")
+    @PostMapping("/{applicationId}/location")
+    public RsData<Void> saveLocation(
+            @PathVariable Long applicationId,
+            @AuthenticationPrincipal SecurityUser actor,
+            @Valid @RequestBody ApplicationLocationRequest request) {
+
+        applicationService.saveLocation(applicationId, actor.getId(), request);
+
+        return new RsData<>(
+                "200-30",
+                "실시간 위치가 저장되었습니다.",
+                null
+        );
+    }
+    @Operation(summary = "동행 실시간 위치 조회", description = "동행 매니저의 가장 최근 위치를 조회합니다. 동행 매니저 본인, 그 공고를 작성한 의뢰인, 관리자만 볼 수 있습니다.")
+    @GetMapping("/{applicationId}/location")
+    public RsData<ApplicationLocationResponse> getLocation(
+            @PathVariable Long applicationId,
+            @AuthenticationPrincipal SecurityUser actor) {
+
+        ApplicationLocationResponse response = applicationService.getLocation(applicationId, actor.getId());
+
+        return new RsData<>(
+                "200-31",
+                "실시간 위치 조회가 완료되었습니다.",
+                response
+        );
+    }
 }

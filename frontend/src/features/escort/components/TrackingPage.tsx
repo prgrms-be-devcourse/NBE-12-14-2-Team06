@@ -8,6 +8,7 @@ import { AppShell } from '@/components/layout';
 import { Container, InfoRow, SectionHeading } from '@/components/ui';
 import { PROGRESS_ORDER, advanceProgress } from '@/features/application';
 import { useRequireAuth } from '@/features/auth';
+import { useShareLocation } from '@/features/location';
 import { StatusLabel } from '@/features/post';
 import { fetchReport } from '@/features/report';
 import { cn } from '@/lib/cn';
@@ -86,6 +87,12 @@ export default function TrackingPage() {
   }, [applicationId]);
 
   const state = result.key === applicationId ? result.data : undefined;
+
+  // 동행 중(출발 기록 후 ~ 귀가 완료 전)에만 이 기기의 위치를 의뢰인에게 공유합니다.
+  // 훅은 아래의 조기 return 보다 먼저 불러야 해서, 단계 계산(stage)과 같은 기준을 여기서 한 번 더 씁니다.
+  const sharingLocation =
+    state?.status === 'ready' && doneCount !== undefined && doneCount >= 2 && doneCount < PROGRESS_ORDER.length;
+  const share = useShareLocation(applicationId, sharingLocation);
 
   if (authLoading) {
     return (
@@ -187,7 +194,12 @@ export default function TrackingPage() {
                 </dl>
               </section>
 
-              <MapCard stage={stage} />
+              <MapCard
+                stage={stage}
+                position={share.position}
+                updatedAt={share.lastSentLabel}
+                note={share.message}
+              />
 
               <section className={cn(CARD, 'flex items-center gap-4 px-6 py-6')}>
                 <Image src="/icons/escort/notice.svg" alt="" width={48} height={61} className="-my-4 -mx-2.5 shrink-0" />

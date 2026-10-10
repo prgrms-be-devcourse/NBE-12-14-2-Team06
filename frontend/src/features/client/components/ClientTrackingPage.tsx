@@ -8,6 +8,7 @@ import { AppShell } from '@/components/layout';
 import { Container, InfoRow, SectionHeading } from '@/components/ui';
 import { useRequireAuth } from '@/features/auth';
 import { MapCard, StageBar, Timeline, type EscortStage } from '@/features/escort';
+import { useEscortLocation } from '@/features/location';
 import { fetchPendingPayment, type PaymentDto } from '@/features/payment';
 import { StatusLabel } from '@/features/post';
 import { cn } from '@/lib/cn';
@@ -72,7 +73,8 @@ function summaryRows(escort: ClientEscortCase): { label: string; value: string[]
  * 이동수단: GET /api/v1/rides/posts/{postId}). 다른 화면에서 postId 없이 들어올 수도 있어, 그때는
  * 지금처럼 모의 데이터(model/escort.ts)를 보여줍니다.
  * 진행 단계(5종)는 GET /api/v1/applications/{id}/progress 로 실제 조회합니다(model/escort.ts 의
- * PROGRESS_TO_STAGE 참고). ⚠️ 타임라인 단계별 "시각"과 지도의 실시간 위치는 아직 API 가 없어 모의 값입니다.
+ * PROGRESS_TO_STAGE 참고). 지도의 실시간 위치는 동행 중에만 GET /api/v1/applications/{id}/location 을
+ * 5초마다 물어봅니다(features/location). ⚠️ 타임라인 단계별 "시각"은 아직 API 가 없어 모의 값입니다.
  */
 export default function ClientTrackingPage() {
   const { loading: authLoading, user } = useRequireAuth('CLIENT');
@@ -130,6 +132,10 @@ export default function ClientTrackingPage() {
   // postId 가 없으면 불러올 방법이 없어 아래 "동행 정보를 찾을 수 없습니다" 로 떨어집니다.
   const liveError = live.key === postId ? live.error : undefined;
   const escort = live.key === postId ? live.escort : undefined;
+
+  // 동행 중일 때만 동행 매니저의 최근 위치를 5초마다 물어봅니다. (훅은 아래의 조기 return 보다 먼저 불러야 합니다.)
+  const tracking = !!escort && BASE_STAGE[escort.stage] === 'ongoing';
+  const escortLocation = useEscortLocation(applicationId, tracking);
 
   if (authLoading) {
     return (
@@ -247,7 +253,13 @@ export default function ClientTrackingPage() {
           <div className="mt-[22px] grid items-start gap-[22px] lg:grid-cols-[minmax(0,745px)_minmax(0,511px)] lg:justify-center">
             <div className="flex min-w-0 flex-col gap-[22px]">
               <ManagerInfoCard manager={escort.manager} size="lg" title="동행 정보" />
-              <MapCard stage={baseStage} updatedAt={escort.updatedAt} />
+              <MapCard
+                stage={baseStage}
+                updatedAt={escortLocation.location?.updatedAtLabel ?? escort.updatedAt}
+                position={escortLocation.location?.position}
+                trail={escortLocation.trail}
+                note={escortLocation.error}
+              />
 
               <section className={cn(CARD, 'flex items-center gap-4 px-6 py-6 lg:min-h-[114px]')}>
                 <Image src="/icons/escort/notice.svg" alt="" width={48} height={61} className="-my-4 -mx-2.5 shrink-0" />
