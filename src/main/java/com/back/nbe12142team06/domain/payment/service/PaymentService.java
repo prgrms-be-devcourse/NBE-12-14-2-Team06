@@ -1,6 +1,7 @@
 package com.back.nbe12142team06.domain.payment.service;
 
 import com.back.nbe12142team06.domain.application.entity.Application;
+import com.back.nbe12142team06.domain.application.service.ApplicationService;
 import com.back.nbe12142team06.domain.payment.client.TossPaymentClient;
 import com.back.nbe12142team06.domain.payment.dto.PaymentCancelRequest;
 import com.back.nbe12142team06.domain.payment.dto.PaymentConfirmRequest;
@@ -10,8 +11,8 @@ import com.back.nbe12142team06.domain.payment.entity.Payment;
 import com.back.nbe12142team06.domain.payment.entity.PaymentStatus;
 import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
 import com.back.nbe12142team06.domain.post.entity.Post;
+import com.back.nbe12142team06.domain.post.entity.PostStatus;
 import com.back.nbe12142team06.domain.settlement.service.SettlementService;
-import com.back.nbe12142team06.global.exception.ForbiddenException;
 import com.back.nbe12142team06.global.exception.InternalServerErrorException;
 import com.back.nbe12142team06.global.exception.InvalidException;
 import com.back.nbe12142team06.global.exception.NotFoundException;
@@ -19,7 +20,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -33,6 +33,7 @@ public class PaymentService {
     private final PaymentPersistenceService paymentPersistenceService;
     private final TossPaymentClient tossPaymentClient;
     private final SettlementService settlementService;
+    private final ApplicationService applicationService;
 
     public Payment confirm(PaymentConfirmRequest request, Long paymentId, Long userId, String sessionAmount, String sessionOrderId) {
 
@@ -95,7 +96,8 @@ public class PaymentService {
             throw new InvalidException(44, "이미 취소된 결제입니다.");
         }
 
-        if (!payment.getPaymentStatus().equals(PaymentStatus.DONE)) {
+        if (!(payment.getPaymentStatus().equals(PaymentStatus.DONE) ||
+                payment.getPaymentStatus().equals(PaymentStatus.PARTIAL_CANCELED))) {
             throw new InvalidException(45, "결제 완료 상태가 아닙니다.");
         }
 
@@ -128,8 +130,21 @@ public class PaymentService {
 
     public Payment cancel(Long userId, Long paymentId, PaymentCancelRequest request) {
         Payment payment = paymentPersistenceService.findById(userId, paymentId);
+
+        // 매칭되었거나 동행 완료인 경우 결제 취소 불가
+        Post post = payment.getPost();
+        if (!(post.getPostStatus().equals(PostStatus.OPEN) ||
+                post.getPostStatus().equals(PostStatus.EXPIRED))) {
+            throw new InvalidException(46, "이미 종료된 동행이거나 매칭되었기 때문에 결제를 취소할 수 없습니다.");
+        }
+
         int amount = payment.getAmount();
-        return this.cancel(payment, request, amount, null);
+        Payment canceledPayment = this.cancel(payment, request, amount, null);
+
+        // 지원한 사용자 모두 거절
+        applicationService.rejectAllByPost(post);
+
+        return canceledPayment;
     }
 
     /// deprecated
@@ -141,7 +156,7 @@ public class PaymentService {
 
     public void verifyAmount(String amount, String orderId, SaveAmountRequest request) {
         if (!amount.equals(request.amount())
-        || !orderId.equals(request.orderId())) {
+                || !orderId.equals(request.orderId())) {
             log.warn("결제 금액 정보 불일치 - 요청 amount: {}, 요청 orderId: {}, 저장된 amount: {}, 저장된 orderId: {}",
                     request.amount(), request.orderId(), amount, orderId);
             throw new InvalidException(42, "결제 금액 정보가 유효하지 않습니다.");
@@ -156,9 +171,21 @@ public class PaymentService {
         }
     }
 
-    // userId 삭제 예정
-    public void validPayment(Long userId, Post post, Application application, LocalDate settledDate) {
+    public void validPayment(Post post, Application application, LocalDate settledDate) {
+        int payoutAmount = validPayment(post);
+        // 정산 데이터 생성
+        settlementService.createSettlement(payoutAmount, application, application.getEscort(), settledDate);
+    }
+
+    public int validPayment(Post post) {
+        // 결제 완료를 모두 가져옴
         List<Payment> payments = paymentPersistenceService.findByPostId(post.getId());
+
+        // 결제 완료된 결제가 없는 경우
+        if (payments.isEmpty()) {
+            paymentPersistenceService.updateAmountForModifyPost(post.getId(), post);
+            return post.getTotalPay().intValue();
+        }
 
         int balanceAmount = 0;
         for (Payment payment : payments) {
@@ -190,8 +217,7 @@ public class PaymentService {
             );
         }
 
-        // 정산 데이터 생성
-        settlementService.createSettlement(payoutAmount, application, application.getEscort(), settledDate);
+        return payoutAmount;
     }
 
     public Payment createPayment(Post post) {

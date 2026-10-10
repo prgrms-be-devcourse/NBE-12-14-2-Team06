@@ -4,6 +4,7 @@ import com.back.nbe12142team06.domain.payment.dto.TossConfirmResponse;
 import com.back.nbe12142team06.domain.payment.entity.Payment;
 import com.back.nbe12142team06.domain.payment.entity.PaymentStatus;
 import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
+import com.back.nbe12142team06.domain.post.entity.Post;
 import com.back.nbe12142team06.global.exception.ForbiddenException;
 import com.back.nbe12142team06.global.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -110,5 +111,11 @@ public class PaymentPersistenceService {
     @Transactional
     public void failedConfirm(Long paymentId) {
         paymentRepository.deleteById(paymentId);
+    }
+
+    @Transactional
+    public void updateAmountForModifyPost(Long postId, Post post) {
+        Payment payment = paymentRepository.findByPostIdAndPaymentStatus(postId, PaymentStatus.READY).getFirst();
+        payment.update(post.getTotalPay().intValue(), post.getEscortHours());
     }
 }
