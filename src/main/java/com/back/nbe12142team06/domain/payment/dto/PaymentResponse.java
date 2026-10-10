@@ -15,7 +15,8 @@ public record PaymentResponse(
         PaymentStatus paymentStatus,
         LocalDateTime approvedAt,
         LocalDateTime canceledAt,
-        String cancelReason
+        String cancelReason,
+        Long postId
         ) {
     public PaymentResponse(Payment payment) {
         this(
@@ -27,7 +28,8 @@ public record PaymentResponse(
                 payment.getPaymentStatus(),
                 payment.getApprovedAt(),
                 payment.getCanceledAt(),
-                payment.getCancelReason()
+                payment.getCancelReason(),
+                payment.getPost() == null ? null : payment.getPost().getId()
                 );
     }
 }
