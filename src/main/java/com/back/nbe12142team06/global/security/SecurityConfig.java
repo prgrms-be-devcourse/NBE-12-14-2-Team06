@@ -53,11 +53,13 @@ public class SecurityConfig {
                     .requestMatchers(HttpMethod.PATCH, "/api/v1/applications/*/cancel", "/api/v1/applications/*/progress")
                             .hasRole("ESCORT")
 
-                    // 지원(의뢰인): 내 공고의 지원자 목록, 지원 수락/거절, 지원자 프로필 조회
+                    // 지원(의뢰인): 내 공고의 지원자 목록, 지원 수락/거절, 지원자 프로필 , 실시간 위치 조회
                     .requestMatchers(HttpMethod.GET, "/api/v1/applications/posts/*").hasRole("CLIENT")
                     .requestMatchers(HttpMethod.PATCH, "/api/v1/applications/*/accept", "/api/v1/applications/*/reject")
                             .hasRole("CLIENT")
                     .requestMatchers(HttpMethod.GET, "/api/v1/applications/*/escort-profile").hasRole("CLIENT")
+                    .requestMatchers(HttpMethod.POST, "/api/v1/applications/*/location").hasRole("ESCORT")
+                    .requestMatchers(HttpMethod.GET,  "/api/v1/applications/*/location").hasAnyRole("CLIENT", "ESCORT")
 
                     // 보고서(작성: 동행인 / 조회: 해당 동행 건의 의뢰인·동행인), 리뷰 작성(의뢰인)
                     .requestMatchers(HttpMethod.POST, "/api/v1/applications/*/report").hasRole("ESCORT")
