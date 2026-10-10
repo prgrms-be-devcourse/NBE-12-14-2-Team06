@@ -10,6 +10,7 @@ import com.back.nbe12142team06.domain.education.repository.EducationVideoReposit
 import com.back.nbe12142team06.domain.payment.client.TossPaymentClient;
 import com.back.nbe12142team06.domain.payment.dto.TossConfirmResponse;
 import com.back.nbe12142team06.domain.payment.entity.Payment;
+import com.back.nbe12142team06.domain.payment.entity.PaymentStatus;
 import com.back.nbe12142team06.domain.payment.repository.PaymentRepository;
 import com.back.nbe12142team06.domain.post.entity.PostStatus;
 import com.back.nbe12142team06.domain.post.repository.PostRepository;
@@ -596,5 +597,102 @@ class EscortFlowIntegrationTest {
         resultActions
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.statusCode").value("403-1"));
+    }
+
+    // ── 시나리오 4 ─────────────────────────────────────────────
+
+    @Test
+    @DisplayName("[통합] 결제를 취소한 공고는 승인부터 막혀 동행 완료·정산까지 가지 못한다")
+    void 결제_취소한_공고는_정산까지_가지_못한다() throws Exception {
+
+        String tag = tag();
+        int hourlyPay = 15000;
+
+        String clientUsername = "flow4-client-" + tag;
+        signUp(clientUsername, "testPassword", "flow4-client-" + tag + "@test.com", "의뢰인", "CLIENT", phone(tag, 1));
+        Cookie clientCookie = login(clientUsername, "testPassword");
+
+        // 1. 공고 등록 (동행 예정 2시간)
+        LocalDateTime now = LocalDateTime.now();
+        String writeResponse = mvc.perform(post("/api/v1/posts")
+                        .cookie(clientCookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(postJson(now.plusDays(1), now.plusDays(1).plusHours(1),
+                                now.plusDays(1).plusHours(2), now.plusDays(1).plusHours(4), hourlyPay)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        DocumentContext writeCtx = JsonPath.parse(writeResponse);
+        Long postId = ((Number) writeCtx.read("$.data.id")).longValue();
+        Long paymentId = ((Number) writeCtx.read("$.data.paymentId")).longValue();
+
+        // 2. 결제 승인 (금액 임시 저장 → 승인)
+        String plannedAmount = String.valueOf(hourlyPay * 2);
+        mvc.perform(post("/api/v1/payments/save-amount")
+                        .cookie(clientCookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"paymentId": %d, "orderId": "order-%s", "amount": "%s"}
+                                """.formatted(paymentId, tag, plannedAmount)))
+                .andExpect(status().isCreated());
+        mvc.perform(post("/api/v1/payments/{paymentId}/confirm", paymentId)
+                        .cookie(clientCookie)
+                        .sessionAttrs(Map.of("amount", plannedAmount, "orderId", "order-%s".formatted(tag)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"paymentKey": "test-payment-key-%s", "orderId": "order-%s", "amount": "%s"}
+                                """.formatted(tag, tag, plannedAmount)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCode").value("200-41"));
+
+        // 3. 의뢰인이 결제를 취소 (공고는 모집 중이라 취소가 허용된다)
+        mvc.perform(delete("/api/v1/payments/{paymentId}", paymentId)
+                        .cookie(clientCookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"cancelReason": "병원 예약이 취소되었습니다."}
+                                """))
+                .andDo(print())
+                .andExpect(status().isNoContent())
+                .andExpect(jsonPath("$.statusCode").value("204-41"));
+
+        verify(tossPaymentClient).callApiCancel(any(), any(), any());
+
+        // 취소 후: 성공한 결제가 사라지고, 같은 금액의 미결제(READY) 건이 새로 생긴다
+        assertThat(paymentRepository.findSuccessPayByPostId(postId)).isEmpty();
+        assertThat(paymentRepository.findByPostIdAndPaymentStatus(postId, PaymentStatus.READY)).hasSize(1);
+
+        // 4. 동행인이 지원 — 미결제 공고에도 지원 자체는 된다
+        String escortUsername = "flow4-escort-" + tag;
+        Long escortUserId = signUp(escortUsername, "testPassword", "flow4-escort-" + tag + "@test.com", "동행인", "ESCORT", phone(tag, 2));
+        Cookie escortCookie = login(escortUsername, "testPassword");
+        createEscortProfile(escortCookie);
+        verifyEscortDirectly(escortUserId);
+
+        String applyResponse = mvc.perform(post("/api/v1/applications/{postId}", postId)
+                        .cookie(escortCookie))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        Long applicationId = ((Number) JsonPath.parse(applyResponse).read("$.data.id")).longValue();
+
+        // 5. 승인은 막힌다 — 돈을 받지 않은 공고는 매칭되지 않는다
+        mvc.perform(patch("/api/v1/applications/{applicationId}/accept", applicationId)
+                        .cookie(clientCookie))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.statusCode").value("400-33"))
+                .andExpect(jsonPath("$.msg").value("결제 완료 공고만 승인할 수 있습니다."));
+
+        assertThat(postRepository.findById(postId).orElseThrow().getPostStatus()).isEqualTo(PostStatus.OPEN);
+
+        // 6. 매칭이 없으니 동행 완료 처리도 막힌다 (동행 진행 중이 아님)
+        mvc.perform(patch("/api/v1/posts/{postId}/escortComplete", postId).cookie(clientCookie))
+                .andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.statusCode").value("400-19"));
+
+        // 7. 그래서 이 동행인에게는 정산 데이터가 만들어지지 않는다
+        //    (이 클래스는 @Transactional 이 없어 다른 시나리오의 데이터가 남아 있으므로 이 동행인 것만 본다)
+        assertThat(settlementRepository.findAll())
+                .noneMatch(settlement -> settlement.getEscort().getId().equals(escortUserId));
     }
 }
