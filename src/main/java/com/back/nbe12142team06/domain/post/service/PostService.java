@@ -36,6 +36,9 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static com.back.nbe12142team06.domain.application.enums.ApplicationStatus.ACCEPTED;
+import static com.back.nbe12142team06.domain.application.enums.ApplicationStatus.PENDING;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -194,11 +197,12 @@ public class PostService {
                 throw new InvalidException(17, "모집 중이거나 만료 상태에서만 삭제가 가능합니다.");
             }
         }
-
         // 결제 상태 변경 -> 스케줄러로 삭제된 공고에 대해 결제 취소할 예정
         paymentService.cancelPostAndPayment(postId);
 
         postRepository.deleteById(postId);
+        // 공고의 지원(대기중, 승인)을 패널티 없이 취소
+        cancelApplicationsWithoutPenalty(post);
         log.info("[공고 삭제] postId={}, userId={}", postId, userId);
     }
     @Transactional
@@ -223,6 +227,9 @@ public class PostService {
         }
 
         post.matchedCancel();
+
+        // 공고의 지원(대기중, 승인)을 패널티 없이 취소
+        cancelApplicationsWithoutPenalty(post);
         log.info("[공고 매칭 취소] postId={}, userId={}", postId, userId);
     }
     @Transactional
@@ -352,10 +359,26 @@ public class PostService {
         }
 
         post.cancel();
+        // 공고의 지원(대기중, 승인)을 패널티 없이 취소
+        cancelApplicationsWithoutPenalty(post);
         log.info("[공고 취소] postId={}, userId={}", postId, userId);
     }
 
     public boolean hasInProgressPost(Long userId){
         return this.postRepository.existsByClientIdAndPostStatus(userId, PostStatus.IN_PROGRESS);
+    }
+
+    // 공고가 취소·삭제될 때, 그 공고의 지원(대기중, 승인)을 패널티 없이 취소한다.
+    // 같은 트랜잭션 안에서 가져온 지원이라 변경 감지로 저장된다.
+    private void cancelApplicationsWithoutPenalty(Post post) {
+        List<Application> acceptedApplications = applicationRepository.findAllByPostAndStatus(post, ACCEPTED);
+        List<Application> pendingApplications = applicationRepository.findAllByPostAndStatus(post, PENDING);
+
+        for (Application acceptedApplication : acceptedApplications) {
+            acceptedApplication.cancelWithoutPenalty();
+        }
+        for (Application pendingApplication : pendingApplications) {
+            pendingApplication.cancelWithoutPenalty();
+        }
     }
 }
