@@ -42,3 +42,6 @@ out/
 ### Claude ###
 .claude/
 .DS_Store
+
+### Custom ###
+loadtest/
