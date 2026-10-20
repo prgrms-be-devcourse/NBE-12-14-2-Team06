@@ -45,3 +45,6 @@ out/
 
 ### Custom ###
 loadtest/
+monitoring/grafana/dashboards/payment-*.json
+monitoring/grafana/dashboards/ride-*.json
+monitoring/grafana/dashboards/settlement-*.json
